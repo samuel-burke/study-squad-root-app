@@ -66,30 +66,57 @@ jobs:
           path: client/playwright-report/
           retention-days: 14
 
-  package:
-    name: Build Root package artifact
+  deploy:
+    name: Deploy to Root
     needs: [verify, e2e]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    # Only main ships. Run it again by hand from the Actions tab if an upload failed.
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
+    concurrency:
+      group: deploy-root
+      cancel-in-progress: false
+    permissions:
+      contents: write # pushes the root-v<version> tag after an upload
+    env:
+      ROOT_AUTH_TOKEN: ${{ secrets.ROOT_AUTH_TOKEN }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
           cache: npm
-      - run: npm ci
-      - run: npm run generate
-      - run: npm run build
-      - name: Upload build output
-        uses: actions/upload-artifact@v7
-        with:
-          name: study-room-build
-          path: |
-            root-manifest.json
-            client/dist/
-            server/dist/
-            core/dist/
-            contract/dist/
-            networking/gen/server/
-          retention-days: 30
+      - name: Decide whether to upload
+        id: check
+        run: |
+          version=$(node -p "require('./root-manifest.json').version")
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          if [ -z "$ROOT_AUTH_TOKEN" ]; then
+            echo "::notice::No ROOT_AUTH_TOKEN secret, so nothing is uploaded. See docs/DEPLOYING.md."
+            echo "upload=false" >> "$GITHUB_OUTPUT"
+          elif git ls-remote --exit-code --tags origin "refs/tags/root-v$version" >/dev/null; then
+            echo "::notice::Version $version is already on Root. Bump the version in root-manifest.json to ship a new one."
+            echo "upload=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "upload=true" >> "$GITHUB_OUTPUT"
+          fi
+      - if: steps.check.outputs.upload == 'true'
+        run: npm ci
+      - name: Build
+        if: steps.check.outputs.upload == 'true'
+        # A clean generate: stale networking/gen output once crashed the app on Root.
+        run: |
+          rm -rf networking/gen
+          npm run generate
+          npm run build
+      - name: Package
+        if: steps.check.outputs.upload == 'true'
+        run: npx rootsdk build package --output-file ./rootapp.pkg --project-folder .
+      - name: Upload to Root
+        if: steps.check.outputs.upload == 'true'
+        run: npx rootsdk upload package --file ./rootapp.pkg --authToken "$ROOT_AUTH_TOKEN"
+      - name: Tag the uploaded version
+        if: steps.check.outputs.upload == 'true'
+        run: |
+          git tag "root-v${{ steps.check.outputs.version }}"
+          git push origin "root-v${{ steps.check.outputs.version }}"

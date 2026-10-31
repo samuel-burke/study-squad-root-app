@@ -6,6 +6,7 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ### Added
 
+- Continuous deployment: a push to `main` that passes CI uploads a new version to Root by itself, once a `ROOT_AUTH_TOKEN` secret is set. See docs/DEPLOYING.md.
 - A **Custom** solo timer length: type any whole number of minutes from 5 to 180. Before this, Deep Thought (42 minutes) and Ultramarathon (3 hours) couldn't be earned, because neither length was on the list.
 
 ### Changed

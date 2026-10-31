@@ -4,6 +4,14 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ## [Unreleased]
 
+### Added
+
+- A **Custom** solo timer length: type any whole number of minutes from 5 to 180. Before this, Deep Thought (42 minutes) and Ultramarathon (3 hours) couldn't be earned, because neither length was on the list.
+
+### Changed
+
+- Jackpot now unlocks on any total XP ending in 777 (777, 1,777, 2,777 and so on), so missing 777 no longer means missing it for good.
+
 ## [0.3.0] - 2026-10-30
 
 A chattier, more alive room: the Squad bot, live stats and boss damage, a bigger leaderboard, your own avatar and countdown chirps.

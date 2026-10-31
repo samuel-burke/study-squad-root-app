@@ -217,7 +217,7 @@ const RULES: Record<string, Row> = {
   },
   unstoppable: { earns: today({ sessionsFinished: 8 }), misses: today({ sessionsFinished: 7 }) },
   speedrun: { earns: { goal: { secondsOpen: 59 } }, misses: { goal: { secondsOpen: 60 } } },
-  jackpot: { earns: xp(777), misses: xp(778) },
+  jackpot: { earns: xp(1777), misses: xp(1778) },
   "over-9000": { earns: xp(9001), misses: xp(9000) },
   phoenix: { earns: streak({ comebackFrom: 30 }), misses: streak({ comebackFrom: 29 }) },
   "one-person-army": { earns: boss({ contributors: 1 }), misses: boss({ contributors: 2 }) },

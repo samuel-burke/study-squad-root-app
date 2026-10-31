@@ -180,9 +180,11 @@ describe("badge rules", () => {
     expect(earned({ session: overnight })).toContain("midnight-oil");
   });
 
-  it("XP Easter eggs: exactly 777, and over 9000", () => {
+  it("XP Easter eggs: a total ending in 777, and over 9000", () => {
     expect(earned({ xpTotal: 777 })).toEqual(["jackpot"]);
+    expect(earned({ xpTotal: 2777 })).toEqual(["jackpot"]);
     expect(earned({ xpTotal: 778 })).toEqual([]);
+    expect(earned({ xpTotal: 1077 })).toEqual([]);
     expect(earned({ xpTotal: 9001 })).toEqual(["over-9000"]);
   });
 

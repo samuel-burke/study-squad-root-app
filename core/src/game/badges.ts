@@ -709,13 +709,14 @@ export const BADGES: readonly BadgeDefinition[] = [
   {
     id: "jackpot",
     name: "Jackpot",
-    description: "Land on exactly 777 XP.",
+    description: "Land on a total XP ending in 777, like 777 or 1,777.",
     glyph: "coin",
     tier: "secret",
     stamp: "777",
     category: "secret",
     secret: true,
-    earned: (f) => f.xpTotal === 777,
+    // Any total ending in 777, so missing one chance isn't missing it for good.
+    earned: (f) => f.xpTotal % 1000 === 777,
   },
   {
     id: "over-9000",

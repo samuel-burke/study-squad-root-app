@@ -995,6 +995,26 @@ h3 {
   color: var(--blue);
 }
 
+.custom-minutes {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  margin-top: 4px;
+  font-weight: 700;
+}
+
+.custom-minutes input {
+  width: 88px;
+  min-height: 40px;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border-strong);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+}
+
 .btn-start {
   min-height: 54px;
   border-radius: 16px;

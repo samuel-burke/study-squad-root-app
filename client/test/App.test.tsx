@@ -88,6 +88,23 @@ describe("Study Squad app", () => {
     expect(screen.getByRole("button", { name: "End solo timer" })).toBeInTheDocument();
   });
 
+  it("starts a solo timer with a custom length, and refuses one out of range", async () => {
+    const { user } = await renderApp();
+    await user.click(screen.getByRole("button", { name: "Start a solo timer" }));
+    const dialog = screen.getByRole("dialog");
+    await user.click(within(dialog).getByRole("radio", { name: "Custom" }));
+    const field = within(dialog).getByLabelText("Minutes");
+    const start = within(dialog).getByRole("button", { name: "Start focusing" });
+    await user.clear(field);
+    await user.type(field, "181");
+    expect(start).toBeDisabled();
+    await user.clear(field);
+    await user.type(field, "42");
+    expect(start).toBeEnabled();
+    await user.click(start);
+    expect(await screen.findByRole("listitem", { name: /You, Solo · 42:00/ })).toBeInTheDocument();
+  });
+
   it("adds and completes goals, earning XP once", async () => {
     const { user } = await renderApp();
     const panel = screen.getByRole("region", { name: "Your session" });

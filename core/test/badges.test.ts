@@ -173,16 +173,18 @@ describe("badge rules", () => {
     expect(on("2026-10-31")).toEqual([]);
     expect(on("2027-01-01")).toEqual(["new-year"]);
     expect(on("2028-02-29")).toEqual(["leap-day"]);
-    expect(on("2026-11-13")).toEqual(["friday-13"]);
-    expect(on("2026-10-13")).toEqual([]); // a Tuesday
+    expect(on("2027-03-17")).toEqual(["st-patricks"]);
+    expect(on("2027-03-16")).toEqual([]);
     expect(on("2026-10-28", 13, 37)).toEqual(["leet"]);
     const overnight = session({ start: at("2026-10-28", 23, 40), end: at("2026-10-29", 0, 5) });
     expect(earned({ session: overnight })).toContain("midnight-oil");
   });
 
-  it("XP Easter eggs: exactly 777, and over 9000", () => {
+  it("XP Easter eggs: a total ending in 777, and over 9000", () => {
     expect(earned({ xpTotal: 777 })).toEqual(["jackpot"]);
+    expect(earned({ xpTotal: 2777 })).toEqual(["jackpot"]);
     expect(earned({ xpTotal: 778 })).toEqual([]);
+    expect(earned({ xpTotal: 1077 })).toEqual([]);
     expect(earned({ xpTotal: 9001 })).toEqual(["over-9000"]);
   });
 

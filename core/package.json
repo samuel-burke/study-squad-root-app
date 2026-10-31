@@ -1,6 +1,6 @@
 {
   "name": "@studyroom/core",
-  "version": "0.3.0",
+  "version": "0.3.2",
   "private": true,
   "description": "Pure domain logic for Study Squad: timer math, XP, streaks, boss, and the room engine.",
   "main": "./dist/index.js",

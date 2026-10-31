@@ -28,6 +28,8 @@ jobs:
       - run: npm ci
       - name: Generate networking code from Protobuf
         run: npm run generate
+      - name: Check generated package versions are committed
+        run: git diff --exit-code package-lock.json
       - run: npm run format:check
       - run: npm run lint
       - run: npm run typecheck

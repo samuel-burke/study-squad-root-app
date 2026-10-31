@@ -210,14 +210,13 @@ const RULES: Record<string, Row> = {
     earns: session({ start: at("2028-02-29", 14), end: at("2028-02-29", 14, 25) }),
     misses: session({ start: at("2028-02-28", 14), end: at("2028-02-28", 14, 25) }),
   },
-  "friday-13": {
-    earns: session({ start: at("2026-11-13", 14), end: at("2026-11-13", 14, 25) }),
-    // The 13th, but a Sunday.
-    misses: session({ start: at("2026-12-13", 14), end: at("2026-12-13", 14, 25) }),
+  "st-patricks": {
+    earns: session({ start: at("2027-03-17", 14), end: at("2027-03-17", 14, 25) }),
+    misses: session({ start: at("2027-03-18", 14), end: at("2027-03-18", 14, 25) }),
   },
   unstoppable: { earns: today({ sessionsFinished: 8 }), misses: today({ sessionsFinished: 7 }) },
   speedrun: { earns: { goal: { secondsOpen: 59 } }, misses: { goal: { secondsOpen: 60 } } },
-  jackpot: { earns: xp(777), misses: xp(778) },
+  jackpot: { earns: xp(1777), misses: xp(1778) },
   "over-9000": { earns: xp(9001), misses: xp(9000) },
   phoenix: { earns: streak({ comebackFrom: 30 }), misses: streak({ comebackFrom: 29 }) },
   "one-person-army": { earns: boss({ contributors: 1 }), misses: boss({ contributors: 2 }) },

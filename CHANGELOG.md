@@ -4,6 +4,16 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ## [Unreleased]
 
+### Added
+
+- Continuous deployment: a push to `main` that passes CI uploads a new version to Root by itself, once a `ROOT_AUTH_TOKEN` secret is set. See docs/DEPLOYING.md.
+- A **Custom** solo timer length: type any whole number of minutes from 5 to 180. Before this, Deep Thought (42 minutes) and Ultramarathon (3 hours) couldn't be earned, because neither length was on the list.
+
+### Changed
+
+- The Friday the 13th secret badge is now **Luck of the Irish**: finish a session on St. Patrick's Day, March 17.
+- Jackpot now unlocks on any total XP ending in 777 (777, 1,777, 2,777 and so on), so missing 777 no longer means missing it for good.
+
 ## [0.3.2] - 2026-10-31
 
 ### Fixed

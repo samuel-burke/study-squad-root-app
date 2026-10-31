@@ -45,7 +45,14 @@ export function StartSessionSheet(props: StartSessionSheetProps) {
   const [goals, setGoals] = useState<string[]>(() => Array(slots).fill(""));
   const [goalsPrivate, setGoalsPrivate] = useState(me.goalsPrivate);
   const [mode, setMode] = useState<"room" | "solo">(props.initialMode);
-  const [minutes, setMinutes] = useState<number>(25);
+  const [preset, setPreset] = useState<number>(25);
+  // Any whole length the server accepts, typed in. Some secret badges need one.
+  const [custom, setCustom] = useState<string | null>(null);
+  const minutes = custom === null ? preset : Number(custom);
+  const minutesValid =
+    Number.isInteger(minutes) &&
+    minutes >= LIMITS.soloMinMinutes &&
+    minutes <= LIMITS.soloMaxMinutes;
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -140,17 +147,51 @@ export function StartSessionSheet(props: StartSessionSheetProps) {
                   key={m}
                   type="button"
                   role="radio"
-                  aria-checked={minutes === m}
-                  onClick={() => setMinutes(m)}
+                  aria-checked={custom === null && preset === m}
+                  onClick={() => {
+                    setPreset(m);
+                    setCustom(null);
+                  }}
                 >
                   {m} min
                 </button>
               ))}
+              <button
+                type="button"
+                role="radio"
+                aria-checked={custom !== null}
+                onClick={() => setCustom((c) => c ?? String(preset))}
+              >
+                Custom
+              </button>
+            </div>
+          )}
+          {mode === "solo" && custom !== null && (
+            <div className="custom-minutes">
+              <label htmlFor="custom-minutes">Minutes</label>
+              <input
+                id="custom-minutes"
+                type="number"
+                inputMode="numeric"
+                min={LIMITS.soloMinMinutes}
+                max={LIMITS.soloMaxMinutes}
+                step={1}
+                value={custom}
+                onChange={(e) => setCustom(e.target.value)}
+                aria-describedby="custom-minutes-hint"
+              />
+              <span id="custom-minutes-hint" className="choice-sub">
+                {LIMITS.soloMinMinutes} to {LIMITS.soloMaxMinutes} minutes
+              </span>
             </div>
           )}
         </div>
 
-        <button type="submit" className="btn btn-primary btn-start" disabled={busy}>
+        <button
+          type="submit"
+          className="btn btn-primary btn-start"
+          disabled={busy || (mode === "solo" && !minutesValid)}
+        >
           Start focusing
         </button>
       </form>

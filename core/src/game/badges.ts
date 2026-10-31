@@ -177,7 +177,6 @@ export interface BadgeDefinition {
 const finished = (f: BadgeFacts) => (f.session?.finished ? f.session : undefined);
 /** "MM-DD" of a day key. */
 const monthDay = (day: DayKey) => day.slice(5);
-const dayOfMonth = (day: DayKey) => Number(day.slice(8));
 
 const streakBadge = (id: string, name: string, tier: BadgeTier, days: number): BadgeDefinition => ({
   id,
@@ -674,16 +673,16 @@ export const BADGES: readonly BadgeDefinition[] = [
     },
   },
   {
-    id: "friday-13",
-    name: "Feeling Lucky",
-    description: "Finish a session on a Friday the 13th.",
+    id: "st-patricks",
+    name: "Luck of the Irish",
+    description: "Finish a session on St. Patrick's Day, March 17.",
     glyph: "clover",
     tier: "secret",
     category: "secret",
     secret: true,
     earned: (f) => {
       const s = finished(f);
-      return s !== undefined && weekdayIndex(s.end.day) === 4 && dayOfMonth(s.end.day) === 13;
+      return s !== undefined && monthDay(s.end.day) === "03-17";
     },
   },
   {

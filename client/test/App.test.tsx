@@ -262,6 +262,35 @@ describe("Study Squad app", () => {
     );
   });
 
+  it("shows badge details right below the tapped badge, with a Replay for earned ones", async () => {
+    const { user } = await renderApp({ badges: ["squad-up", "first-session"] });
+    await user.click(screen.getByRole("button", { name: "Your progress" }));
+    const shelf = await screen.findByRole("region", { name: "Badges" });
+
+    const tile = within(shelf).getByRole("button", { name: "Squad Up, earned" });
+    await user.click(tile);
+    const detail = within(shelf).getByRole("region", { name: "Badge details" });
+    // The details are the very next item in the grid after the tapped badge.
+    expect(tile.closest("li")?.nextElementSibling).toContainElement(detail);
+    // Replay sits in the box's header, Show on my card at the bottom.
+    const buttons = within(detail).getAllByRole("button");
+    expect(buttons.map((b) => b.textContent)).toEqual(["Replay", "Show on my card"]);
+    expect(within(detail).getByRole("button", { name: "Replay" })).toHaveClass(
+      "badge-detail-replay",
+    );
+
+    await user.click(within(detail).getByRole("button", { name: "Replay" }));
+    const moment = screen.getByRole("dialog", { name: "Squad Up" });
+    await user.click(within(moment).getByRole("button", { name: "Nice!" }));
+    expect(screen.queryByRole("dialog", { name: "Squad Up" })).not.toBeInTheDocument();
+
+    // Locked badges can't be replayed.
+    await user.click(within(shelf).getByRole("button", { name: "Night Owl, locked" }));
+    const locked = within(shelf).getByRole("region", { name: "Badge details" });
+    expect(locked).toHaveTextContent("Not earned yet");
+    expect(within(locked).queryByRole("button", { name: "Replay" })).not.toBeInTheDocument();
+  });
+
   it("uses the phone layout with a bottom action bar on small screens", async () => {
     mockViewport(true);
     const { user } = await renderApp();

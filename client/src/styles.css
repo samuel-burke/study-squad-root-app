@@ -1845,6 +1845,22 @@ textarea.input {
   line-height: 1.2;
 }
 
+/* Dense packing lets the badges after an open detail row fill the rest of the
+   tapped badge's row, so the details land in the row right below it. */
+.badge-grid-shelf {
+  grid-auto-flow: row dense;
+}
+
+.badge-detail-row {
+  grid-column: 1 / -1;
+}
+
+/* Replay sits in the top right corner, well away from "Show on my card". */
+.badge-detail-replay {
+  margin-left: auto;
+  align-self: flex-start;
+}
+
 .badge-detail-head {
   display: flex;
   align-items: center;

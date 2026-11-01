@@ -159,8 +159,7 @@ async function renderFrames(browser) {
   const fonts = join(here, "../../client/src/assets/fonts");
   for (const font of ["dm-sans-latin.woff2", "space-grotesk-latin.woff2"])
     await copyFile(join(fonts, font), join(raw, font));
-  for (const file of ["frames.html", "logo.svg", "logo-small.svg"])
-    await copyFile(join(here, file), join(raw, file));
+  for (const file of ["frames.html", "logo.svg"]) await copyFile(join(here, file), join(raw, file));
   const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
   for (const [id, file] of FRAMES) {
     await page.goto(`file://${join(raw, "frames.html")}#${id}`);

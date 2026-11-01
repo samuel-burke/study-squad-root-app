@@ -491,12 +491,11 @@
     </section>
 
     <script>
-      // The full logo in the hero, the small-size version next to posts.
       document.querySelectorAll("[data-mark]").forEach((el) => {
         const s = el.style.getPropertyValue("--s");
         const img = document.createElement("img");
         img.className = "logo";
-        img.src = s ? "logo.svg" : "logo-small.svg";
+        img.src = "logo.svg";
         img.style.width = img.style.height = s || "52px";
         el.replaceWith(img);
       });

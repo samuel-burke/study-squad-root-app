@@ -12,6 +12,7 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ### Changed
 
+- The setting that picks the text channel for bot messages is now called **Bot messages channel** and sits at the top of App settings (Timer and room), instead of "Post updates in" halfway down the list. Your current channel stays picked. Room settings in the app shows it too.
 - Tapping a badge in Your progress now shows its details in the row right below it, instead of at the bottom of its category.
 - Movie lines are no longer rare: each one is as likely as any personality line. Joins and badges get their own movie lines too, like "Hello there!", "The game is afoot!" and "The Force is strong with this one." Sherlock Holmes lines too, like "Elementary, my dear squad."
 - Removed sorcery and spooky wording. The squad bot no longer says "The prophecy is being fulfilled" or that textbooks were "summoned". Renamed bosses: Grand Wizard of Excuses is now The Excuse Generator, The Group Project Ghost is The Group Project Freeloader, The Word Count Wraith is The Word Count Wall, The Messy Desk Monster is The Messy Desk Mountain, The Auto-Correct Imp is The Auto-Correct Gremlin, and The Phantom Assignment is The Surprise Assignment.

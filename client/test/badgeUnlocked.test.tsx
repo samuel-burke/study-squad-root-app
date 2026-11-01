@@ -1,5 +1,6 @@
 import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { BADGES } from "@studyroom/core";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { BadgeUnlocked } from "../src/components/BadgeUnlocked";
 import { FANFARES } from "../src/lib/badgeSounds";
@@ -59,6 +60,25 @@ describe("BadgeUnlocked", () => {
       />,
     );
     expect(screen.getByRole("dialog", { name: "Warming Up" })).toBeInTheDocument();
+  });
+});
+
+describe("every badge's unlock moment", () => {
+  const EYEBROWS = {
+    bronze: "Badge unlocked",
+    silver: "Silver badge unlocked",
+    gold: "Gold badge unlocked!",
+    platinum: "Platinum badge unlocked!",
+    secret: "Secret badge found!",
+  } as const;
+
+  it.each(BADGES.map((b) => [b.id, b] as const))("%s plays its tier's show", (id, badge) => {
+    const play = vi.fn();
+    render(<BadgeUnlocked badgeId={id} play={play} onDismiss={() => {}} />);
+    const dialog = screen.getByRole("dialog", { name: badge.name });
+    expect(dialog).toHaveTextContent(EYEBROWS[badge.tier]);
+    expect(dialog).toHaveTextContent(badge.description);
+    expect(play).toHaveBeenCalledExactlyOnceWith(badge.tier);
   });
 });
 

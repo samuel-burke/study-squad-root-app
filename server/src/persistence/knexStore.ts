@@ -16,6 +16,8 @@ import type {
   Store,
   TimerPreset,
   WeekFocusRecord,
+  XpTotalRecord,
+  StandingsRange,
 } from "@studyroom/core";
 import type { Knex } from "knex";
 
@@ -66,6 +68,9 @@ const toSolo = (r: Row): SoloRecord => ({
   minutes: num(r.minutes),
   phase: r.phase === "break" ? "break" : "focus",
   breakEndsAt: num(r.break_ends_at),
+  bossXpDealt: num(r.boss_xp_dealt),
+  liveMinutes: num(r.live_minutes),
+  liveXp: num(r.live_xp),
 });
 
 const toStat = (r: Row): DailyStatRecord => ({
@@ -261,6 +266,9 @@ export class KnexStore implements Store {
           minutes: s.minutes,
           phase: s.phase,
           break_ends_at: s.breakEndsAt,
+          boss_xp_dealt: s.bossXpDealt,
+          live_minutes: s.liveMinutes,
+          live_xp: s.liveXp,
         })
         .onConflict("user_id")
         .merge();
@@ -305,10 +313,20 @@ export class KnexStore implements Store {
         userId: String(r.user_id),
         joinedAt: num(r.joined_at),
         keepGoing: bool(r.keep_going),
+        bossXpDealt: num(r.boss_xp_dealt),
+        liveMinutes: num(r.live_minutes),
+        liveXp: num(r.live_xp),
       })),
     addParticipant: async (p: ParticipantRecord) => {
       await this.db("room_participants")
-        .insert({ user_id: p.userId, joined_at: p.joinedAt, keep_going: p.keepGoing })
+        .insert({
+          user_id: p.userId,
+          joined_at: p.joinedAt,
+          keep_going: p.keepGoing,
+          boss_xp_dealt: p.bossXpDealt,
+          live_minutes: p.liveMinutes,
+          live_xp: p.liveXp,
+        })
         .onConflict("user_id")
         .merge();
     },
@@ -466,7 +484,42 @@ export class KnexStore implements Store {
             { column: "user_id", order: "asc" },
           ])
       ).map((r: Row) => ({ userId: String(r.user_id), focusMinutes: num(r.focus_minutes) })),
+    xpStandings: async (range: StandingsRange): Promise<XpTotalRecord[]> =>
+      (
+        await this.db
+          .from(this.xpRows(range).as("x"))
+          .whereNotIn("user_id", this.db("leaderboard_opt_outs").select("user_id"))
+          .groupBy("user_id")
+          .having(this.db.raw("SUM(xp) > 0"))
+          .select("user_id", this.db.raw("SUM(xp) AS xp"))
+          .orderBy([
+            { column: "xp", order: "desc" },
+            { column: "user_id", order: "asc" },
+          ])
+      ).map((r: Row) => ({ userId: String(r.user_id), xp: num(r.xp) })),
+    xpFor: async (userId: string, range: StandingsRange): Promise<number> => {
+      const row = await this.db
+        .from(this.xpRows(range).as("x"))
+        .where({ user_id: userId })
+        .sum({ xp: "xp" })
+        .first();
+      return num(row?.xp ?? 0);
+    },
   };
+
+  /** Daily XP and quest rewards paid in the range, one row each. */
+  private xpRows(range: StandingsRange) {
+    return this.db("daily_stats")
+      .whereBetween("day", [range.fromDay, range.toDay])
+      .select("user_id", "xp")
+      .unionAll((q) =>
+        q
+          .from("quest_rewards")
+          .where("rewarded_at", ">=", range.fromMs)
+          .where("rewarded_at", "<", range.toMs)
+          .select("user_id", "xp"),
+      );
+  }
 
   bosses = {
     get: async (weekKey: DayKey) => {

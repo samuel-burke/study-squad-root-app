@@ -1,6 +1,6 @@
 # Study Squad privacy policy
 
-_Effective October 28, 2026_
+_Effective October 30, 2026_
 
 Study Squad is a group study timer for [Root](https://www.rootapp.com) communities, made by Samuel Burke ("we", "us"). This page explains, in plain language, what Study Squad keeps, why, who sees it, and how you can delete it whenever you like.
 
@@ -40,8 +40,8 @@ Each community's Study Squad data lives in that community's own app storage, hos
 - **Other members of the community:**
   - your card on the board while your timer is running (your name, picture, level, streak, card style, one badge, timer and current goal, or just "Focusing" if you keep goals private);
   - your profile, which opens when someone taps you on the board or the leaderboard (your name, picture, level, XP, streak, card style and the badges you've earned). It never shows your goals or focus history;
-  - the weekly leaderboard, which shows the names, pictures and focus minutes of the week's top 10. You can hide yourself from it any time under **Your progress**.
-- **Channel posts:** if an admin turns on updates, Study Squad posts friendly highlights to a channel. These can include community totals (hours focused, goals finished, how many people showed up), the names and streak lengths of the top three streaks, the names and focus time of the week's top three (never anyone who hid from the leaderboard), streak milestones like "Ana R. just hit a 30 day streak", and how many people are focusing.
+  - the leaderboard, which shows the names, pictures, focus minutes and XP of the top 10 for this week, this month, this year or all time (members can rank it by minutes or by XP), and your place on this week's board (like #4) on your card while you're on the board. You can hide yourself from it any time under **Your progress**, which removes both.
+- **Channel posts:** if an admin turns on updates, Study Squad posts friendly highlights to a channel. These can include community totals (hours focused, goals finished, how many people showed up), the names and streak lengths of the top three streaks, the names and focus time of the week's top three (never anyone who hid from the leaderboard), streak milestones like "Ana R. just hit a 30 day streak", how many people are focusing, and, from the squad bot, mentions of the people on the room timer when it starts, switches between study and break, someone joins, or someone unlocks a badge.
 - **Community admins** choose Study Squad's settings, like timer length and which channel gets updates. They don't get any extra view of your data.
 - **Us:** we don't browse community data. Root may share app logs with us so we can fix bugs. These record things like your user ID and what went wrong, and they're only used to keep the app working.
 

@@ -32,13 +32,21 @@ function goalText(member: MemberCardDto) {
 }
 
 /** Covers a card so tapping anywhere on it opens the member's profile. */
-export function OpenProfileButton({ name, onOpen }: { name: string; onOpen?(): void }) {
+export function OpenProfileButton({
+  name,
+  you = name === "You",
+  onOpen,
+}: {
+  name: string;
+  you?: boolean;
+  onOpen?(): void;
+}) {
   if (!onOpen) return null;
   return (
     <button
       type="button"
       className="open-profile"
-      aria-label={name === "You" ? "View your profile" : `View ${name}'s profile`}
+      aria-label={you ? "View your profile" : `View ${name}'s profile`}
       onClick={onOpen}
     />
   );
@@ -63,6 +71,22 @@ function FeaturedBadge({ ids }: { ids: string[] }) {
   );
 }
 
+/** The member's place on this week's leaderboard. Nothing when unranked or hidden. */
+export function RankChip({ rank }: { rank: number }) {
+  if (rank <= 0) return null;
+  return (
+    <span
+      className="rank-chip"
+      data-top={rank <= 3}
+      role="img"
+      aria-label={`#${rank} on this week's leaderboard`}
+      title={`#${rank} on this week's leaderboard`}
+    >
+      #{rank}
+    </span>
+  );
+}
+
 function MemberCard({
   member,
   profile,
@@ -79,12 +103,12 @@ function MemberCard({
   onOpen?(): void;
 }) {
   const chip = statusChip(member, now);
-  const name = you ? "You" : (profile?.name ?? "Member");
+  const name = profile?.name ?? (you ? "You" : "Member");
   const label = `${name}, ${chip.label}${voice ? ", in voice" : ""}`;
   const goal = goalText(member);
   return (
     <li className="member-card" data-you={you} data-style={member.cardStyle} aria-label={label}>
-      <OpenProfileButton name={name} onOpen={onOpen} />
+      <OpenProfileButton name={name} you={you} onOpen={onOpen} />
       <div className="member-top">
         <Avatar userId={member.userId} profile={profile} you={you} />
         <div style={{ flex: 1, minWidth: 0 }}>
@@ -97,6 +121,7 @@ function MemberCard({
           <div className="streak-line">
             <FlameIcon size={13} stroke="var(--flame)" />
             {member.streak} day streak
+            <RankChip rank={member.weeklyRank} />
           </div>
         </div>
       </div>
@@ -136,19 +161,20 @@ function MemberRow({
   onOpen?(): void;
 }) {
   const chip = statusChip(member, now);
-  const name = you ? "You" : (profile?.name ?? "Member");
+  const name = profile?.name ?? (you ? "You" : "Member");
   const label = `${name}, ${chip.label}${voice ? ", in voice" : ""}`;
   const goal = goalText(member) ?? (member.goalPrivate ? "Focusing (private)" : "Focusing");
   const time = rowTime(member, now);
   return (
     <li className="member-row" data-style={member.cardStyle} aria-label={label}>
-      <OpenProfileButton name={name} onOpen={onOpen} />
+      <OpenProfileButton name={name} you={you} onOpen={onOpen} />
       <Avatar userId={member.userId} profile={profile} you={you} />
       <div className="body">
         <div
           style={{ fontSize: 14, fontWeight: 700, display: "flex", alignItems: "center", gap: 6 }}
         >
           {name}
+          <RankChip rank={member.weeklyRank} />
           {voice && <InVoiceMark />}
           <FeaturedBadge ids={member.badges} />
         </div>

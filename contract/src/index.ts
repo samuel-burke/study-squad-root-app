@@ -3,6 +3,8 @@ import type {
   CardLookDto,
   GoalDto,
   LeaderboardDto,
+  LeaderboardMetric as LeaderboardMetricDto,
+  LeaderboardPeriod as LeaderboardPeriodDto,
   MemberCardDto,
   MemberProfileDto,
   MemberStatus as MemberStatusDto,
@@ -21,6 +23,8 @@ import type {
   TimerPreset as TimerPresetDto,
 } from "@studyroom/core";
 import {
+  LeaderboardMetric,
+  LeaderboardPeriod,
   MemberStatus,
   Phase,
   PresetKey,
@@ -85,6 +89,40 @@ const STATUS_FROM_PROTO = invert(STATUS_TO_PROTO);
 const PRESET_FROM_PROTO = invert(PRESET_TO_PROTO);
 const QUEST_UNIT_FROM_PROTO = invert(QUEST_UNIT_TO_PROTO);
 
+const METRIC_TO_PROTO: Record<LeaderboardMetricDto, LeaderboardMetric> = {
+  minutes: LeaderboardMetric.MINUTES,
+  xp: LeaderboardMetric.XP,
+};
+const METRIC_FROM_PROTO = invert(METRIC_TO_PROTO);
+
+const PERIOD_TO_PROTO: Record<LeaderboardPeriodDto, LeaderboardPeriod> = {
+  week: LeaderboardPeriod.WEEK,
+  month: LeaderboardPeriod.MONTH,
+  year: LeaderboardPeriod.YEAR,
+  all: LeaderboardPeriod.ALL,
+};
+const PERIOD_FROM_PROTO = invert(PERIOD_TO_PROTO);
+
+export function leaderboardPeriodToProto(period: LeaderboardPeriodDto): LeaderboardPeriod {
+  return PERIOD_TO_PROTO[period];
+}
+
+/** Unspecified means this week, so older clients keep working. null for a value this build doesn't know. */
+export function leaderboardPeriodFromProto(period: LeaderboardPeriod): LeaderboardPeriodDto | null {
+  return period === LeaderboardPeriod.UNSPECIFIED
+    ? "week"
+    : (PERIOD_FROM_PROTO.get(period) ?? null);
+}
+
+export function leaderboardMetricToProto(by: LeaderboardMetricDto): LeaderboardMetric {
+  return METRIC_TO_PROTO[by];
+}
+
+/** Unspecified means minutes, so older clients keep working. null for a value this build doesn't know. */
+export function leaderboardMetricFromProto(by: LeaderboardMetric): LeaderboardMetricDto | null {
+  return by === LeaderboardMetric.UNSPECIFIED ? "minutes" : (METRIC_FROM_PROTO.get(by) ?? null);
+}
+
 function phaseFromProto(phase: Phase): RoomPhase {
   return PHASE_FROM_PROTO.get(phase) ?? "idle";
 }
@@ -135,6 +173,7 @@ const memberToProto = (m: MemberCardDto): MemberCard => ({
   streak: m.streak,
   badges: m.badges,
   cardStyle: m.cardStyle,
+  weeklyRank: m.weeklyRank,
 });
 
 export function roomToProto(room: RoomStateDto): RoomState {
@@ -225,16 +264,20 @@ export function progressToProto(progress: ProgressDto): Progress {
 
 export function leaderboardToProto(board: LeaderboardDto): Leaderboard {
   return {
-    weekStart: board.weekStart,
+    startDay: board.startDay,
     endsAtMs: board.endsAt,
     entries: board.entries.map((e) => ({
       userId: e.userId,
       focusMinutes: e.focusMinutes,
       rank: e.rank,
+      xp: e.xp,
     })),
     myRank: board.me.rank,
     myFocusMinutes: board.me.focusMinutes,
     hidden: board.me.hidden,
+    by: METRIC_TO_PROTO[board.by],
+    myXp: board.me.xp,
+    period: PERIOD_TO_PROTO[board.period],
   };
 }
 
@@ -325,6 +368,7 @@ const memberFromProto = (m: MemberCard): MemberCardDto => ({
   streak: m.streak,
   badges: m.badges ?? [],
   cardStyle: m.cardStyle || "classic",
+  weeklyRank: m.weeklyRank ?? 0,
 });
 
 export function roomFromProto(room: RoomState | undefined): RoomStateDto {
@@ -417,14 +461,22 @@ export function progressFromProto(progress: Progress): ProgressDto {
 
 export function leaderboardFromProto(board: Leaderboard): LeaderboardDto {
   return {
-    weekStart: board.weekStart,
+    by: leaderboardMetricFromProto(board.by) ?? "minutes",
+    period: leaderboardPeriodFromProto(board.period) ?? "week",
+    startDay: board.startDay,
     endsAt: board.endsAtMs,
     entries: board.entries.map((e) => ({
       userId: e.userId,
       focusMinutes: e.focusMinutes,
+      xp: e.xp,
       rank: e.rank,
     })),
-    me: { rank: board.myRank, focusMinutes: board.myFocusMinutes, hidden: board.hidden },
+    me: {
+      rank: board.myRank,
+      focusMinutes: board.myFocusMinutes,
+      xp: board.myXp,
+      hidden: board.hidden,
+    },
   };
 }
 

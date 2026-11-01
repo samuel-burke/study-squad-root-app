@@ -5,6 +5,15 @@ const room = SETTINGS.room;
 const game = SETTINGS.game;
 
 describe("parseSettings", () => {
+  it("reads the squad bot's personalities, ignoring unknown ones", () => {
+    const pick = (value: unknown) =>
+      parseSettings({ [room.group]: { [room.squadPersonalities]: value } }).squadBot.personalities;
+    expect(pick(["meme", "chill", "nope"])).toEqual(["chill", "meme"]);
+    expect(pick([])).toEqual(DEFAULT_CONFIG.squadBot.personalities);
+    expect(pick("gamer")).toEqual(["gamer"]);
+    expect(DEFAULT_CONFIG.squadBot.personalities).toHaveLength(6);
+  });
+
   it("falls back to defaults when Root sends nothing", () => {
     expect(parseSettings(undefined)).toEqual(DEFAULT_CONFIG);
     expect(parseSettings({})).toEqual(DEFAULT_CONFIG);

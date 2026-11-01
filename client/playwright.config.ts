@@ -14,6 +14,8 @@ export default defineConfig({
   reporter: process.env.CI ? [["github"], ["html", { open: "never" }]] : "list",
   use: {
     baseURL: `http://localhost:${PORT}`,
+    // The demo uses the browser's time zone as the community's, so pin it.
+    timezoneId: "UTC",
     trace: "retain-on-failure",
   },
   projects: [

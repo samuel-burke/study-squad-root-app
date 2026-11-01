@@ -37,6 +37,8 @@ export interface MemberCardDto {
   badges: string[];
   /** Card style id (see CARD_STYLES). */
   cardStyle: string;
+  /** Place on this week's leaderboard. 0 when unranked or hidden from it. */
+  weeklyRank: number;
 }
 
 export interface BossDto {
@@ -216,23 +218,37 @@ export interface MemberProfileDto {
   cardStyle: string;
 }
 
+/** What the leaderboard ranks by. */
+export type LeaderboardMetric = "minutes" | "xp";
+
+/**
+ * The stretch of time the leaderboard covers, in the community time zone:
+ * this week (from Monday), this month, this year, or all time.
+ */
+export type LeaderboardPeriod = "week" | "month" | "year" | "all";
+
 export interface LeaderboardEntryDto {
   userId: string;
-  /** Whole focus minutes this week. */
+  /** Whole focus minutes in the period. */
   focusMinutes: number;
-  /** 1-based. Members with the same minutes share a rank. */
+  /** XP earned in the period from focus, goals and quests. */
+  xp: number;
+  /** 1-based, by the board's metric. Members with the same total share a rank. */
   rank: number;
 }
 
-/** This week's focus-minute standings. Members who opted out are never listed. */
+/** Standings for a period by focus minutes or XP. Members who opted out are never listed. */
 export interface LeaderboardDto {
-  /** Monday of this week, in the community time zone. */
-  weekStart: DayKey;
-  /** When the board resets (next Monday 00:00 in the community time zone). */
+  /** What `entries` and `me.rank` are ranked by. */
+  by: LeaderboardMetric;
+  period: LeaderboardPeriod;
+  /** First day of the period in the community time zone. "" for all time. */
+  startDay: DayKey;
+  /** When the period ends and the board starts over (server time). 0 for all time. */
   endsAt: number;
   entries: LeaderboardEntryDto[];
-  /** The caller's own week. rank is 0 when they're hidden or haven't focused yet. */
-  me: { rank: number; focusMinutes: number; hidden: boolean };
+  /** The caller's own totals. rank is 0 when they're hidden or have nothing to rank yet. */
+  me: { rank: number; focusMinutes: number; xp: number; hidden: boolean };
 }
 
 export interface RecapDto {

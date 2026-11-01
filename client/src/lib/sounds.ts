@@ -94,9 +94,13 @@ function audioContextCtor(): AudioContextCtor | null {
 }
 
 let context: AudioContext | null = null;
+let primed = false;
 
 function getContext(): AudioContext | null {
-  if (context) return context;
+  // A closed context can never play again, so start a fresh one.
+  if (context && context.state !== "closed") return context;
+  context = null;
+  primed = false;
   const Ctor = audioContextCtor();
   if (!Ctor) return null;
   try {
@@ -108,18 +112,33 @@ function getContext(): AudioContext | null {
 }
 
 /**
- * Browsers keep audio suspended until the person interacts with the page.
- * Call this from any click so later chimes, which arrive from the server,
- * are allowed to play.
+ * Browsers keep audio locked until the person interacts with the page, and
+ * Safari only unlocks it inside the tap or click itself. Call this from every
+ * interaction so later chimes, which arrive after a server round trip, are
+ * allowed to play.
  */
 export function unlockAudio(): void {
   const ctx = getContext();
-  if (ctx) resume(ctx);
+  if (!ctx) return;
+  resume(ctx);
+  if (primed) return;
+  // iOS only treats Web Audio as started once a sound plays during a gesture,
+  // so play one silent sample.
+  try {
+    const source = ctx.createBufferSource();
+    source.buffer = ctx.createBuffer(1, 1, 22_050);
+    source.connect(ctx.destination);
+    source.start(0);
+    primed = true;
+  } catch {
+    // Try again on the next interaction.
+  }
 }
 
-/** Ask a suspended context to start. A refusal just means no sound yet. */
+/** Ask a paused context to start. A refusal just means no sound yet. */
 function resume(ctx: AudioContext): void {
-  if (ctx.state !== "suspended") return;
+  // Safari also uses "interrupted", after a call or switching apps.
+  if (ctx.state === "running" || ctx.state === "closed") return;
   try {
     void ctx.resume().catch(() => {});
   } catch {
@@ -175,4 +194,27 @@ function scheduleNotes(ctx: AudioContext, { notes, wave }: (typeof MELODIES)[Sou
     osc.start(t0);
     osc.stop(t1 + 0.05);
   }
+}
+
+/** "tick" counts down; "lastTick" is the final second, pitched up a step. */
+export type Chirp = "tick" | "lastTick";
+
+const CHIRP_FREQ: Record<Chirp, number> = { tick: 1318.51, lastTick: 1760 };
+
+/** A short, bright blip for the countdown before a phase change. */
+export function playChirp(chirp: Chirp): void {
+  withAudio((ctx) => {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = "sine";
+    osc.frequency.value = CHIRP_FREQ[chirp];
+    const t0 = ctx.currentTime + 0.01;
+    const t1 = t0 + 0.08;
+    gain.gain.setValueAtTime(0.0001, t0);
+    gain.gain.exponentialRampToValueAtTime(VOLUME * 0.8, t0 + 0.005);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t1);
+    osc.connect(gain).connect(ctx.destination);
+    osc.start(t0);
+    osc.stop(t1 + 0.02);
+  });
 }

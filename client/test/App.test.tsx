@@ -88,6 +88,23 @@ describe("Study Squad app", () => {
     expect(screen.getByRole("button", { name: "End solo timer" })).toBeInTheDocument();
   });
 
+  it("starts a solo timer with a custom length, and refuses one out of range", async () => {
+    const { user } = await renderApp();
+    await user.click(screen.getByRole("button", { name: "Start a solo timer" }));
+    const dialog = screen.getByRole("dialog");
+    await user.click(within(dialog).getByRole("radio", { name: "Custom" }));
+    const field = within(dialog).getByLabelText("Minutes");
+    const start = within(dialog).getByRole("button", { name: "Start focusing" });
+    await user.clear(field);
+    await user.type(field, "181");
+    expect(start).toBeDisabled();
+    await user.clear(field);
+    await user.type(field, "42");
+    expect(start).toBeEnabled();
+    await user.click(start);
+    expect(await screen.findByRole("listitem", { name: /You, Solo · 42:00/ })).toBeInTheDocument();
+  });
+
   it("adds and completes goals, earning XP once", async () => {
     const { user } = await renderApp();
     const panel = screen.getByRole("region", { name: "Your session" });
@@ -198,6 +215,21 @@ describe("Study Squad app", () => {
     expect(await screen.findByRole("timer")).toBeInTheDocument();
   });
 
+  it("keeps progress and the leaderboard live while the room updates", async () => {
+    const { gateway, user } = await renderApp();
+    const progress = vi.spyOn(gateway, "getProgress");
+    const leaderboard = vi.spyOn(gateway, "getLeaderboard");
+    await user.click(screen.getByRole("button", { name: "Your progress" }));
+    await screen.findByText("5 day streak");
+    await waitFor(() => expect(leaderboard).toHaveBeenCalledTimes(1));
+    expect(progress).toHaveBeenCalledTimes(1);
+    // Anything that changes the room, like a focus minute ticking by, reloads both.
+    await act(() => gateway.addGoal("Pushed from elsewhere"));
+    await waitFor(() => expect(progress).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(leaderboard).toHaveBeenCalledTimes(2));
+    expect(leaderboard).toHaveBeenLastCalledWith("minutes", "week");
+  });
+
   it("shows badges, keeps secrets hidden, and lets you restyle your card", async () => {
     const { user } = await renderApp({ badges: ["squad-up", "first-session"] });
     await user.click(screen.getByRole("button", { name: "Your progress" }));
@@ -305,6 +337,34 @@ describe("Study Squad app", () => {
       await user.click(screen.getByRole("button", { name: "Nice!" }));
     }
     expect(unlocked).toEqual(expect.arrayContaining(["Checked Off", "Speedrun"]));
+  });
+
+  it("plays a finished timer's unlocks from the break result alone", async () => {
+    const gateway = await DemoGateway.create({
+      bots: false,
+      elapsedMinutes: 0,
+      focusMinutes: 0.02,
+      breakMinutes: 1,
+    });
+    // Only the break result gets through: no badge or status push.
+    const subscribe = gateway.subscribe.bind(gateway);
+    vi.spyOn(gateway, "subscribe").mockImplementation((handlers) =>
+      subscribe({ ...handlers, badgesEarned: () => {}, myStatus: () => {} }),
+    );
+    const user = userEvent.setup();
+    render(<App gateway={gateway} />);
+    await user.click(await screen.findByRole("button", { name: "Join room timer" }));
+    const dialog = screen.getByRole("dialog");
+    await user.click(within(dialog).getByRole("button", { name: "Start focusing" }));
+    await screen.findByRole("dialog", { name: "Nice work" }, { timeout: 4_000 });
+    const unlocked: string[] = [];
+    await screen.findByRole("button", { name: "Nice!" });
+    while (screen.queryByRole("button", { name: "Nice!" })) {
+      const moment = screen.getByRole("button", { name: "Nice!" }).closest("[role=dialog]");
+      unlocked.push(moment?.querySelector("h2")?.textContent ?? "");
+      await user.click(screen.getByRole("button", { name: "Nice!" }));
+    }
+    expect(unlocked).toEqual(expect.arrayContaining(["First Steps", "Squad Up"]));
   });
 
   it("deletes my data after a confirmation and starts fresh", async () => {

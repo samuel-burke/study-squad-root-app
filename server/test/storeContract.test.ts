@@ -124,10 +124,21 @@ describe.each(implementations)("%s", (_name, open) => {
       minutes: 25,
       phase: "focus" as const,
       breakEndsAt: 3,
+      bossXpDealt: 0,
+      liveMinutes: 0,
+      liveXp: 0,
     };
     await store.solos.save(solo);
-    await store.solos.save({ ...solo, phase: "break" });
-    expect(await store.solos.list()).toEqual([{ ...solo, phase: "break" }]);
+    await store.solos.save({
+      ...solo,
+      phase: "break",
+      bossXpDealt: 14,
+      liveMinutes: 7,
+      liveXp: 12,
+    });
+    expect(await store.solos.list()).toEqual([
+      { ...solo, phase: "break", bossXpDealt: 14, liveMinutes: 7, liveXp: 12 },
+    ]);
     await store.solos.delete("priya");
     expect(await store.solos.get("priya")).toBeUndefined();
   });
@@ -142,12 +153,33 @@ describe.each(implementations)("%s", (_name, open) => {
       preset,
       settledCount: 3,
     });
-    await store.room.addParticipant({ userId: "b", joinedAt: 20, keepGoing: false });
-    await store.room.addParticipant({ userId: "a", joinedAt: 10, keepGoing: false });
-    await store.room.addParticipant({ userId: "b", joinedAt: 30, keepGoing: true });
+    await store.room.addParticipant({
+      userId: "b",
+      joinedAt: 20,
+      keepGoing: false,
+      bossXpDealt: 0,
+      liveMinutes: 0,
+      liveXp: 0,
+    });
+    await store.room.addParticipant({
+      userId: "a",
+      joinedAt: 10,
+      keepGoing: false,
+      bossXpDealt: 0,
+      liveMinutes: 0,
+      liveXp: 0,
+    });
+    await store.room.addParticipant({
+      userId: "b",
+      joinedAt: 30,
+      keepGoing: true,
+      bossXpDealt: 8,
+      liveMinutes: 4,
+      liveXp: 8,
+    });
     expect(await store.room.listParticipants()).toEqual([
-      { userId: "a", joinedAt: 10, keepGoing: false },
-      { userId: "b", joinedAt: 30, keepGoing: true },
+      { userId: "a", joinedAt: 10, keepGoing: false, bossXpDealt: 0, liveMinutes: 0, liveXp: 0 },
+      { userId: "b", joinedAt: 30, keepGoing: true, bossXpDealt: 8, liveMinutes: 4, liveXp: 8 },
     ]);
     await store.room.removeParticipant("a");
     await store.room.saveCycle(null);
@@ -213,6 +245,43 @@ describe.each(implementations)("%s", (_name, open) => {
     await store.leaderboard.setHidden("ana", false);
     await store.leaderboard.setHidden("nobody", false);
     expect(await store.leaderboard.listHidden()).toEqual(["kai"]);
+  });
+
+  it("sums XP and the quest rewards paid in a range for the leaderboard", async () => {
+    const week = { fromDay: "2026-10-26", toDay: "2026-11-01", fromMs: 1_000, toMs: 2_000 };
+    await store.stats.add("ana", "2026-10-26", { focusMinutes: 30, xp: 60 });
+    await store.stats.add("ana", "2026-10-28", { xp: 20, goalsDone: 1 });
+    await store.stats.add("kai", "2026-10-27", { focusMinutes: 10, xp: 20 });
+    await store.stats.add("lena", "2026-10-27", { focusMinutes: 5 });
+    await store.stats.add("priya", "2026-10-25", { xp: 500 });
+    await store.stats.add("priya", "2026-11-02", { xp: 500 });
+    const reward = (userId: string, questId: string, xp: number, rewardedAt: number) =>
+      store.quests.markRewarded({ userId, weekKey: "2026-10-26", questId, xp, rewardedAt });
+    await reward("kai", "goals", 40, 1_000);
+    await reward("kai", "roomRounds", 20, 1_999);
+    await reward("devon", "goals", 80, 1_500);
+    // Paid just before and just after the range.
+    await reward("priya", "goals", 40, 999);
+    await reward("priya", "roomRounds", 40, 2_000);
+
+    // Ties by user id; Lena has minutes but no XP.
+    expect(await store.leaderboard.xpStandings(week)).toEqual([
+      { userId: "ana", xp: 80 },
+      { userId: "devon", xp: 80 },
+      { userId: "kai", xp: 80 },
+    ]);
+    expect(await store.leaderboard.xpFor("kai", week)).toBe(80);
+    expect(await store.leaderboard.xpFor("ana", { ...week, toDay: "2026-10-27" })).toBe(60);
+    expect(await store.leaderboard.xpFor("nobody", week)).toBe(0);
+    const allTime = { fromDay: "0000-01-01", toDay: "2026-11-02", fromMs: 0, toMs: 3_000 };
+    expect(await store.leaderboard.xpFor("priya", allTime)).toBe(1080);
+
+    await store.leaderboard.setHidden("kai", true);
+    expect((await store.leaderboard.xpStandings(week)).map((r) => r.userId)).toEqual([
+      "ana",
+      "devon",
+    ]);
+    expect(await store.leaderboard.xpFor("kai", week)).toBe(80);
   });
 
   it("stores bosses and key-values", async () => {
@@ -283,8 +352,18 @@ describe.each(implementations)("%s", (_name, open) => {
         minutes: 25,
         phase: "focus",
         breakEndsAt: 3,
+        bossXpDealt: 0,
+        liveMinutes: 0,
+        liveXp: 0,
       });
-      await store.room.addParticipant({ userId: id, joinedAt: 1, keepGoing: false });
+      await store.room.addParticipant({
+        userId: id,
+        joinedAt: 1,
+        keepGoing: false,
+        bossXpDealt: 0,
+        liveMinutes: 0,
+        liveXp: 0,
+      });
       await store.leaderboard.setHidden(id, true);
       await store.stats.add(id, "2026-10-28", { focusMinutes: 10, goalsDone: 1 });
       await store.sessions.insert({

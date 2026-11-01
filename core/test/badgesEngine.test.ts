@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { DomainError, ErrorCode, EMPTY_STREAK, addDays } from "../src";
+import { DomainError, ErrorCode, EMPTY_STREAK, addDays, badgeById } from "../src";
 import { configWith, createHarness, MINUTE, T0 } from "./helpers";
 
 const FOCUS = 25 * MINUTE;
 /** Wednesday 2026-10-28 07:00 in New York. */
 const SEVEN_AM = Date.UTC(2026, 9, 28, 11, 0, 0);
+/** Wednesday 2026-10-28 03:00 in New York. */
+const THREE_AM = Date.UTC(2026, 9, 28, 7, 0, 0);
 /** XP that puts a member at the start of level 8. */
 const LEVEL_8_XP = 2450;
 
@@ -155,6 +157,96 @@ describe("earning badges", () => {
   });
 });
 
+describe("delivering every unlock", () => {
+  type Harness = ReturnType<typeof createHarness>;
+
+  /**
+   * A badge earned in the background (a timer finishing) has no reply to ride
+   * on, so it must reach the member on the break result, the status push and
+   * the badge push alike: whichever arrives first plays the unlock.
+   */
+  function expectPushedEveryWay(notifier: Harness["notifier"], userId: string, ids: string[]) {
+    expect(notifier.badgesFor(userId)).toEqual(expect.arrayContaining(ids));
+    const status = notifier.statuses.filter((s) => s.userId === userId).at(-1);
+    expect(status?.me.newBadges).toEqual(expect.arrayContaining(ids));
+    const result = notifier.personal.filter((p) => p.userId === userId).at(-1);
+    expect(result?.event.me.newBadges).toEqual(expect.arrayContaining(ids));
+  }
+
+  /**
+   * XP and boss damage now land minute by minute, so a level or a boss
+   * defeat can happen mid-timer, with no break result yet. Those unlocks ride
+   * on the minute's status push and the badge push.
+   */
+  function expectPushedLive(notifier: Harness["notifier"], userId: string, ids: string[]) {
+    expect(notifier.badgesFor(userId)).toEqual(expect.arrayContaining(ids));
+    const carried = notifier.statuses
+      .filter((s) => s.userId === userId)
+      .flatMap((s) => s.me.newBadges ?? []);
+    expect(carried).toEqual(expect.arrayContaining(ids));
+  }
+
+  it("when a room round finishes", async () => {
+    const { engine, notifier, advance } = createHarness();
+    await engine.joinRoomTimer("ana");
+    await engine.joinRoomTimer("marcus");
+    await advance(FOCUS);
+    expectPushedEveryWay(notifier, "ana", ["first-session", "squad-up"]);
+    expectPushedEveryWay(notifier, "marcus", ["first-session", "squad-up"]);
+  });
+
+  it("when a solo timer finishes", async () => {
+    const { engine, notifier, advance } = createHarness(configWith(), SEVEN_AM);
+    await engine.startSolo("ana", 30);
+    await advance(30 * MINUTE);
+    expectPushedEveryWay(notifier, "ana", ["first-session", "early-bird"]);
+  });
+
+  it("when focus defeats the boss mid-timer", async () => {
+    const config = configWith({ boss: { enabled: true, name: "Calc II", baseHpXp: 50 } });
+    const { engine, notifier, advance } = createHarness(config);
+    await engine.startSolo("ana", 30);
+    await advance(30 * MINUTE);
+    expectPushedLive(notifier, "ana", ["first-boss", "final-blow", "one-person-army"]);
+  });
+
+  it("when focus crosses a level mid-timer, and a finished timer saves a streak", async () => {
+    const config = configWith({ streakFreezesEnabled: false });
+    const { engine, notifier, store, advance } = createHarness(config);
+    await store.members.save({
+      userId: "ana",
+      xpTotal: 1090,
+      streak: { ...EMPTY_STREAK, streak: 6, lastActiveDay: addDays("2026-10-28", -4) },
+      goalsPrivate: null,
+    });
+    await engine.startSolo("ana", 25);
+    await advance(25 * MINUTE);
+    expectPushedLive(notifier, "ana", ["level-5"]);
+    // A streak day only counts once the timer finishes.
+    expectPushedEveryWay(notifier, "ana", ["comeback"]);
+  });
+
+  it("when ending a solo early finishes an already-due timer", async () => {
+    const { engine, notifier, clock } = createHarness();
+    await engine.startSolo("ana", 5);
+    // The wake-up hasn't run yet, so ending the solo settles it.
+    clock.advance(5 * MINUTE);
+    const snapshot = await engine.endSolo("ana");
+    expect(snapshot.me.newBadges).toEqual(["first-session"]);
+    expectPushedEveryWay(notifier, "ana", ["first-session"]);
+  });
+
+  it("when a goal is checked off", async () => {
+    const { engine, notifier, advance } = createHarness();
+    const me = await engine.addGoal("ana", "Answer one email");
+    await advance(30_000);
+    const reply = await engine.setGoalDone("ana", me.goals[0]!.id, true);
+    expect(reply.newBadges).toEqual(["first-goal", "speedrun"]);
+    expect(notifier.badgesFor("ana")).toEqual(["first-goal", "speedrun"]);
+    expect(notifier.statuses.at(-1)?.me.newBadges).toEqual(["first-goal", "speedrun"]);
+  });
+});
+
 describe("card looks", () => {
   it("shows the gold border automatically at level 8", async () => {
     const { engine, store } = createHarness();
@@ -300,5 +392,43 @@ describe("member profiles", () => {
     await expectError(engine.getMemberProfile(""), ErrorCode.Validation);
     await expectError(engine.getMemberProfile("a b"), ErrorCode.Validation);
     await expectError(engine.getMemberProfile(42), ErrorCode.Validation);
+  });
+});
+
+describe("squad bot badge posts", () => {
+  const badgePosts = (posts: { kind: string; detail: unknown }[]) =>
+    posts
+      .map((p) => p.detail as { event?: string; text: string; userIds: string[] })
+      .filter((d) => d.event === "badgeUnlocked");
+
+  it("congratulates each member once, naming every badge they just earned", async () => {
+    const { engine, announcer, advance } = createHarness();
+    await engine.joinRoomTimer("ana");
+    await engine.joinRoomTimer("marcus");
+    await advance(FOCUS);
+    const posts = badgePosts(announcer.posts);
+    expect(posts.map((p) => p.userIds)).toEqual([["ana"], ["marcus"]]);
+    const names = ["first-session", "squad-up"].map((id) => badgeById(id)!.name);
+    expect(posts[0]!.text).toContain(`${names[0]} and ${names[1]}`);
+    // Nothing new next round, so no new post.
+    await advance(5 * MINUTE + FOCUS);
+    expect(badgePosts(announcer.posts)).toHaveLength(2);
+  });
+
+  it("keeps secret badges a surprise for everyone else", async () => {
+    const { engine, announcer, advance } = createHarness(configWith(), THREE_AM);
+    await engine.startSolo("ana", 30);
+    await advance(30 * MINUTE);
+    const text = badgePosts(announcer.posts)[0]!.text;
+    expect(text).toContain("a secret badge");
+    expect(text).not.toContain(badgeById("three-am")!.name);
+  });
+
+  it("stays quiet when the squad bot is off", async () => {
+    const config = configWith({ squadBot: { enabled: false, personalities: ["hype"] } });
+    const { engine, announcer, advance } = createHarness(config);
+    await engine.startSolo("ana", 30);
+    await advance(30 * MINUTE);
+    expect(badgePosts(announcer.posts)).toEqual([]);
   });
 });

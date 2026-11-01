@@ -17,6 +17,8 @@ export * from "./game/boss";
 export * from "./game/quests";
 export * from "./game/badges";
 export * from "./game/cosmetics";
+export * from "./squad/squadLines";
+export * from "./squad/squadVoice";
 export * from "./engine/ports";
 export * from "./engine/serialQueue";
 export * from "./engine/memoryStore";

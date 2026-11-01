@@ -4,6 +4,8 @@ import type {
   CardLookDto,
   GoalDto,
   LeaderboardDto,
+  LeaderboardMetric,
+  LeaderboardPeriod,
   MemberCardDto,
   MemberProfileDto,
   MyStatusDto,
@@ -27,6 +29,7 @@ import {
   type BossState,
 } from "../game/boss";
 import {
+  badgeById,
   newlyEarnedBadges,
   type BadgeFacts,
   type QuestFacts,
@@ -49,10 +52,14 @@ import {
   dayKey,
   daysBetween,
   localTime,
+  monthKey,
+  nextMonthStart,
   nextWeekStart,
+  nextYearStart,
   startOfDay,
   weekdayName,
   weekKey,
+  yearKey,
 } from "../time/calendar";
 import {
   buildCycle,
@@ -61,6 +68,8 @@ import {
   phaseAt,
   type CyclePhase,
 } from "../timer/roomCycle";
+import { SECRET_BADGE_NAME, type SquadEvent } from "../squad/squadLines";
+import { pickSquadLine, type LastSquadLines } from "../squad/squadVoice";
 import {
   validateGoalText,
   validateId,
@@ -76,6 +85,7 @@ import type {
   Logger,
   MemberRecord,
   Notifier,
+  StandingsRange,
   ParticipantRecord,
   RoomCycleRecord,
   Store,
@@ -92,6 +102,8 @@ export interface EngineDeps {
   logger: Logger;
   config: AppConfig;
   newId: () => string;
+  /** Returns [0, 1) like Math.random. Picks the squad bot's lines. */
+  random: () => number;
 }
 
 export interface StartOptions {
@@ -105,7 +117,22 @@ interface BusyPostState {
 }
 
 const BUSY_KEY = "busyPost";
+/** A focus block that hasn't credited or dealt anything live yet. */
+const NO_LIVE_CREDIT = { bossXpDealt: 0, liveMinutes: 0, liveXp: 0 } as const;
 const LAST_RECAP_KEY = "lastRecapDay";
+/** The squad bot's last line per event, so it never says the same thing twice in a row. */
+const SQUAD_LAST_KEY = "squadLastLines";
+/** When the room last started from empty, for "studying together for 2 hours". */
+const SQUAD_SESSION_KEY = "squadSessionStartedAt";
+/** When each member's join was last announced. */
+const SQUAD_JOINS_KEY = "squadJoinPosts";
+/** A member's join is announced at most once in this long, so popping in and out stays quiet. */
+const SQUAD_JOIN_COOLDOWN_MS = 2 * 60 * MINUTE_MS;
+/**
+ * A timer switch older than this is old news, say after the server was down,
+ * so nobody gets pinged for a break that is nearly over.
+ */
+const SQUAD_STALE_MS = 2 * MINUTE_MS;
 /** How long to wait before retrying a wake-up whose tick failed. */
 const TICK_RETRY_MS = 30_000;
 
@@ -337,17 +364,32 @@ export class StudyRoomEngine {
     });
   }
 
-  /** This week's focus-minute standings, plus where the caller stands. */
-  getLeaderboard(userId: string): Promise<LeaderboardDto> {
-    return this.run(async (tx, now) => this.buildLeaderboard(tx, userId, now));
+  /** Standings for this week, month, year or all time by minutes or XP, plus where the caller stands. */
+  async getLeaderboard(
+    userId: string,
+    by: unknown = "minutes",
+    period: unknown = "week",
+  ): Promise<LeaderboardDto> {
+    const metric = validateMetric(by);
+    const range = validatePeriod(period);
+    return this.run(async (tx, now) => this.buildLeaderboard(tx, userId, now, metric, range));
   }
 
   /** Opting out hides the member from the leaderboard and from rankings in recaps. */
-  async setLeaderboardHidden(userId: string, hidden: unknown): Promise<LeaderboardDto> {
+  async setLeaderboardHidden(
+    userId: string,
+    hidden: unknown,
+    by: unknown = "minutes",
+    period: unknown = "week",
+  ): Promise<LeaderboardDto> {
     if (typeof hidden !== "boolean") throw validationError("Expected true or false.");
-    return this.run(async (tx, now) => {
+    const metric = validateMetric(by);
+    const range = validatePeriod(period);
+    return this.run(async (tx, now, effects) => {
       await tx.leaderboard.setHidden(userId, hidden);
-      return this.buildLeaderboard(tx, userId, now);
+      // Their rank chip on the board appears or goes away.
+      this.touch(effects, userId);
+      return this.buildLeaderboard(tx, userId, now, metric, range);
     });
   }
 
@@ -365,14 +407,21 @@ export class StudyRoomEngine {
       await this.applyStartOptions(tx, userId, goals, options.goalsPrivate, now);
       const participants = await tx.room.listParticipants();
       if (!participants.some((p) => p.userId === userId)) {
-        if (!(await tx.room.getCycle())) {
+        const cycle = await tx.room.getCycle();
+        if (!cycle) {
           await tx.room.saveCycle({
             cycleStartedAt: now,
             preset: this.config.preset,
             settledCount: 0,
           });
         }
-        await tx.room.addParticipant({ userId, joinedAt: now, keepGoing: false });
+        await tx.room.addParticipant({
+          userId,
+          joinedAt: now,
+          keepGoing: false,
+          ...NO_LIVE_CREDIT,
+        });
+        await this.announceJoin(tx, effects, userId, !cycle, now);
       }
       this.touch(effects, userId);
       await this.checkBusyRoom(tx, now, effects);
@@ -400,8 +449,11 @@ export class StudyRoomEngine {
             finished: false,
             plannedMinutes: cycle.preset.focusMinutes,
             now,
+            live: me,
           });
-          await this.damageBoss(tx, effects, focusXp(minutes, combo), [userId], now);
+          // The base XP already hit the boss minute by minute; this adds the rest.
+          const rest = focusXp(minutes, combo) - me.bossXpDealt;
+          await this.damageBoss(tx, effects, rest, [userId], now);
         }
         await tx.room.removeParticipant(userId);
         if (participants.length === 1) await tx.room.saveCycle(null);
@@ -438,6 +490,7 @@ export class StudyRoomEngine {
         minutes,
         phase: "focus",
         breakEndsAt: endsAt + this.config.preset.breakMinutes * MINUTE_MS,
+        ...NO_LIVE_CREDIT,
       });
       this.touch(effects, userId);
       await this.checkBusyRoom(tx, now, effects);
@@ -461,8 +514,10 @@ export class StudyRoomEngine {
           finished: false,
           plannedMinutes: solo.minutes,
           now,
+          live: solo,
         });
-        await this.damageBoss(tx, effects, focusXp(minutes, 1), [userId], now);
+        const rest = focusXp(minutes, 1) - solo.bossXpDealt;
+        await this.damageBoss(tx, effects, rest, [userId], now);
       }
       if (solo) await tx.solos.delete(userId);
       this.touch(effects, userId);
@@ -519,7 +574,10 @@ export class StudyRoomEngine {
           const member = await this.loadMember(tx, userId);
           await tx.members.save({ ...member, xpTotal: member.xpTotal + xp });
           await tx.stats.add(userId, day, { xp, goalsDone: 1 });
-          const quests = await this.rewardQuests(tx, userId, now);
+          // Goal XP hits the boss as earned, after the daily cap, so the boss
+          // can't be farmed with tiny goals.
+          await this.damageBoss(tx, effects, xp, [userId], now);
+          const quests = await this.rewardQuests(tx, effects, userId, now);
           await this.awardBadges(tx, effects, userId, now, {
             goal: { secondsOpen: Math.floor((now - goal.createdAt) / 1000) },
             quests,
@@ -617,6 +675,7 @@ export class StudyRoomEngine {
         }
         for (const [userId, badgeIds] of effects.badges) {
           effects.notifications.push((n) => n.badgesEarned(userId, badgeIds));
+          await this.announceBadges(tx, effects, userId, badgeIds, now);
         }
         attachNewBadges(result, effects);
         return { result, nextWake: await this.nextWakeAt(tx, now) };
@@ -682,6 +741,91 @@ export class StudyRoomEngine {
   private async settleDue(tx: Store, now: number, effects: Effects): Promise<void> {
     await this.settleRoomCycle(tx, now, effects);
     await this.settleSolos(tx, now, effects);
+    await this.creditLiveFocus(tx, now, effects);
+    await this.dealLiveDamage(tx, now, effects);
+  }
+
+  /**
+   * Study minutes and XP count as they happen: each whole minute of a running
+   * focus block adds its minutes and base XP (under the daily cap) right away,
+   * so the leaderboard, quests, levels and the board's ranks move every
+   * minute. The end of the block adds the rest, including the combo bonus.
+   */
+  private async creditLiveFocus(tx: Store, now: number, effects: Effects): Promise<void> {
+    const cycle = await tx.room.getCycle();
+    const phase = cycle ? phaseAt(buildCycle(cycle.cycleStartedAt, cycle.preset), now) : undefined;
+    if (phase?.kind === "focus") {
+      for (const p of await tx.room.listParticipants()) {
+        const minutes = overlapMs(p.joinedAt, now, phase.startsAt, phase.endsAt) / MINUTE_MS;
+        const credited = await this.creditLiveMinutes(tx, effects, p, minutes, now);
+        if (credited) await tx.room.addParticipant({ ...p, ...credited });
+      }
+    }
+    for (const solo of await tx.solos.list()) {
+      if (solo.phase !== "focus") continue;
+      const minutes = (Math.min(now, solo.endsAt) - solo.startedAt) / MINUTE_MS;
+      const credited = await this.creditLiveMinutes(tx, effects, solo, minutes, now);
+      if (credited) await tx.solos.save({ ...solo, ...credited });
+    }
+  }
+
+  /** Credits the block's new whole minutes. Returns its updated live totals, or null if none. */
+  private async creditLiveMinutes(
+    tx: Store,
+    effects: Effects,
+    block: { userId: string; liveMinutes: number; liveXp: number },
+    minutes: number,
+    now: number,
+  ): Promise<{ liveMinutes: number; liveXp: number } | null> {
+    const whole = Math.floor(minutes);
+    const newMinutes = whole - block.liveMinutes;
+    if (newMinutes <= 0) return null;
+    const { userId } = block;
+    const day = dayKey(now, this.config.timeZone);
+    const xpToday = (await tx.stats.get(userId, day))?.xp ?? 0;
+    const rawXp = this.config.xp.enabled ? baseFocusXp(whole) - baseFocusXp(block.liveMinutes) : 0;
+    const xp = applyDailyCap(rawXp, xpToday, this.config.xp.dailyCap);
+    if (xp > 0) {
+      const member = await this.loadMember(tx, userId);
+      await tx.members.save({ ...member, xpTotal: member.xpTotal + xp });
+    }
+    await tx.stats.add(userId, day, { focusMinutes: newMinutes, xp });
+    const quests = await this.rewardQuests(tx, effects, userId, now);
+    await this.awardBadges(tx, effects, userId, now, {
+      quests,
+      ...(await this.activityFacts(tx, userId, day)),
+    });
+    this.touch(effects, userId);
+    return { liveMinutes: whole, liveXp: block.liveXp + xp };
+  }
+
+  /**
+   * Focus hits the boss as it happens: each whole minute of a running focus
+   * block deals its base XP. The combo bonus lands when the round ends, since
+   * the combo depends on who finishes. Each block remembers what it has dealt,
+   * so the end of the block only deals the rest.
+   */
+  private async dealLiveDamage(tx: Store, now: number, effects: Effects): Promise<void> {
+    if (!this.config.boss.enabled) return;
+    const cycle = await tx.room.getCycle();
+    const phase = cycle ? phaseAt(buildCycle(cycle.cycleStartedAt, cycle.preset), now) : undefined;
+    if (phase?.kind === "focus") {
+      for (const p of await tx.room.listParticipants()) {
+        const minutes = overlapMs(p.joinedAt, now, phase.startsAt, phase.endsAt) / MINUTE_MS;
+        const hit = baseFocusXp(minutes) - p.bossXpDealt;
+        if (hit <= 0) continue;
+        await tx.room.addParticipant({ ...p, bossXpDealt: p.bossXpDealt + hit });
+        await this.damageBoss(tx, effects, hit, [p.userId], now);
+      }
+    }
+    for (const solo of await tx.solos.list()) {
+      if (solo.phase !== "focus") continue;
+      const minutes = (Math.min(now, solo.endsAt) - solo.startedAt) / MINUTE_MS;
+      const hit = baseFocusXp(minutes) - solo.bossXpDealt;
+      if (hit <= 0) continue;
+      await tx.solos.save({ ...solo, bossXpDealt: solo.bossXpDealt + hit });
+      await this.damageBoss(tx, effects, hit, [solo.userId], now);
+    }
   }
 
   private async settleRoomCycle(tx: Store, now: number, effects: Effects): Promise<void> {
@@ -702,11 +846,116 @@ export class StudyRoomEngine {
       effects.roomChanged = true;
     }
     if (settled < phases.length) {
-      if (settled !== cycle.settledCount)
+      if (settled !== cycle.settledCount) {
         await tx.room.saveCycle({ ...cycle, settledCount: settled });
+        await this.announcePhase(tx, phases[settled]!, now, effects);
+      }
       return;
     }
-    if (await this.finishCycle(tx, phases, effects)) await this.settleRoomCycle(tx, now, effects);
+    if (await this.finishCycle(tx, phases, effects)) {
+      const next = await tx.room.getCycle();
+      if (next) {
+        await this.announcePhase(
+          tx,
+          buildCycle(next.cycleStartedAt, next.preset)[0]!,
+          now,
+          effects,
+        );
+      }
+      await this.settleRoomCycle(tx, now, effects);
+    }
+  }
+
+  /** The squad bot tells everyone in the room that the clock just switched to `phase`. */
+  private async announcePhase(
+    tx: Store,
+    phase: CyclePhase,
+    now: number,
+    effects: Effects,
+  ): Promise<void> {
+    if (now - phase.startsAt >= SQUAD_STALE_MS || now >= phase.endsAt) return;
+    const event: SquadEvent =
+      phase.kind === "break"
+        ? "breakStarted"
+        : phase.kind === "longBreak"
+          ? "sessionCompleted"
+          : "studyResumed";
+    const userIds = (await tx.room.listParticipants()).map((p) => p.userId);
+    await this.squadMessage(tx, effects, event, userIds, phase.round, now);
+  }
+
+  /**
+   * Picks and queues a squad bot post. It goes out once from here, after the
+   * transaction commits, however many devices the members have connected.
+   */
+  private async squadMessage(
+    tx: Store,
+    effects: Effects,
+    event: SquadEvent,
+    userIds: string[],
+    round: number,
+    now: number,
+    badge?: string,
+  ): Promise<void> {
+    const channelId = this.config.postChannelId;
+    if (!this.config.squadBot.enabled || !channelId || userIds.length === 0) return;
+    const last = (await tx.kv.get<LastSquadLines>(SQUAD_LAST_KEY)) ?? {};
+    const startedAt = (await tx.kv.get<number>(SQUAD_SESSION_KEY)) ?? now;
+    const line = pickSquadLine(event, this.config.squadBot.personalities, last, this.deps.random, {
+      round,
+      togetherMinutes: Math.max(0, now - startedAt) / MINUTE_MS,
+      badge,
+    });
+    await tx.kv.set(SQUAD_LAST_KEY, {
+      ...last,
+      ...(line.rare ? { rare: line.id } : { [event]: line.id }),
+    });
+    effects.posts.push((a) => a.squadMessage(channelId, event, line.text, userIds));
+  }
+
+  /** The squad bot congratulates a member on badges they just earned, in one post. */
+  private async announceBadges(
+    tx: Store,
+    effects: Effects,
+    userId: string,
+    badgeIds: readonly string[],
+    now: number,
+  ): Promise<void> {
+    const names = [
+      ...new Set(
+        badgeIds.map((id) => {
+          const badge = badgeById(id);
+          return !badge || badge.secret ? SECRET_BADGE_NAME : badge.name;
+        }),
+      ),
+    ];
+    const badge =
+      names.length > 1 ? `${names.slice(0, -1).join(", ")} and ${names.at(-1)}` : names[0];
+    await this.squadMessage(tx, effects, "badgeUnlocked", [userId], 0, now, badge);
+  }
+
+  /**
+   * Announces a member joining the room. Starting an empty room is always
+   * announced; joining a running one at most once per cool-down per member.
+   */
+  private async announceJoin(
+    tx: Store,
+    effects: Effects,
+    userId: string,
+    startedRoom: boolean,
+    now: number,
+  ): Promise<void> {
+    const joins = (await tx.kv.get<Record<string, number>>(SQUAD_JOINS_KEY)) ?? {};
+    const recentlyAnnounced = now - (joins[userId] ?? -Infinity) < SQUAD_JOIN_COOLDOWN_MS;
+    if (recentlyAnnounced && !startedRoom) return;
+    // Forget old entries so the record stays small.
+    const recent = Object.fromEntries(
+      Object.entries(joins).filter(([, at]) => now - at < SQUAD_JOIN_COOLDOWN_MS),
+    );
+    await tx.kv.set(SQUAD_JOINS_KEY, { ...recent, [userId]: now });
+    if (startedRoom) await tx.kv.set(SQUAD_SESSION_KEY, now);
+    const event = startedRoom ? "sessionStarted" : "memberJoined";
+    await this.squadMessage(tx, effects, event, [userId], 1, now);
   }
 
   /**
@@ -731,7 +980,7 @@ export class StudyRoomEngine {
         : null,
     );
     for (const p of carried) {
-      await tx.room.addParticipant({ ...p, joinedAt: end, keepGoing: false });
+      await tx.room.addParticipant({ ...p, joinedAt: end, keepGoing: false, ...NO_LIVE_CREDIT });
       effects.statusChanged.add(p.userId);
     }
     effects.roomChanged = true;
@@ -782,16 +1031,28 @@ export class StudyRoomEngine {
           plannedMinutes: focusMinutes,
           fullCycle: fullCycle(share.participant.joinedAt),
           now: phase.endsAt,
+          live: share.participant,
         }),
       });
     }
+    // Base XP already hit the boss minute by minute; the round's end deals the
+    // rest, including the combo bonus, then each participant starts the next
+    // round at zero.
+    const rest = minuteShares.reduce(
+      (sum, s) => sum + Math.max(0, focusXp(s.minutes, combo) - s.participant.bossXpDealt),
+      0,
+    );
     await this.damageBoss(
       tx,
       effects,
-      roomDamageXp,
+      rest,
       minuteShares.map((s) => s.participant.userId),
       phase.endsAt,
     );
+    for (const p of participants) {
+      if (p.bossXpDealt !== 0 || p.liveMinutes !== 0 || p.liveXp !== 0)
+        await tx.room.addParticipant({ ...p, ...NO_LIVE_CREDIT });
+    }
 
     const breakEndsAt = phases[phase.index + 1]?.endsAt ?? phase.endsAt;
     const room = await this.buildRoomState(tx, phase.endsAt);
@@ -822,7 +1083,7 @@ export class StudyRoomEngine {
         roomDamageXp,
         goalPrompt: await this.goalPrompt(tx, userId),
         breakEndsAt,
-        me: await this.buildMyStatus(tx, userId, phase.endsAt),
+        me: withNewBadges(await this.buildMyStatus(tx, userId, phase.endsAt), effects),
       };
       effects.notifications.push((n) => n.personalResult(userId, result));
     }
@@ -841,11 +1102,13 @@ export class StudyRoomEngine {
           finished: true,
           plannedMinutes: solo.minutes,
           now: solo.endsAt,
+          live: solo,
         });
         const damageXp = focusXp(solo.minutes, 1);
-        await this.damageBoss(tx, effects, damageXp, [solo.userId], solo.endsAt);
+        const rest = damageXp - solo.bossXpDealt;
+        await this.damageBoss(tx, effects, rest, [solo.userId], solo.endsAt);
         const stillOnBreak = solo.breakEndsAt > now;
-        if (stillOnBreak) await tx.solos.save({ ...solo, phase: "break" });
+        if (stillOnBreak) await tx.solos.save({ ...solo, phase: "break", ...NO_LIVE_CREDIT });
         else await tx.solos.delete(solo.userId);
         const result: PersonalResultDto = {
           source: "solo",
@@ -862,7 +1125,7 @@ export class StudyRoomEngine {
           roomDamageXp: damageXp,
           goalPrompt: await this.goalPrompt(tx, solo.userId),
           breakEndsAt: solo.breakEndsAt,
-          me: await this.buildMyStatus(tx, solo.userId, now),
+          me: withNewBadges(await this.buildMyStatus(tx, solo.userId, now), effects),
         };
         effects.notifications.push((n) => n.personalResult(solo.userId, result));
         this.touch(effects, solo.userId);
@@ -887,7 +1150,18 @@ export class StudyRoomEngine {
     if (this.config.boss.enabled && candidates.length > 0) {
       candidates.push(nextWeekStart(now, this.config.timeZone));
     }
+    // While anyone is focusing, wake every minute so stats and the boss update live.
+    if (await this.anyoneFocusing(tx, now)) {
+      candidates.push((Math.floor(now / MINUTE_MS) + 1) * MINUTE_MS);
+    }
     return candidates.length > 0 ? Math.min(...candidates) : null;
+  }
+
+  private async anyoneFocusing(tx: Store, now: number): Promise<boolean> {
+    if ((await tx.solos.list()).some((s) => s.phase === "focus")) return true;
+    const cycle = await tx.room.getCycle();
+    if (!cycle || (await tx.room.listParticipants()).length === 0) return false;
+    return phaseAt(buildCycle(cycle.cycleStartedAt, cycle.preset), now)?.kind === "focus";
   }
 
   // ---------------------------------------------------------------- rewards
@@ -907,14 +1181,21 @@ export class StudyRoomEngine {
       plannedMinutes: number;
       fullCycle?: boolean;
       now: number;
+      /** What this block already credited live, minute by minute. Only the rest is added. */
+      live?: { liveMinutes: number; liveXp: number };
     },
   ) {
     const { userId, minutes, combo, finished, now } = input;
+    const live = input.live ?? { liveMinutes: 0, liveXp: 0 };
     const day = dayKey(now, this.config.timeZone);
     const member = await this.loadMember(tx, userId);
     const xpToday = (await tx.stats.get(userId, day))?.xp ?? 0;
     const rawXp = this.config.xp.enabled ? focusXp(minutes, combo) : 0;
-    const xpEarned = applyDailyCap(rawXp, xpToday, this.config.xp.dailyCap);
+    // Live ticks paid base XP for whole minutes; the end pays the rest,
+    // including the combo bonus, under whatever room the daily cap has left.
+    const liveRawXp = this.config.xp.enabled ? baseFocusXp(live.liveMinutes) : 0;
+    const restXp = applyDailyCap(Math.max(0, rawXp - liveRawXp), xpToday, this.config.xp.dailyCap);
+    const xpEarned = live.liveXp + restXp;
 
     let streak = member.streak;
     let streakExtended = false;
@@ -930,10 +1211,10 @@ export class StudyRoomEngine {
       streakExtended && streak.streak === 1 && member.streak.lastActiveDay !== null
         ? member.streak.streak
         : 0;
-    await tx.members.save({ ...member, xpTotal: member.xpTotal + xpEarned, streak });
+    await tx.members.save({ ...member, xpTotal: member.xpTotal + restXp, streak });
     await tx.stats.add(userId, day, {
-      focusMinutes: minutes,
-      xp: xpEarned,
+      focusMinutes: Math.max(0, minutes - live.liveMinutes),
+      xp: restXp,
       sessionsFinished: finished ? 1 : 0,
     });
     await tx.sessions.insert({
@@ -946,7 +1227,7 @@ export class StudyRoomEngine {
       xp: xpEarned,
       combo,
     });
-    const quests = await this.rewardQuests(tx, userId, now);
+    const quests = await this.rewardQuests(tx, effects, userId, now);
 
     const tz = this.config.timeZone;
     const session: SessionFacts = {
@@ -997,7 +1278,9 @@ export class StudyRoomEngine {
     if (!this.config.boss.enabled || xp <= 0) return;
     const boss = await this.loadBoss(tx, now);
     const result = applyDamage(boss, xp, contributorIds, now);
+    if (result.boss === boss) return;
     await tx.bosses.save(result.boss);
+    effects.roomChanged = true;
     if (result.defeatedNow) await this.onBossDefeated(tx, result.boss, effects, contributorIds);
   }
 
@@ -1043,10 +1326,15 @@ export class StudyRoomEngine {
   /**
    * Pays the reward for every quest the member has just finished this week.
    * Like boss loot it is outside the daily cap: it comes at most three times
-   * a week, and a capped reward would often be zero. Returns the quest facts
-   * badges look at.
+   * a week, and a capped reward would often be zero. The reward also hits the
+   * boss. Returns the quest facts badges look at.
    */
-  private async rewardQuests(tx: Store, userId: string, now: number): Promise<QuestFacts> {
+  private async rewardQuests(
+    tx: Store,
+    effects: Effects,
+    userId: string,
+    now: number,
+  ): Promise<QuestFacts> {
     const week = weekKey(dayKey(now, this.config.timeZone));
     const rewarded = new Set(await tx.quests.listRewarded(userId, week));
     let xp = 0;
@@ -1066,6 +1354,7 @@ export class StudyRoomEngine {
     if (xp > 0) {
       const member = await this.loadMember(tx, userId);
       await tx.members.save({ ...member, xpTotal: member.xpTotal + xp });
+      await this.damageBoss(tx, effects, xp, [userId], now);
     }
     return {
       doneThisWeek: rewarded.size,
@@ -1285,6 +1574,13 @@ export class StudyRoomEngine {
     const goals = await tx.goals.firstOpen(ids);
     const today = dayKey(now, this.config.timeZone);
     const looks = await this.cardLooks(tx, ids, members);
+    // Hidden members are already left out of the standings, so they get no rank.
+    const ranks = new Map(
+      rankByMinutes(await tx.leaderboard.standings(weekKey(today), today)).map((e) => [
+        e.userId,
+        e.rank,
+      ]),
+    );
 
     const card = (
       userId: string,
@@ -1303,6 +1599,7 @@ export class StudyRoomEngine {
         streak: member ? currentStreak(member.streak, today, this.config.streakFreezesEnabled) : 0,
         badges: looks.get(userId)?.showcase ?? [],
         cardStyle: looks.get(userId)?.style ?? "classic",
+        weeklyRank: ranks.get(userId) ?? 0,
       };
     };
 
@@ -1467,22 +1764,51 @@ export class StudyRoomEngine {
     };
   }
 
-  private async buildLeaderboard(tx: Store, userId: string, now: number): Promise<LeaderboardDto> {
+  private async buildLeaderboard(
+    tx: Store,
+    userId: string,
+    now: number,
+    by: LeaderboardMetric,
+    period: LeaderboardPeriod,
+  ): Promise<LeaderboardDto> {
     const tz = this.config.timeZone;
     const today = dayKey(now, tz);
-    const weekStart = weekKey(today);
-    const ranked = rankByMinutes(await tx.leaderboard.standings(weekStart, today));
-    const hidden = await tx.leaderboard.isHidden(userId);
-    const mine = ranked.find((e) => e.userId === userId);
-    const myRows = await tx.stats.listForUser(userId, weekStart, today);
+    const { startDay, endsAt } = periodBounds(period, today, now, tz);
+    const range: StandingsRange = {
+      fromDay: startDay || EARLIEST_DAY,
+      toDay: today,
+      fromMs: startDay ? startOfDay(startDay, tz) : 0,
+      toMs: startOfDay(addDays(today, 1), tz),
+    };
+    const minutes = new Map(
+      (await tx.leaderboard.standings(range.fromDay, today)).map((r) => [
+        r.userId,
+        Math.floor(r.focusMinutes),
+      ]),
+    );
+    const xp = new Map((await tx.leaderboard.xpStandings(range)).map((r) => [r.userId, r.xp]));
+    const totals = (by === "xp" ? [...xp] : [...minutes]).map(([id, value]) => ({
+      userId: id,
+      value,
+    }));
+    const ranked = rankBy(totals).map(({ userId: id, rank }) => ({
+      userId: id,
+      focusMinutes: minutes.get(id) ?? 0,
+      xp: xp.get(id) ?? 0,
+      rank,
+    }));
+    const myRows = await tx.stats.listForUser(userId, range.fromDay, today);
     return {
-      weekStart,
-      endsAt: nextWeekStart(now, tz),
+      by,
+      period,
+      startDay,
+      endsAt,
       entries: ranked.slice(0, LIMITS.leaderboardSize),
       me: {
-        rank: mine?.rank ?? 0,
+        rank: ranked.find((e) => e.userId === userId)?.rank ?? 0,
         focusMinutes: Math.floor(myRows.reduce((sum, r) => sum + r.focusMinutes, 0)),
-        hidden,
+        xp: await tx.leaderboard.xpFor(userId, range),
+        hidden: await tx.leaderboard.isHidden(userId),
       },
     };
   }
@@ -1547,16 +1873,48 @@ export class StudyRoomEngine {
  * first means two people shown with the same minutes never get different ranks.
  */
 function rankByMinutes(rows: readonly { userId: string; focusMinutes: number }[]) {
+  return rankBy(rows.map((r) => ({ userId: r.userId, value: r.focusMinutes }))).map(
+    ({ userId, value, rank }) => ({ userId, focusMinutes: value, rank }),
+  );
+}
+
+/** Ranks whole, positive values, most first, so ties share a place (1, 2, 2, 4). */
+function rankBy(rows: readonly { userId: string; value: number }[]) {
   const whole = rows
-    .map((r) => ({ userId: r.userId, focusMinutes: Math.floor(r.focusMinutes) }))
-    .filter((r) => r.focusMinutes > 0)
-    .sort(
-      (a, b) =>
-        b.focusMinutes - a.focusMinutes || (a.userId < b.userId ? -1 : a.userId > b.userId ? 1 : 0),
-    );
+    .map((r) => ({ userId: r.userId, value: Math.floor(r.value) }))
+    .filter((r) => r.value > 0)
+    .sort((a, b) => b.value - a.value || (a.userId < b.userId ? -1 : a.userId > b.userId ? 1 : 0));
   let rank = 0;
   return whole.map((r, i) => {
-    if (i === 0 || r.focusMinutes !== whole[i - 1]!.focusMinutes) rank = i + 1;
+    if (i === 0 || r.value !== whole[i - 1]!.value) rank = i + 1;
     return { ...r, rank };
   });
+}
+
+/** Before any day the app could have data for, so "all time" can share the range queries. */
+const EARLIEST_DAY = "0000-01-01";
+
+/** First day of the period ("" for all time) and when it ends (0 for all time). */
+function periodBounds(period: LeaderboardPeriod, today: string, now: number, tz: string) {
+  switch (period) {
+    case "week":
+      return { startDay: weekKey(today), endsAt: nextWeekStart(now, tz) };
+    case "month":
+      return { startDay: monthKey(today), endsAt: nextMonthStart(now, tz) };
+    case "year":
+      return { startDay: yearKey(today), endsAt: nextYearStart(now, tz) };
+    case "all":
+      return { startDay: "", endsAt: 0 };
+  }
+}
+
+function validatePeriod(period: unknown): LeaderboardPeriod {
+  if (period === "week" || period === "month" || period === "year" || period === "all")
+    return period;
+  throw validationError("The leaderboard covers a week, month, year or all time.");
+}
+
+function validateMetric(by: unknown): LeaderboardMetric {
+  if (by === "minutes" || by === "xp") return by;
+  throw validationError("The leaderboard ranks by minutes or xp.");
 }

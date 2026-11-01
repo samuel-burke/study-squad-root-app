@@ -14,7 +14,13 @@ export interface ChannelLookup {
   name(channelId: string): Promise<string>;
   /** A link that opens the channel in Root. */
   link(channelId: string): Promise<string>;
+  /** The community's voice channels. */
+  voiceChannels(): Promise<{ id: string; name: string }[]>;
 }
+
+/** Matches the admin's typed name loosely: case, spaces and a leading # don't matter. */
+const channelKey = (name: string) =>
+  name.replace(/^#/, "").replace(/\s+/g, " ").trim().toLowerCase();
 
 /** Reads Root's settings and resolves the post and voice channels' names and link. */
 export async function loadConfig(
@@ -30,13 +36,21 @@ export async function loadConfig(
       logger.warn("could not read post channel", { error: String(error) });
     }
   }
-  if (config.voiceChannelId) {
+  if (config.voiceChannelName) {
     try {
-      const [name, url] = await Promise.all([
-        channels.name(config.voiceChannelId),
-        channels.link(config.voiceChannelId),
-      ]);
-      config = { ...config, voiceChannelName: name, voiceChannelUrl: url };
+      const wanted = channelKey(config.voiceChannelName);
+      const voice = (await channels.voiceChannels()).find((c) => channelKey(c.name) === wanted);
+      if (voice) {
+        const url = await channels.link(voice.id);
+        config = {
+          ...config,
+          voiceChannelId: voice.id,
+          voiceChannelName: voice.name,
+          voiceChannelUrl: url,
+        };
+      } else {
+        logger.warn("no voice channel has that name", { name: config.voiceChannelName });
+      }
     } catch (error) {
       logger.warn("could not read voice channel", { error: String(error) });
     }
@@ -60,6 +74,20 @@ export function presenceHandlers(engine: PresenceEngine, logger: Logger) {
     attached: (userId: string) => guard("userAttached", engine.userAttached(userId)),
     detached: (userId: string) => guard("userDetached", engine.userDetached(userId)),
   };
+}
+
+/**
+ * Finds a member's attached Root client, for personal pushes. Root's own
+ * `clients.getClient(userId)` keys its lookup on the configured community id
+ * in a different format from the one clients are stored under, so it never
+ * finds anyone and every personal push (break results, status, badges) was
+ * silently dropped. Searching the attached clients by user id always works.
+ */
+export function findAttachedClient<C extends { userId: string }>(
+  clients: () => readonly C[],
+  userId: string,
+): C | undefined {
+  return clients().find((client) => client.userId === userId);
 }
 
 /** Stops the engine and always closes the database, even if draining fails. */

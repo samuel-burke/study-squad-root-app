@@ -120,6 +120,7 @@ describe("opening a profile from the board", () => {
     streak: 2,
     badges: [],
     cardStyle: "classic",
+    weeklyRank: 0,
   });
 
   it.each([false, true])("opens the tapped member (compact: %s)", async (compact) => {
@@ -139,4 +140,31 @@ describe("opening a profile from the board", () => {
     await userEvent.click(screen.getByRole("button", { name: "View your profile" }));
     expect(onOpenMember).toHaveBeenLastCalledWith("me");
   });
+
+  it.each([false, true])(
+    "shows each member's weekly rank, and none when unranked (compact: %s)",
+    (compact) => {
+      render(
+        <MemberBoard
+          members={[
+            { ...member("me"), weeklyRank: 4 },
+            { ...member("priya"), weeklyRank: 1 },
+            member("kai"),
+          ]}
+          profiles={new Map()}
+          youId="me"
+          now={0}
+          compact={compact}
+        />,
+      );
+      const top = screen.getByRole("img", { name: "#1 on this week's leaderboard" });
+      expect(top).toHaveTextContent("#1");
+      expect(top).toHaveAttribute("data-top", "true");
+      expect(screen.getByRole("img", { name: "#4 on this week's leaderboard" })).toHaveAttribute(
+        "data-top",
+        "false",
+      );
+      expect(screen.getAllByRole("img", { name: /on this week's leaderboard/ })).toHaveLength(2);
+    },
+  );
 });

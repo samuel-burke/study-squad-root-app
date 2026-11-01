@@ -19,10 +19,12 @@ async function snapshot(): Promise<SnapshotDto> {
       async streakMilestone() {},
       async bossDefeated() {},
       async dailyRecap() {},
+      async squadMessage() {},
     },
     logger: console,
     config: DEFAULT_CONFIG,
     newId: () => "g",
+    random: () => 0.5,
   });
   return engine.getSnapshot("me");
 }

@@ -15,6 +15,8 @@ import type {
   SoloRecord,
   Store,
   WeekFocusRecord,
+  XpTotalRecord,
+  StandingsRange,
 } from "./ports";
 
 declare global {
@@ -261,6 +263,32 @@ export class MemoryStore implements Store {
         .filter(([, focusMinutes]) => focusMinutes > 0)
         .map(([userId, focusMinutes]) => ({ userId, focusMinutes }))
         .sort((a, b) => b.focusMinutes - a.focusMinutes || compareIds(a.userId, b.userId));
+    },
+    xpStandings: async (range: StandingsRange): Promise<XpTotalRecord[]> => {
+      const totals = new Map<string, number>();
+      for (const s of this.data.stats.values()) {
+        if (s.day < range.fromDay || s.day > range.toDay) continue;
+        totals.set(s.userId, (totals.get(s.userId) ?? 0) + s.xp);
+      }
+      for (const r of this.data.questRewards) {
+        if (r.rewardedAt >= range.fromMs && r.rewardedAt < range.toMs)
+          totals.set(r.userId, (totals.get(r.userId) ?? 0) + r.xp);
+      }
+      return [...totals]
+        .filter(([userId, xp]) => xp > 0 && !this.data.leaderboardHidden.has(userId))
+        .map(([userId, xp]) => ({ userId, xp }))
+        .sort((a, b) => b.xp - a.xp || compareIds(a.userId, b.userId));
+    },
+    xpFor: async (userId: string, range: StandingsRange): Promise<number> => {
+      let xp = 0;
+      for (const s of this.data.stats.values()) {
+        if (s.userId === userId && s.day >= range.fromDay && s.day <= range.toDay) xp += s.xp;
+      }
+      for (const r of this.data.questRewards) {
+        if (r.userId === userId && r.rewardedAt >= range.fromMs && r.rewardedAt < range.toMs)
+          xp += r.xp;
+      }
+      return xp;
     },
   };
 

@@ -7,10 +7,13 @@ import {
   dayKey,
   DEFAULT_CONFIG,
   newBoss,
+  squadPost,
   weekKey,
   MemoryStore,
   StudyRoomEngine,
   type AppConfig,
+  type LeaderboardMetric,
+  type LeaderboardPeriod,
   type MyStatusDto,
   type PersonalResultDto,
   type PhaseCompletedDto,
@@ -286,10 +289,20 @@ export class DemoGateway implements StudyRoomGateway {
           this.post(`${this.nameOf(userId)} just hit a ${streak} day streak.`),
         bossDefeated: async (_c, name) => this.post(`The room defeated ${name}!`),
         dailyRecap: async (_c, recap: RecapDto) => this.post(`${recap.weekday} recap`),
+        squadMessage: async (_c, event, text, userIds) =>
+          this.post(
+            squadPost(
+              event,
+              text,
+              userIds.map((id) => this.nameOf(id)),
+              userIds.length,
+            ),
+          ),
       },
       logger: console,
       config: this.config,
       newId: () => `demo-${this.nextId++}`,
+      random: Math.random,
     });
   }
 
@@ -350,15 +363,35 @@ export class DemoGateway implements StudyRoomGateway {
                 ? 0
                 : (back * 29) % 140;
       if (minutes > 0)
-        await this.store.stats.add(DEMO_USER_ID, addDays(today, -back), { focusMinutes: minutes });
+        await this.store.stats.add(DEMO_USER_ID, addDays(today, -back), {
+          focusMinutes: minutes,
+          xp: Math.min(this.config.xp.dailyCap, minutes * 2),
+        });
     }
     await this.seedBoss();
     if (!this.options.bots) return;
+    // Some earlier weeks, so month, year and all time rank differently from this week.
+    for (const [i, bot] of BOTS.entries()) {
+      for (let back = 120; back > 0; back--) {
+        const day = addDays(weekKey(today), -back);
+        if ((i * 7 + back * 3) % 5 >= 2) continue;
+        const focusMinutes = 20 + ((i * 31 + back * 17) % 110);
+        await this.store.stats.add(bot.userId, day, {
+          focusMinutes,
+          xp: Math.min(this.config.xp.dailyCap, focusMinutes * 2),
+        });
+      }
+    }
     // Earlier days this week, so the weekly leaderboard has standings to show.
     for (const [i, bot] of BOTS.entries()) {
       for (let day = weekKey(today); day < today; day = addDays(day, 1)) {
         const focusMinutes = 30 + ((i * 47 + Number(day.slice(-2)) * 29) % 120);
-        await this.store.stats.add(bot.userId, day, { focusMinutes });
+        // Some goal XP on top, so ranking by XP doesn't just repeat the minutes.
+        const goalXp = ((i * 5 + Number(day.slice(-2))) % 3) * 25;
+        await this.store.stats.add(bot.userId, day, {
+          focusMinutes,
+          xp: Math.min(this.config.xp.dailyCap, focusMinutes * 2 + goalXp),
+        });
       }
     }
     for (const bot of BOTS) {
@@ -513,12 +546,12 @@ export class DemoGateway implements StudyRoomGateway {
     return this.call(() => this.engine.getProgress(DEMO_USER_ID));
   }
 
-  getLeaderboard() {
-    return this.call(() => this.engine.getLeaderboard(DEMO_USER_ID));
+  getLeaderboard(by?: LeaderboardMetric, period?: LeaderboardPeriod) {
+    return this.call(() => this.engine.getLeaderboard(DEMO_USER_ID, by, period));
   }
 
-  setLeaderboardHidden(hidden: boolean) {
-    return this.call(() => this.engine.setLeaderboardHidden(DEMO_USER_ID, hidden));
+  setLeaderboardHidden(hidden: boolean, by?: LeaderboardMetric, period?: LeaderboardPeriod) {
+    return this.call(() => this.engine.setLeaderboardHidden(DEMO_USER_ID, hidden, by, period));
   }
 
   setCardStyle(style: string) {

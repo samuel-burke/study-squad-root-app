@@ -1,3 +1,4 @@
+import { ALL_PERSONALITIES, type Personality } from "./squad/squadLines";
 import { isValidTimeZone } from "./time/calendar";
 import {
   customPreset,
@@ -19,7 +20,7 @@ export const SETTINGS = {
     customFocus: "customFocusMinutes",
     customBreak: "customBreakMinutes",
     postChannel: "postChannel",
-    voiceChannel: "voiceChannel",
+    voiceChannel: "voiceChannelName",
     recapEnabled: "recapEnabled",
     recapTime: "recapTime",
     recapLeaderboard: "recapLeaderboard",
@@ -27,6 +28,8 @@ export const SETTINGS = {
     goalsPublic: "goalsPublicByDefault",
     busyPosts: "busyPosts",
     busyThreshold: "busyThreshold",
+    squadBot: "squadBot",
+    squadPersonalities: "squadPersonalities",
   },
   game: {
     group: "game",
@@ -49,16 +52,25 @@ export interface AppConfig {
   postChannelId: string | null;
   /** Display name of that channel, resolved by the server. Empty if unknown. */
   postChannelName: string;
-  /** Voice channel the "Join voice" button opens. null = no button. */
+  /**
+   * Voice channel the "Join voice" button opens, found by the server from
+   * voiceChannelName. null = no button.
+   */
   voiceChannelId: string | null;
-  /** Its display name and link, resolved by the server. Empty if unknown. */
+  /** The name the admin typed, then the channel's own name once found. "" = off. */
   voiceChannelName: string;
+  /** A link that opens the channel in Root, resolved by the server. */
   voiceChannelUrl: string;
   recap: { enabled: boolean; hours: number; minutes: number };
   /** List the week's top focusers in the daily recap. */
   recapLeaderboardEnabled: boolean;
   goalsPublicByDefault: boolean;
   busyPosts: { enabled: boolean; threshold: number };
+  /**
+   * The squad bot: posts in the channel when the room timer starts, switches
+   * and finishes, and when someone joins, in the voices admins picked.
+   */
+  squadBot: { enabled: boolean; personalities: Personality[] };
   xp: { enabled: boolean; dailyCap: number };
   comboEnabled: boolean;
   /**
@@ -83,6 +95,7 @@ export const DEFAULT_CONFIG: AppConfig = {
   recapLeaderboardEnabled: true,
   goalsPublicByDefault: true,
   busyPosts: { enabled: true, threshold: 5 },
+  squadBot: { enabled: true, personalities: [...ALL_PERSONALITIES] },
   xp: { enabled: true, dailyCap: 300 },
   comboEnabled: true,
   boss: { enabled: true, name: "", baseHpXp: 10_000 },
@@ -115,6 +128,13 @@ function text(value: unknown, fallback: string, maxLength: number): string {
   return trimmed.length > 0 ? trimmed : fallback;
 }
 
+/** A multi-select of personalities. Unknown keys are dropped; none picked means all. */
+function personalities(value: unknown): Personality[] {
+  const picked = Array.isArray(value) ? value : typeof value === "string" ? [value] : [];
+  const known = ALL_PERSONALITIES.filter((p) => picked.includes(p));
+  return known.length > 0 ? known : [...ALL_PERSONALITIES];
+}
+
 function timeOfDay(value: unknown, fallback: { hours: number; minutes: number }) {
   if (value && typeof value === "object") {
     const v = value as { hours?: unknown; minutes?: unknown };
@@ -142,7 +162,6 @@ export function parseSettings(raw: RawSettings): AppConfig {
 
   const tz = firstString(room[r.timeZone]);
   const channel = firstString(room[r.postChannel]);
-  const voice = firstString(room[r.voiceChannel]);
 
   return {
     ...presetFrom(
@@ -153,8 +172,8 @@ export function parseSettings(raw: RawSettings): AppConfig {
     timeZone: tz && isValidTimeZone(tz) ? tz : d.timeZone,
     postChannelId: channel && channel.length > 0 ? channel : null,
     postChannelName: "",
-    voiceChannelId: voice && voice.length > 0 ? voice : null,
-    voiceChannelName: "",
+    voiceChannelId: null,
+    voiceChannelName: text(room[r.voiceChannel], "", 100).replace(/^#\s*/, ""),
     voiceChannelUrl: "",
     recap: {
       enabled: bool(room[r.recapEnabled], d.recap.enabled),
@@ -165,6 +184,10 @@ export function parseSettings(raw: RawSettings): AppConfig {
     busyPosts: {
       enabled: bool(room[r.busyPosts], d.busyPosts.enabled),
       threshold: int(room[r.busyThreshold], d.busyPosts.threshold, 2, 100),
+    },
+    squadBot: {
+      enabled: bool(room[r.squadBot], d.squadBot.enabled),
+      personalities: personalities(room[r.squadPersonalities]),
     },
     xp: {
       enabled: bool(game[g.xpEnabled], d.xp.enabled),

@@ -7,6 +7,51 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 ### Added
 
 - A **Send feedback** box under Room settings, marked "Coming soon". It can't be filled in or sent yet.
+- Continuous deployment: a push to `main` that passes CI uploads a new version to Root by itself, once a `ROOT_AUTH_TOKEN` secret is set. See docs/DEPLOYING.md.
+- A **Custom** solo timer length: type any whole number of minutes from 5 to 180. Before this, Deep Thought (42 minutes) and Ultramarathon (3 hours) couldn't be earned, because neither length was on the list.
+
+### Changed
+
+- The Friday the 13th secret badge is now **Luck of the Irish**: finish a session on St. Patrick's Day, March 17.
+- Jackpot now unlocks on any total XP ending in 777 (777, 1,777, 2,777 and so on), so missing 777 no longer means missing it for good.
+
+## [0.3.2] - 2026-10-31
+
+### Fixed
+
+- 0.3.1 still crashed on start in Root with the same `LeaderboardMetric` error, although its package was correct. The generated `@studyroom/gen-*` packages always carried the same version in `package-lock.json`, so Root could keep serving an old copy. Their version now comes from a hash of the `.proto` files, `npm run generate` keeps `package-lock.json` in step, and `npm run verify` fails if it is out of date.
+
+## [0.3.1] - 2026-10-31
+
+### Fixed
+
+- The server crashed on start in Root ("Cannot read properties of undefined (reading 'MINUTES')") when a package was built on top of old generated networking code. `npm run generate` now clears `networking/gen` first, so every build uses fresh code.
+
+## [0.3.0] - 2026-10-30
+
+A chattier, more alive room: the Squad bot, live stats and boss damage, a bigger leaderboard, your own avatar and countdown chirps.
+
+### Added
+
+- Squad bot: Study Squad now chats in the updates channel like part of the study group. It posts when the room timer starts, at each break, when study resumes, when the four rounds are done, when someone joins, and when someone unlocks a badge (secret badges stay a surprise), and it mentions the people studying. It has six personalities (Hype Squad, Drill Sergeant, Chill Friend, Meme Lord, Gamer Mode and Chaos Mode), never repeats itself back to back, and now and then drops a rare surprise line. Admins can turn it off with **Squad bot** and choose its voices with **Squad bot personalities**. Study Squad now asks Root for permission to mention members.
+- Each card on the "Focusing now" board shows the member's place on this week's leaderboard (#1, #2…). Members with no minutes yet, or who hid themselves from the leaderboard, show no rank.
+- The leaderboard can rank by focus minutes or by XP (focus, goals and quest rewards), and covers this week, this month, this year or all time. Pick with the **Week | Month | Year | All time** and **Minutes | XP** switches above the standings. The rank on each card stays weekly.
+- Countdown chirps: one chirp at 10 seconds left, then one each second for the last 5, before each focus block and break ends. Mute silences them.
+
+### Changed
+
+- A new day now starts at 4am in the community's time zone instead of midnight, so a late-night session counts toward the day it began. This moves streaks, the daily XP cap, daily stats and when finished goals leave your list. Weeks start at 4am on Monday, so weekly quests, the weekly boss and the leaderboard reset then too. The daily recap still posts at its set clock time.
+- The weekly boss takes damage live: every minute someone focuses, their XP hits the boss right away instead of when the session ends. The room's combo bonus still lands when the round ends.
+- All XP now counts as boss damage: finishing goals (up to the daily cap) and weekly quest rewards hit the boss too, not just focus.
+- Focus minutes and XP are credited every minute while you focus, not only when the session ends. Your XP bar, level, quests, the leaderboard and the rank on each card all move live, and the progress screen refreshes itself while it's open. The combo bonus still lands when the round ends, and totals are exactly what they were before.
+- **Admins:** the voice channel is now set by typing its name in **Voice channel name** (Root's channel picker only lists text channels). Check it after updating.
+- Your own avatar now shows your Root profile picture on the board, in the break moment and on your profile, instead of a "YOU" bubble, and the Focusing now board shows your Root name instead of "You". Members without a picture still see "YOU".
+
+### Fixed
+
+- The study-start chime now plays on Safari and iOS
+- In Root, nothing pushed to just you ever arrived: the break screen after a timer, badge unlocks from a finished timer, and status updates on your other devices. The server now finds your connection reliably.
+- Badges earned when a timer finishes also ride on the break result, so their unlock plays even if another push is late.
 
 ## [0.2.1] - 2026-10-29
 

@@ -2,6 +2,7 @@ import type { BossState } from "../game/boss";
 import type { StreakState } from "../game/streak";
 import type { DayKey } from "../time/calendar";
 import type { TimerPreset } from "../timer/presets";
+import type { SquadEvent } from "../squad/squadLines";
 import type {
   MyStatusDto,
   PersonalResultDto,
@@ -38,6 +39,11 @@ export interface SoloRecord {
   minutes: number;
   phase: "focus" | "break";
   breakEndsAt: number;
+  /** Base focus XP already dealt to the boss live, minute by minute, during this focus. */
+  bossXpDealt: number;
+  /** Whole focus minutes, and the XP for them, already credited live during this focus. */
+  liveMinutes: number;
+  liveXp: number;
 }
 
 export interface RoomCycleRecord {
@@ -53,6 +59,11 @@ export interface ParticipantRecord {
   joinedAt: number;
   /** Tapped "Keep going?" this cycle, so the cycle end carries them into the next one. */
   keepGoing: boolean;
+  /** Base focus XP already dealt to the boss live, minute by minute, in the current focus round. */
+  bossXpDealt: number;
+  /** Whole focus minutes, and the XP for them, already credited live in the current focus round. */
+  liveMinutes: number;
+  liveXp: number;
 }
 
 export interface SessionLogRecord {
@@ -80,6 +91,22 @@ export type DailyStatDelta = Partial<Omit<DailyStatRecord, "userId" | "day">>;
 export interface WeekFocusRecord {
   userId: string;
   focusMinutes: number;
+}
+
+export interface XpTotalRecord {
+  userId: string;
+  xp: number;
+}
+
+/**
+ * A leaderboard period: daily stats for [fromDay, toDay], and quest rewards
+ * paid in [fromMs, toMs).
+ */
+export interface StandingsRange {
+  fromDay: DayKey;
+  toDay: DayKey;
+  fromMs: number;
+  toMs: number;
 }
 
 /** A weekly quest reward that has been paid, so it is paid only once. */
@@ -172,6 +199,14 @@ export interface Store {
      * by user id). Members who are hidden or have no minutes are left out.
      */
     standings(fromDay: DayKey, toDay: DayKey): Promise<WeekFocusRecord[]>;
+    /**
+     * XP per member over the range: daily XP plus quest rewards paid in it,
+     * most first (ties by user id). Members who are hidden or have no XP are
+     * left out.
+     */
+    xpStandings(range: StandingsRange): Promise<XpTotalRecord[]>;
+    /** One member's XP over the range, counted like xpStandings, hidden or not. */
+    xpFor(userId: string, range: StandingsRange): Promise<number>;
   };
   quests: {
     /** Ids of the weekly quests whose reward the member has already received. */
@@ -244,6 +279,13 @@ export interface Announcer {
     lootXp: number,
   ): Promise<void>;
   dailyRecap(channelId: string, recap: RecapDto): Promise<void>;
+  /** A squad bot post: `text` from the line pools, addressed to (mentioning) `userIds`. */
+  squadMessage(
+    channelId: string,
+    event: SquadEvent,
+    text: string,
+    userIds: string[],
+  ): Promise<void>;
 }
 
 export interface Logger {

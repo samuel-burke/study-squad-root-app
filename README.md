@@ -20,7 +20,7 @@ Study Squad is a group study timer for [Root](https://www.rootapp.com) communiti
 - **Break moment**: XP earned, streak, damage dealt to the boss, and "did you finish your goal?"
 - **Game layer**: XP and levels (daily cap), a combo multiplier for focusing together, a weekly community boss
 - **Streaks without guilt**: one finished session counts the day, one free freeze per week
-- **Channel posts**: daily recap, "room is busy" and streak milestone posts
+- **Channel posts**: daily recap, "room is busy", streak milestone posts, and a squad bot with six personalities that cheers on (and mentions) the people studying
 - **Admin settings** through Root's Global Settings (no custom admin UI to secure)
 
 See [DESIGN.md](DESIGN.md) for the reasoning behind each rule and [docs/API.md](docs/API.md) for the client/server contract.
@@ -43,7 +43,7 @@ npm run demo
 
 Open the printed URL. Add `?focus=0.2&break=0.2` to make rounds 12 seconds long and see the break moment quickly.
 
-More URL settings for testing (boss nearly beaten, a long streak, replaying badge unlocks) are in [docs/TESTING.md](docs/TESTING.md).
+More URL settings for testing (boss nearly beaten, a long streak, replaying badge unlocks) are in [docs/TESTING.md](docs/TESTING.md). Merges to `main` deploy to Root on their own: see [docs/DEPLOYING.md](docs/DEPLOYING.md).
 
 ## Run it inside Root
 

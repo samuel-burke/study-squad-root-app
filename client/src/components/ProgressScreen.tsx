@@ -1,5 +1,5 @@
 import { formatHours, type ProgressDto, type QuestDto } from "@studyroom/core";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toGatewayError, type StudyRoomGateway } from "../api/gateway";
 import { heatLevel, percent } from "../lib/view";
 import { BadgeShelf, CardStylePicker } from "./BadgeShelf";
@@ -15,6 +15,7 @@ export function ProgressScreen({
   onBack,
   onDeleteData,
   onOpenMember,
+  refreshKey,
 }: {
   gateway: StudyRoomGateway;
   xpEnabled: boolean;
@@ -24,8 +25,11 @@ export function ProgressScreen({
   onDeleteData(): Promise<boolean>;
   /** Opens a member's profile from the leaderboard. */
   onOpenMember?(userId: string): void;
+  /** Reloads quietly whenever this changes, such as on each room update while people focus. */
+  refreshKey?: unknown;
 }) {
   const [progress, setProgress] = useState<ProgressDto | null>(null);
+  const loaded = useRef(false);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -45,12 +49,19 @@ export function ProgressScreen({
     let cancelled = false;
     gateway
       .getProgress()
-      .then((p) => !cancelled && setProgress(p))
-      .catch((e: unknown) => !cancelled && setError(toGatewayError(e).message));
+      .then((p) => {
+        if (cancelled) return;
+        loaded.current = true;
+        setProgress(p);
+      })
+      .catch((e: unknown) => {
+        // A failed background refresh keeps what's on screen; the next update tries again.
+        if (!cancelled && !loaded.current) setError(toGatewayError(e).message);
+      });
     return () => {
       cancelled = true;
     };
-  }, [gateway]);
+  }, [gateway, refreshKey]);
 
   return (
     <main className="progress-page">
@@ -139,7 +150,7 @@ export function ProgressScreen({
         </>
       )}
 
-      <WeeklyLeaderboard gateway={gateway} onOpenMember={onOpenMember} />
+      <WeeklyLeaderboard gateway={gateway} onOpenMember={onOpenMember} refreshKey={refreshKey} />
 
       <DeleteMyData onDelete={onDeleteData} onDone={onBack} />
     </main>

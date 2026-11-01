@@ -1,7 +1,32 @@
 import { describe, expect, it } from "vitest";
-import { bossDefeatedPost, busyRoomPost, dailyRecapPost, streakMilestonePost } from "../src";
+import {
+  bossDefeatedPost,
+  busyRoomPost,
+  dailyRecapPost,
+  squadPost,
+  streakMilestonePost,
+} from "../src";
 
 describe("channel posts", () => {
+  it("addresses squad bot posts to the room", () => {
+    expect(squadPost("breakStarted", "Take five. 🧠", ["@Ana", "@Kai"], 2)).toBe(
+      "@Ana @Kai Take five. 🧠",
+    );
+  });
+
+  it("reminds the room to keep going when the session is done", () => {
+    expect(squadPost("sessionCompleted", "That's a wrap.", ["@Ana"], 1)).toBe(
+      "@Ana That's a wrap. Tap Keep going in Study Squad to roll into the next cycle.",
+    );
+  });
+
+  it("sums up a big room instead of mentioning everyone", () => {
+    const mentions = Array.from({ length: 12 }, (_, i) => `@m${i}`);
+    const post = squadPost("breakStarted", "Break!", mentions, 12);
+    expect(post).toContain("@m9 and 2 others Break!");
+    expect(post).not.toContain("@m10");
+  });
+
   it("announces a busy room", () => {
     expect(busyRoomPost(6, 1.5)).toContain("6 people are focusing right now. Combo is at 1.5x.");
   });

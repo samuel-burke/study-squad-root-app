@@ -71,4 +71,19 @@ describe("useSoundCues", () => {
     expect(result.current.muted).toBe(true);
     vi.restoreAllMocks();
   });
+
+  it("unlocks audio on every kind of interaction, not just the first", async () => {
+    const sounds = await import("../src/lib/sounds");
+    const unlock = vi.spyOn(sounds, "unlockAudio");
+    const { unmount } = setup("idle");
+    for (const type of ["pointerdown", "pointerup", "touchend", "click", "keydown"]) {
+      window.dispatchEvent(new Event(type));
+    }
+    window.dispatchEvent(new Event("touchend"));
+    expect(unlock).toHaveBeenCalledTimes(6);
+    unmount();
+    window.dispatchEvent(new Event("click"));
+    expect(unlock).toHaveBeenCalledTimes(6);
+    unlock.mockRestore();
+  });
 });

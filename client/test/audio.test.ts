@@ -29,6 +29,14 @@ class FakeAudioContext {
     return osc;
   }
 
+  sources: { start: ReturnType<typeof vi.fn> }[] = [];
+  createBuffer = vi.fn(() => ({}));
+  createBufferSource() {
+    const source = { buffer: null, connect: vi.fn(), start: vi.fn() };
+    this.sources.push(source);
+    return source;
+  }
+
   createGain() {
     return {
       gain: {
@@ -139,5 +147,60 @@ describe("playCue", () => {
     unlockAudio();
     unlockAudio();
     expect(FakeAudioContext.instances[0]!.resume).toHaveBeenCalledTimes(1);
+  });
+
+  it("plays one silent sample on the first unlock, as iOS needs", async () => {
+    vi.stubGlobal("AudioContext", FakeAudioContext);
+    const { unlockAudio } = await loadSounds();
+    unlockAudio();
+    unlockAudio();
+    const ctx = FakeAudioContext.instances[0]!;
+    expect(ctx.sources).toHaveLength(1);
+    expect(ctx.sources[0]!.start).toHaveBeenCalledWith(0);
+  });
+
+  it("tries the silent sample again if it failed", async () => {
+    let fail = true;
+    class Flaky extends FakeAudioContext {
+      override createBufferSource() {
+        if (fail) throw new Error("not yet");
+        return super.createBufferSource();
+      }
+    }
+    vi.stubGlobal("AudioContext", Flaky);
+    const { unlockAudio } = await loadSounds();
+    expect(() => unlockAudio()).not.toThrow();
+    fail = false;
+    unlockAudio();
+    expect(FakeAudioContext.instances[0]!.sources).toHaveLength(1);
+  });
+
+  it("resumes a context Safari interrupted", async () => {
+    vi.stubGlobal("AudioContext", FakeAudioContext);
+    const { unlockAudio } = await loadSounds();
+    unlockAudio();
+    const ctx = FakeAudioContext.instances[0]!;
+    (ctx as { state: string }).state = "interrupted";
+    unlockAudio();
+    expect(ctx.resume).toHaveBeenCalledTimes(2);
+  });
+
+  it("starts a fresh context when the old one was closed", async () => {
+    vi.stubGlobal("AudioContext", FakeAudioContext);
+    const { playCue } = await loadSounds();
+    playCue("focusStart");
+    FakeAudioContext.instances[0]!.state = "closed";
+    playCue("focusStart");
+    expect(FakeAudioContext.instances).toHaveLength(2);
+    expect(FakeAudioContext.instances[1]!.oscillators).toHaveLength(3);
+  });
+
+  it("plays a short chirp, higher on the last second", async () => {
+    vi.stubGlobal("AudioContext", FakeAudioContext);
+    const { playChirp } = await loadSounds();
+    playChirp("tick");
+    playChirp("lastTick");
+    const ctx = FakeAudioContext.instances[0]!;
+    expect(ctx.oscillators.map((o) => o.frequency.value)).toEqual([1318.51, 1760]);
   });
 });

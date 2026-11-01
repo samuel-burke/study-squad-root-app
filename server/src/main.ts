@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import {
+  ChannelType,
   ChannelWebRtcEvent,
   ClientEvent,
   GlobalSettingsEvent,
@@ -24,7 +25,7 @@ import { openDatabase } from "./persistence/database";
 import { KnexStore } from "./persistence/knexStore";
 import { migrateToLatest } from "./persistence/migrations";
 import { studyRoomService } from "./studyRoomService";
-import { createShutdown, loadConfig, presenceHandlers } from "./wiring";
+import { createShutdown, findAttachedClient, loadConfig, presenceHandlers } from "./wiring";
 
 const logger = createLogger();
 let shutdown: (() => Promise<void>) | null = null;
@@ -40,6 +41,13 @@ function loadRootConfig(settings: GlobalSettings | undefined): Promise<AppConfig
             channelId: id as ChannelGuid,
           })
         ).url,
+      voiceChannels: async () => {
+        const groups = await rootServer.community.channelGroups.list();
+        const channels = await Promise.all(
+          groups.map((g) => rootServer.community.channels.list({ channelGroupId: g.id })),
+        );
+        return channels.flat().filter((c) => c.channelType === ChannelType.Voice);
+      },
     },
     logger,
   );
@@ -56,7 +64,7 @@ async function onStarting(state: RootAppStartState): Promise<void> {
     clock: { now: Date.now },
     scheduler: new TimeoutScheduler(),
     notifier: new PushNotifier(studyRoomService, (userId) =>
-      rootServer.clients.getClient(userId as UserGuid),
+      findAttachedClient(() => rootServer.clients.getClients(), userId),
     ),
     announcer: new ChannelAnnouncer({
       postMessage: async (channelId, content) => {
@@ -71,6 +79,7 @@ async function onStarting(state: RootAppStartState): Promise<void> {
     logger,
     config: await loadRootConfig(state.globalSettings ?? rootServer.globalSettings),
     newId: randomUUID,
+    random: Math.random,
   });
   studyRoomService.bind(new StudyRoomHandlers(engine, logger));
   rootServer.lifecycle.addService(studyRoomService);

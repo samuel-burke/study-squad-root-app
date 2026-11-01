@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  leaderboardMetricToProto,
+  leaderboardPeriodToProto,
   leaderboardToProto,
   memberProfileToProto,
   myStatusToProto,
@@ -149,8 +151,29 @@ describe("RootGateway", () => {
     const gateway = new RootGateway();
     await expect(gateway.getLeaderboard()).resolves.toEqual(board);
     await expect(gateway.setLeaderboardHidden(true)).resolves.toEqual(hidden);
-    expect(service.client.getLeaderboard).toHaveBeenCalledWith({});
-    expect(service.client.setLeaderboardHidden).toHaveBeenCalledWith({ hidden: true });
+    expect(service.client.getLeaderboard).toHaveBeenCalledWith({
+      by: leaderboardMetricToProto("minutes"),
+      period: leaderboardPeriodToProto("week"),
+    });
+    expect(service.client.setLeaderboardHidden).toHaveBeenCalledWith({
+      hidden: true,
+      by: leaderboardMetricToProto("minutes"),
+      period: leaderboardPeriodToProto("week"),
+    });
+
+    const byXp = await engine.getLeaderboard("kai", "xp", "all");
+    vi.mocked(service.client.getLeaderboard).mockResolvedValue(leaderboardToProto(byXp));
+    await expect(gateway.getLeaderboard("xp", "all")).resolves.toEqual(byXp);
+    await gateway.setLeaderboardHidden(false, "xp", "month");
+    expect(service.client.getLeaderboard).toHaveBeenLastCalledWith({
+      by: leaderboardMetricToProto("xp"),
+      period: leaderboardPeriodToProto("all"),
+    });
+    expect(service.client.setLeaderboardHidden).toHaveBeenLastCalledWith({
+      hidden: false,
+      by: leaderboardMetricToProto("xp"),
+      period: leaderboardPeriodToProto("month"),
+    });
   });
 
   it("looks up another member's profile", async () => {

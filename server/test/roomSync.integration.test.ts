@@ -121,6 +121,7 @@ describe("room timer sync across clients (engine + SQLite + push adapter)", () =
         let n = 0;
         return () => `goal-${++n}`;
       })(),
+      random: () => 0.5,
     });
   });
 
@@ -182,6 +183,54 @@ describe("room timer sync across clients (engine + SQLite + push adapter)", () =
     expect(fanOut.of("viewer", "status")).toHaveLength(0);
   });
 
+  it("posts each squad bot message once, whatever the connections, and never replays one after a restart", async () => {
+    const announcer = new RecordingAnnouncer();
+    const build = () =>
+      new StudyRoomEngine({
+        store: new KnexStore(db),
+        clock,
+        scheduler,
+        notifier: new PushNotifier(fanOut, () => undefined),
+        announcer,
+        logger: silentLogger,
+        config: configWith(),
+        newId: () => "x",
+        random: () => 0.5,
+      });
+    const first = build();
+    await first.joinRoomTimer("ana");
+    // Ana's second device and Marcus both connect and join.
+    await first.joinRoomTimer("ana");
+    await first.joinRoomTimer("marcus");
+    await first.getSnapshot("viewer");
+    clock.current = T0 + 25 * MINUTE;
+    await first.tick();
+    await first.idle();
+    first.stop();
+    // The server restarts a few minutes into the break: the break isn't announced again.
+    clock.current = T0 + 28 * MINUTE;
+    const restarted = build();
+    await restarted.start();
+    await restarted.getSnapshot("ana");
+    clock.current = T0 + 30 * MINUTE;
+    await restarted.tick();
+    await restarted.idle();
+    restarted.stop();
+    expect(
+      announcer.posts.map((p) => {
+        const { event, userIds } = p.detail as { event: string; userIds: string[] };
+        return `${event} ${userIds.join(",")}`;
+      }),
+    ).toEqual([
+      "sessionStarted ana",
+      "memberJoined marcus",
+      "breakStarted ana,marcus",
+      "badgeUnlocked ana",
+      "badgeUnlocked marcus",
+      "studyResumed ana,marcus",
+    ]);
+  });
+
   it("survives a server restart mid-round: state comes back from SQLite", async () => {
     await engine.joinRoomTimer("ana");
     await engine.idle();
@@ -194,6 +243,7 @@ describe("room timer sync across clients (engine + SQLite + push adapter)", () =
       logger: silentLogger,
       config: configWith(),
       newId: () => "x",
+      random: () => 0.5,
     });
     clock.advance(30 * MINUTE);
     await restarted.start();

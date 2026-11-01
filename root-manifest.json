@@ -1,6 +1,6 @@
 {
   "id": "ADIjs4fHiQmWa4Qi7Kaa4w",
-  "version": "0.2.1",
+  "version": "0.3.2",
   "package": {
     "client": {
       "deploy": "client/dist"
@@ -21,7 +21,8 @@
   "permissions": {
     "channel": {
       "channelView": true,
-      "channelCreateMessage": true
+      "channelCreateMessage": true,
+      "channelCreateMessageMention": true
     }
   },
   "settings": {
@@ -146,17 +147,18 @@
           {
             "key": "postChannel",
             "title": "Post updates in",
-            "description": "Daily recaps, busy-room and milestone posts go here. Leave empty to turn posts off.",
+            "description": "Daily recaps, busy-room, milestone and squad bot posts go here. Leave empty to turn posts off.",
             "channel": {
               "multiSelect": false
             }
           },
           {
-            "key": "voiceChannel",
-            "title": "Voice channel",
-            "description": "Shows a Join voice button and a headphones icon on members in this voice channel. Leave empty to hide them.",
-            "channel": {
-              "multiSelect": false
+            "key": "voiceChannelName",
+            "title": "Voice channel name",
+            "description": "Type the name of a voice channel to show a Join voice button and a headphones icon on members in it. Leave blank to hide them.",
+            "text": {
+              "defaultValue": "",
+              "regex": "^.{0,100}$"
             }
           },
           {
@@ -340,6 +342,31 @@
                 }
               ]
             }
+          },
+          {
+            "key": "squadBot",
+            "title": "Squad bot",
+            "description": "Post a fun message in the updates channel when the room timer starts, switches between study and break, or finishes, when someone joins, and when someone unlocks a badge. Mentions the people in the room.",
+            "checkbox": {
+              "defaultValue": true
+            }
+          },
+          {
+            "key": "squadPersonalities",
+            "title": "Squad bot personalities",
+            "description": "Which voices the squad bot uses. It picks a random line from the ones you choose. Choose none to use them all.",
+            "select": {
+              "multiSelect": true,
+              "values": ["hype", "drill", "chill", "meme", "gamer", "chaos"],
+              "options": [
+                { "key": "hype", "value": "Hype Squad: energetic and encouraging" },
+                { "key": "drill", "value": "Drill Sergeant: commanding and competitive" },
+                { "key": "chill", "value": "Chill Friend: relaxed and supportive" },
+                { "key": "meme", "value": "Meme Lord: sarcastic internet humor" },
+                { "key": "gamer", "value": "Gamer Mode: XP, quests and achievements" },
+                { "key": "chaos", "value": "Chaos Mode: random and unexpected" }
+              ]
+            }
           }
         ]
       },
@@ -401,7 +428,7 @@
           {
             "key": "bossEnabled",
             "title": "Weekly boss",
-            "description": "A community goal with an HP bar. Every XP earned focusing deals damage, and everyone who pitched in gets bonus XP when it falls. A new boss spawns every Monday.",
+            "description": "A community goal with an HP bar. Every XP members earn deals damage, live each minute they focus, and everyone who pitched in gets bonus XP when it falls. A new boss spawns every Monday.",
             "checkbox": {
               "defaultValue": true
             }

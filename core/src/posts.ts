@@ -1,6 +1,7 @@
 import { formatCombo } from "./game/combo";
 import { formatHours, formatXp, pluralize } from "./format";
 import type { RecapDto } from "./dto";
+import { KEEP_GOING_FOOTER, type SquadEvent } from "./squad/squadLines";
 
 /**
  * Text for the posts Study Squad drops into a Root channel. Names passed in
@@ -47,4 +48,25 @@ export function dailyRecapPost(recap: RecapDto, names: ReadonlyMap<string, strin
     lines.push(`This week: ${leaders.join(" · ")}`);
   }
   return lines.join("\n");
+}
+
+/** Mentions shown before the rest are summed up, so a full room doesn't flood the post. */
+export const SQUAD_MAX_MENTIONS = 10;
+
+/**
+ * A squad bot post: who it's for, then what the bot says. `mentions` are
+ * ready-made mention tags (or cleaned names) for the first few of
+ * `memberCount` people.
+ */
+export function squadPost(
+  event: SquadEvent,
+  text: string,
+  mentions: readonly string[],
+  memberCount: number,
+): string {
+  const shown = mentions.slice(0, SQUAD_MAX_MENTIONS);
+  const extra = Math.max(0, memberCount - shown.length);
+  const who = extra > 0 ? `${shown.join(" ")} and ${pluralize(extra, "other")}` : shown.join(" ");
+  const footer = event === "sessionCompleted" ? ` ${KEEP_GOING_FOOTER}` : "";
+  return `${who} ${text}${footer}`.trim();
 }

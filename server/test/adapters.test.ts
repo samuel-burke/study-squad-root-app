@@ -82,6 +82,37 @@ describe("ChannelAnnouncer", () => {
     expect(posts.at(-1)?.content).toContain("Someone just hit a 50 day streak");
   });
 
+  it("mentions the room with Root's markup in squad bot posts", async () => {
+    const { posts, channel } = port();
+    await new ChannelAnnouncer(channel).squadMessage("c1", "breakStarted", "Take five. 🧠", [
+      "ana",
+      "kai",
+      "bad id]",
+    ]);
+    expect(posts[0]!.content).toBe(
+      "[@everyone Ana R.](root://user/ana) [@Someone](root://user/kai) Someone Take five. 🧠",
+    );
+  });
+
+  it("mentions everyone in a squad post, whatever characters their Root ids use", async () => {
+    const { posts, channel } = port();
+    // Real Root user ids: 22 base64url characters, often with "_" or "-".
+    const ids = ["AbC_dEf-GhI_jKl-MnO_pQ", "zZ9_yY8-xX7_wW6-vV5_uU", "Qwerty12345Asdfgh67890"];
+    await new ChannelAnnouncer(channel).squadMessage("c1", "breakStarted", "Take five.", ids);
+    for (const id of ids) expect(posts[0]!.content).toContain(`](root://user/${id})`);
+    expect(posts[0]!.content).toBe(
+      "[@Someone](root://user/AbC_dEf-GhI_jKl-MnO_pQ) [@Someone](root://user/zZ9_yY8-xX7_wW6-vV5_uU) [@Someone](root://user/Qwerty12345Asdfgh67890) Take five.",
+    );
+  });
+
+  it("looks up only the members a squad post shows", async () => {
+    const { posts, channel } = port();
+    const ids = Array.from({ length: 13 }, (_, i) => `m${i}`);
+    await new ChannelAnnouncer(channel).squadMessage("c1", "studyResumed", "Back to it.", ids);
+    expect(channel.nickname).toHaveBeenCalledTimes(10);
+    expect(posts[0]!.content).toContain("and 3 others Back to it.");
+  });
+
   it("posts recaps, busy rooms and boss defeats", async () => {
     const { posts, channel } = port();
     const announcer = new ChannelAnnouncer(channel);

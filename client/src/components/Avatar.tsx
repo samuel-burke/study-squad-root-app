@@ -19,13 +19,7 @@ export function Avatar({
       style={{ background: you ? YOU_COLOR : avatarColor(userId) }}
       aria-hidden="true"
     >
-      {profile?.avatarUrl && !you ? (
-        <img src={profile.avatarUrl} alt="" />
-      ) : you ? (
-        "YOU"
-      ) : (
-        initials(name)
-      )}
+      {profile?.avatarUrl ? <img src={profile.avatarUrl} alt="" /> : you ? "YOU" : initials(name)}
     </span>
   );
 }

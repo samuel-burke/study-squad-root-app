@@ -2,9 +2,11 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { createHarness } from "../../core/test/helpers";
+import { Avatar } from "../src/components/Avatar";
 import { strengthText } from "../src/components/BossCard";
 import { ErrorBoundary } from "../src/components/ErrorBoundary";
 import { GoalsSheet } from "../src/components/GoalsSheet";
+import { MemberBoard } from "../src/components/MemberBoard";
 import { Sheet } from "../src/components/Sheet";
 
 describe("Sheet", () => {
@@ -109,5 +111,62 @@ describe("strengthText", () => {
     expect(text(1)).toBe("Strength 1.0×");
     expect(text(1.5)).toBe("Strength 1.5×");
     expect(text(1.25)).toBe("Strength 1.25×");
+  });
+});
+
+describe("Avatar", () => {
+  it("shows your own profile picture when you have one", () => {
+    const { container } = render(
+      <Avatar
+        userId="me"
+        you
+        profile={{ userId: "me", name: "Sam", avatarUrl: "https://cdn.test/me.png" }}
+      />,
+    );
+    expect(container.querySelector("img")).toHaveAttribute("src", "https://cdn.test/me.png");
+    expect(container).not.toHaveTextContent("YOU");
+  });
+
+  it("falls back to YOU without a picture", () => {
+    const { container } = render(
+      <Avatar userId="me" you profile={{ userId: "me", name: "Sam" }} />,
+    );
+    expect(container.querySelector("img")).toBeNull();
+    expect(container).toHaveTextContent("YOU");
+  });
+});
+
+describe("MemberBoard", () => {
+  const me = {
+    userId: "me",
+    status: "roomFocus" as const,
+    endsAt: 60_000,
+    goalText: "",
+    goalPrivate: false,
+    level: 3,
+    streak: 2,
+    badges: [],
+    cardStyle: "default",
+    weeklyRank: 0,
+  };
+
+  it.each([false, true])("shows your Root name instead of You (compact: %s)", (compact) => {
+    render(
+      <MemberBoard
+        members={[me]}
+        profiles={new Map([["me", { userId: "me", name: "Sam" }]])}
+        youId="me"
+        now={0}
+        compact={compact}
+        onOpenMember={vi.fn()}
+      />,
+    );
+    expect(screen.getByRole("listitem", { name: /^Sam, Room timer/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "View your profile" })).toBeInTheDocument();
+  });
+
+  it("says You until your profile loads", () => {
+    render(<MemberBoard members={[me]} profiles={new Map()} youId="me" now={0} />);
+    expect(screen.getByRole("listitem", { name: /^You, Room timer/ })).toBeInTheDocument();
   });
 });

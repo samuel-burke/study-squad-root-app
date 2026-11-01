@@ -4,6 +4,8 @@ import { cueFor, playCue, unlockAudio, type SoundCue } from "../lib/sounds";
 
 const MUTED_KEY = "studysquad.soundsMuted";
 
+const UNLOCK_EVENTS = ["pointerdown", "pointerup", "touchend", "click", "keydown"] as const;
+
 function readMuted(): boolean {
   try {
     return window.localStorage.getItem(MUTED_KEY) === "1";
@@ -31,14 +33,14 @@ export function useSoundCues(
   const [muted, setMutedState] = useState(readMuted);
   const previous = useRef<MyStatusKind | null>(null);
 
-  // Audio stays locked until the first interaction, so unlock it on any click.
+  // Audio stays locked until an interaction, and Safari only counts some
+  // events (a touch's pointerdown isn't one). Unlock on every kind, every
+  // time, since Safari can lock audio again after a call or an app switch.
   useEffect(() => {
     const unlock = () => unlockAudio();
-    window.addEventListener("pointerdown", unlock, { once: true });
-    window.addEventListener("keydown", unlock, { once: true });
+    for (const type of UNLOCK_EVENTS) window.addEventListener(type, unlock, true);
     return () => {
-      window.removeEventListener("pointerdown", unlock);
-      window.removeEventListener("keydown", unlock);
+      for (const type of UNLOCK_EVENTS) window.removeEventListener(type, unlock, true);
     };
   }, []);
 

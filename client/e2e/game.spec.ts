@@ -9,9 +9,14 @@ import { expect, isPhone, openStartSheet, test } from "./fixtures";
 
 const SECOND = 1_000;
 const MINUTE = 60 * SECOND;
+/**
+ * Every test starts at noon on a Wednesday (UTC, see playwright.config.ts), far
+ * from the 4am day and Monday week boundaries, so the time CI runs can't split a test across days.
+ */
+const START = new Date("2026-10-28T12:00:00Z");
 
 async function open(page: Page, query: string) {
-  await page.clock.install();
+  await page.clock.install({ time: START });
   await page.goto(`/${query}`);
   await expect(page.getByRole("timer")).toBeVisible();
 }

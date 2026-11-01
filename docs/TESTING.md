@@ -17,7 +17,7 @@ Run `npm run demo` and add these to the printed URL. They only exist in the demo
 | `cap`            | `cap=1000`                      | Stands in for the Daily XP cap setting.                                                                                                                                          |
 | `streak`         | `streak=6`                      | Your starting streak. With yesterday active, one finished session makes it 7.                                                                                                    |
 | `missed`         | `missed=1`                      | Days missed since you were last active. 1 is covered by the week's freeze; 3 always breaks the streak.                                                                           |
-| `xp`             | `xp=2440`                       | Your starting lifetime XP, for level-ups, Jackpot (777) and Over 9000.                                                                                                           |
+| `xp`             | `xp=2440`                       | Your starting lifetime XP, for level-ups, Jackpot (any total ending in 777) and Over 9000.                                                                                       |
 | `unlock`         | `unlock=giant-slayer,blitz`     | Plays those badges' unlock animations, without awarding them, after your first click on the page (browsers only allow sound after a click). `unlock=all` plays one of each tier. |
 | `badges`         | `badges=first-session,squad-up` | Starts you holding those badges. Without it you start with none, so your first round and goal earn badges live with their unlock moments.                                        |
 
@@ -41,7 +41,7 @@ Useful combinations:
 
 `npm run test:e2e` runs `client/e2e/game.spec.ts` against the demo build with a fake clock, so cycles and days pass in seconds. It covers:
 
-- XP: focus XP times the combo, goal XP, the daily cap (boss damage keeps counting), and landing on 777 XP
+- XP: focus XP times the combo, goal XP, the daily cap (boss damage keeps counting), and landing on a total ending in 777
 - Badges: Study Group, Speedrun, Marathon, Full Cycle, Unstoppable, Jackpot, the boss badges, the streak badges, and one unlock animation per tier in order
 - "Keep going?": hidden during focus, shown in the long break, a tap carries you into the next cycle, no tap releases you with your XP, and solo timers never ask
 - The boss: strength and HP for custom names, a defeat with loot and badges, and The Final Final Exam

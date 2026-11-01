@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { StudyRoomGateway } from "./api/gateway";
 import { BadgeUnlocked } from "./components/BadgeUnlocked";
 import { KeepGoing } from "./components/KeepGoing";
@@ -15,6 +15,7 @@ import { Toast } from "./components/Toast";
 import { useMediaQuery } from "./state/useMediaQuery";
 import { useNow } from "./state/useNow";
 import { useProfiles } from "./state/useProfiles";
+import { useCountdownChirps } from "./state/useCountdownChirps";
 import { useEventSounds } from "./state/useEventSounds";
 import { useSoundCues } from "./state/useSoundCues";
 import { useStudyRoom } from "./state/useStudyRoom";
@@ -34,6 +35,15 @@ export function App({ gateway }: { gateway: StudyRoomGateway }) {
   const [screen, setScreen] = useState<"room" | "progress">("room");
   const [overlay, setOverlay] = useState<Overlay>(null);
   const sounds = useSoundCues(state.me?.status ?? null);
+  const serverNow = useCallback(() => gateway.now(), [gateway]);
+  // Room timer members follow the room clock, which every phase change updates.
+  const myEndsAt =
+    !state.me || state.me.status === "idle"
+      ? null
+      : state.me.onRoomTimer && state.room
+        ? state.room.timer.phaseEndsAt
+        : state.me.endsAt;
+  useCountdownChirps(myEndsAt, serverNow, sounds.muted);
   const celebrationAt = state.celebration?.startedAt ?? null;
   const boss = state.room?.boss;
   const level = state.me?.level;
@@ -104,6 +114,8 @@ export function App({ gateway }: { gateway: StudyRoomGateway }) {
             onBack={() => setScreen("room")}
             onDeleteData={actions.deleteMyData}
             onOpenMember={(userId) => setOverlay({ kind: "member", userId })}
+            // The room is pushed every focus minute, so stats stay live while this is open.
+            refreshKey={room}
           />
         ) : (
           <RoomScreen

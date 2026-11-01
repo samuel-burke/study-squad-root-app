@@ -71,6 +71,8 @@ message MemberCard {
   repeated string badges = 8;
   // A card style id, such as "gold".
   string card_style = 9;
+  // Place on this week's leaderboard. 0 when unranked or hidden from it.
+  int32 weekly_rank = 10;
 }
 
 message Boss {
@@ -196,24 +198,48 @@ message Progress {
   CardLook card = 11;
 }
 
-message LeaderboardEntry {
-  string user_id = 1;
-  // Whole focus minutes this week.
-  double focus_minutes = 2;
-  // 1-based. Equal minutes share a rank.
-  int32 rank = 3;
+// What the weekly leaderboard ranks by. Unspecified means minutes.
+enum LeaderboardMetric {
+  LEADERBOARD_METRIC_UNSPECIFIED = 0;
+  LEADERBOARD_METRIC_MINUTES = 1;
+  LEADERBOARD_METRIC_XP = 2;
 }
 
-// This week's focus-minute standings. Members who opted out are never listed.
+// The stretch of time the leaderboard covers, in the community time zone.
+// Unspecified means this week.
+enum LeaderboardPeriod {
+  LEADERBOARD_PERIOD_UNSPECIFIED = 0;
+  LEADERBOARD_PERIOD_WEEK = 1;
+  LEADERBOARD_PERIOD_MONTH = 2;
+  LEADERBOARD_PERIOD_YEAR = 3;
+  LEADERBOARD_PERIOD_ALL = 4;
+}
+
+message LeaderboardEntry {
+  string user_id = 1;
+  // Whole focus minutes in the period.
+  double focus_minutes = 2;
+  // 1-based, by the board's metric. Equal totals share a rank.
+  int32 rank = 3;
+  // XP earned in the period from focus, goals and quests.
+  int32 xp = 4;
+}
+
+// Standings for a period by focus minutes or XP. Members who opted out are never listed.
 message Leaderboard {
-  // Monday of this week in the community time zone, "YYYY-MM-DD".
-  string week_start = 1;
+  // First day of the period in the community time zone, "YYYY-MM-DD". Empty for all time.
+  string start_day = 1;
+  // When the period ends. 0 for all time.
   double ends_at_ms = 2;
   repeated LeaderboardEntry entries = 3;
-  // 0 when the caller is hidden or hasn't focused this week.
+  // 0 when the caller is hidden or has nothing to rank in the period.
   int32 my_rank = 4;
   double my_focus_minutes = 5;
   bool hidden = 6;
+  // What entries and my_rank are ranked by.
+  LeaderboardMetric by = 7;
+  int32 my_xp = 8;
+  LeaderboardPeriod period = 9;
 }
 
 // What anyone can see about a member by tapping them: game stats only, never
@@ -271,7 +297,10 @@ message SetGoalsPrivateRequest {
 
 message GetProgressRequest {}
 
-message GetLeaderboardRequest {}
+message GetLeaderboardRequest {
+  LeaderboardMetric by = 1;
+  LeaderboardPeriod period = 2;
+}
 
 // The member to look up. The caller still comes from the connection.
 message GetMemberProfileRequest {
@@ -280,6 +309,9 @@ message GetMemberProfileRequest {
 
 message SetLeaderboardHiddenRequest {
   bool hidden = 1;
+  // Which board to send back.
+  LeaderboardMetric by = 2;
+  LeaderboardPeriod period = 3;
 }
 
 // Empty style means automatic (the best style the caller's level unlocks).

@@ -74,7 +74,7 @@ export function BossCard({ boss, combo, now }: { boss: BossDto; combo: number; n
           )
         ) : (
           <>
-            Every XP you earn focusing is damage. Right now the room hits at{" "}
+            Every XP you earn is damage, live each minute you focus. Right now the room hits at{" "}
             <strong>{formatCombo(combo)}</strong>.
             {boss.lootXp > 0 && <> Defeat it for +{boss.lootXp} XP each.</>}
           </>

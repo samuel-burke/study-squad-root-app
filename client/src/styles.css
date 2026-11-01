@@ -640,6 +640,27 @@ h3 {
   flex: none;
 }
 
+.rank-chip {
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  padding: 1px 6px;
+  border-radius: 6px;
+  flex: none;
+}
+
+.streak-line .rank-chip {
+  margin-left: 4px;
+}
+
+.rank-chip[data-top="true"] {
+  color: var(--amber);
+  border-color: var(--amber-you);
+}
+
 .streak-line {
   display: flex;
   align-items: center;
@@ -985,6 +1006,26 @@ textarea.input {
   border-color: var(--blue);
   background: var(--blue-bg);
   color: var(--blue);
+}
+
+.custom-minutes {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  margin-top: 4px;
+  font-weight: 700;
+}
+
+.custom-minutes input {
+  width: 88px;
+  min-height: 40px;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border-strong);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
 }
 
 .btn-start {
@@ -1420,6 +1461,40 @@ textarea.input {
 
 .leaderboard .member-row:nth-child(1) .rank {
   color: var(--amber);
+}
+
+/* Minutes | XP switch above the standings. */
+.segmented {
+  display: flex;
+  padding: 3px;
+  gap: 3px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.segmented button {
+  flex: 1;
+  min-height: 32px;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.segmented button[aria-pressed="true"] {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: inset 0 0 0 1px var(--border-strong);
+}
+
+.segmented button:focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: 1px;
 }
 
 .bottom-bar {

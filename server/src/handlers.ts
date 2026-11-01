@@ -1,4 +1,6 @@
 import {
+  leaderboardMetricFromProto,
+  leaderboardPeriodFromProto,
   leaderboardToProto,
   memberProfileToProto,
   myStatusToProto,
@@ -17,6 +19,7 @@ import type {
   DeleteGoalRequest,
   GetMemberProfileRequest,
   JoinRoomTimerRequest,
+  GetLeaderboardRequest,
   Leaderboard,
   MemberProfile,
   MyStatus,
@@ -82,9 +85,15 @@ export class StudyRoomHandlers {
     );
   }
 
-  getLeaderboard(userId: string): Promise<Leaderboard> {
+  getLeaderboard(userId: string, request: GetLeaderboardRequest): Promise<Leaderboard> {
     return this.handle("getLeaderboard", userId, "read", async () =>
-      leaderboardToProto(await this.engine.getLeaderboard(userId)),
+      leaderboardToProto(
+        await this.engine.getLeaderboard(
+          userId,
+          leaderboardMetricFromProto(request.by),
+          leaderboardPeriodFromProto(request.period),
+        ),
+      ),
     );
   }
 
@@ -96,7 +105,14 @@ export class StudyRoomHandlers {
 
   setLeaderboardHidden(userId: string, request: SetLeaderboardHiddenRequest): Promise<Leaderboard> {
     return this.handle("setLeaderboardHidden", userId, "write", async () =>
-      leaderboardToProto(await this.engine.setLeaderboardHidden(userId, request.hidden)),
+      leaderboardToProto(
+        await this.engine.setLeaderboardHidden(
+          userId,
+          request.hidden,
+          leaderboardMetricFromProto(request.by),
+          leaderboardPeriodFromProto(request.period),
+        ),
+      ),
     );
   }
 

@@ -64,7 +64,12 @@ describe("root-manifest.json", () => {
   });
 
   it("asks only for the permissions it uses", () => {
-    expect(manifest.permissions.channel).toEqual({ channelView: true, channelCreateMessage: true });
+    // Mentions let the squad bot ping the people in the room.
+    expect(manifest.permissions.channel).toEqual({
+      channelView: true,
+      channelCreateMessage: true,
+      channelCreateMessageMention: true,
+    });
   });
 
   it("ships every workspace package the server requires", () => {

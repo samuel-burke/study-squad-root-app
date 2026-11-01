@@ -11,6 +11,8 @@ import type {
 } from "@studyroom/core";
 import {
   Leaderboard,
+  LeaderboardMetric,
+  LeaderboardPeriod,
   MemberProfile,
   type MemberStatus,
   MyStatus,
@@ -21,6 +23,10 @@ import {
 } from "@studyroom/gen-shared";
 import {
   leaderboardFromProto,
+  leaderboardMetricFromProto,
+  leaderboardMetricToProto,
+  leaderboardPeriodFromProto,
+  leaderboardPeriodToProto,
   leaderboardToProto,
   memberProfileFromProto,
   memberProfileToProto,
@@ -58,6 +64,7 @@ const room: RoomStateDto = {
       streak: 31,
       badges: ["night-owl", "first-boss", "longest-day"],
       cardStyle: "gold",
+      weeklyRank: 3,
     },
     {
       userId: "u2",
@@ -69,6 +76,7 @@ const room: RoomStateDto = {
       streak: 0,
       badges: [],
       cardStyle: "classic",
+      weeklyRank: 0,
     },
     {
       userId: "u3",
@@ -80,6 +88,7 @@ const room: RoomStateDto = {
       streak: 54,
       badges: [],
       cardStyle: "classic",
+      weeklyRank: 0,
     },
     {
       userId: "u4",
@@ -91,6 +100,7 @@ const room: RoomStateDto = {
       streak: 2,
       badges: [],
       cardStyle: "classic",
+      weeklyRank: 0,
     },
   ],
   presentCount: 9,
@@ -255,18 +265,38 @@ describe("contract round trip", () => {
   });
 
   it("preserves the leaderboard", () => {
-    const board: LeaderboardDto = {
-      weekStart: "2026-10-26",
-      endsAt: 1_793_592_000_000,
-      entries: [
-        { userId: "priya", focusMinutes: 312, rank: 1 },
-        { userId: "ana", focusMinutes: 60, rank: 2 },
-        { userId: "kai", focusMinutes: 60, rank: 2 },
-      ],
-      me: { rank: 0, focusMinutes: 15, hidden: true },
-    };
-    const bytes = Leaderboard.toBinary(leaderboardToProto(board));
-    expect(leaderboardFromProto(Leaderboard.fromBinary(bytes))).toEqual(board);
+    for (const [by, period, startDay] of [
+      ["minutes", "week", "2026-10-26"],
+      ["xp", "month", "2026-10-01"],
+      ["xp", "year", "2026-01-01"],
+      ["minutes", "all", ""],
+    ] as const) {
+      const board: LeaderboardDto = {
+        by,
+        period,
+        startDay,
+        endsAt: 1_793_592_000_000,
+        entries: [
+          { userId: "priya", focusMinutes: 312, xp: 640, rank: 1 },
+          { userId: "ana", focusMinutes: 60, xp: 120, rank: 2 },
+          { userId: "kai", focusMinutes: 60, xp: 0, rank: 2 },
+        ],
+        me: { rank: 0, focusMinutes: 15, xp: 30, hidden: true },
+      };
+      const bytes = Leaderboard.toBinary(leaderboardToProto(board));
+      expect(leaderboardFromProto(Leaderboard.fromBinary(bytes))).toEqual(board);
+    }
+  });
+
+  it("reads an unset metric as minutes and period as this week, and refuses unknown ones", () => {
+    expect(leaderboardMetricFromProto(LeaderboardMetric.UNSPECIFIED)).toBe("minutes");
+    expect(leaderboardMetricFromProto(LeaderboardMetric.XP)).toBe("xp");
+    expect(leaderboardMetricFromProto(9 as LeaderboardMetric)).toBeNull();
+    expect(leaderboardMetricToProto("xp")).toBe(LeaderboardMetric.XP);
+    expect(leaderboardPeriodFromProto(LeaderboardPeriod.UNSPECIFIED)).toBe("week");
+    expect(leaderboardPeriodFromProto(LeaderboardPeriod.ALL)).toBe("all");
+    expect(leaderboardPeriodFromProto(9 as LeaderboardPeriod)).toBeNull();
+    expect(leaderboardPeriodToProto("year")).toBe(LeaderboardPeriod.YEAR);
   });
 
   it("preserves a member profile", () => {

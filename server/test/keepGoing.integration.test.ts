@@ -57,6 +57,7 @@ describe('"Keep going?" through the handlers on SQLite', () => {
       logger: silentLogger,
       config: configWith(),
       newId: () => "unused",
+      random: () => 0.5,
     });
     logger = mockLogger();
     handlers = new StudyRoomHandlers(engine, logger, options);

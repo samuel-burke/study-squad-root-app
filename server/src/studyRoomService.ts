@@ -78,8 +78,8 @@ export class StudyRoomService extends StudyRoomServiceBase {
     return this.call((h) => h.getProgress(client.userId));
   }
 
-  getLeaderboard(_request: GetLeaderboardRequest, client: Client): Promise<Leaderboard> {
-    return this.call((h) => h.getLeaderboard(client.userId));
+  getLeaderboard(request: GetLeaderboardRequest, client: Client): Promise<Leaderboard> {
+    return this.call((h) => h.getLeaderboard(client.userId, request));
   }
 
   getMemberProfile(request: GetMemberProfileRequest, client: Client): Promise<MemberProfile> {

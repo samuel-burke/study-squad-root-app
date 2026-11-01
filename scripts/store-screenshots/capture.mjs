@@ -1,5 +1,5 @@
 // Captures the app screens for the store screenshots from the demo build,
-// then renders the captioned 1920x1080 frames. See README.md in this folder.
+// then renders the captioned frames (banner 2400x500, gallery 1620x1080). See README.md in this folder.
 import { chromium } from "playwright";
 import { copyFile, mkdir } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
@@ -160,13 +160,14 @@ async function renderFrames(browser) {
   for (const font of ["dm-sans-latin.woff2", "space-grotesk-latin.woff2"])
     await copyFile(join(fonts, font), join(raw, font));
   for (const file of ["frames.html", "logo.svg"]) await copyFile(join(here, file), join(raw, file));
-  const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
+  const page = await browser.newPage({ viewport: { width: 2400, height: 1080 } });
   for (const [id, file] of FRAMES) {
     await page.goto(`file://${join(raw, "frames.html")}#${id}`);
     await page.reload();
     await page.evaluate(() => globalThis.document.fonts.ready);
     await page.waitForTimeout(300);
-    await page.screenshot({ path: join(out, `${file}.png`) });
+    const size = await page.evaluate(() => globalThis.frameSize);
+    await page.screenshot({ path: join(out, `${file}.png`), clip: { x: 0, y: 0, ...size } });
   }
   await page.close();
 }

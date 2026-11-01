@@ -29,8 +29,6 @@
       }
       html,
       body {
-        width: 1920px;
-        height: 1080px;
         overflow: hidden;
         background: var(--bg);
       }
@@ -40,7 +38,10 @@
       }
       .frame {
         position: absolute;
-        inset: 0;
+        left: 0;
+        top: 0;
+        width: 1620px;
+        height: 1080px;
         overflow: hidden;
         display: none;
         background:
@@ -133,10 +134,10 @@
       /* split layout */
       .split .copy {
         position: absolute;
-        left: 110px;
+        left: 90px;
         top: 0;
         bottom: 0;
-        width: 640px;
+        width: 560px;
         display: flex;
         flex-direction: column;
         justify-content: center;
@@ -229,38 +230,46 @@
     </style>
   </head>
   <body>
-    <!-- HERO -->
+    <!-- HERO: the wide banner at the top of the store page -->
     <section
-      class="frame split"
+      class="frame"
       id="hero"
       style="
+        width: 2400px;
+        height: 500px;
         background:
-          radial-gradient(1000px 700px at 0% 0%, rgba(245, 184, 61, 0.26), transparent 70%),
-          radial-gradient(1100px 800px at 100% 100%, rgba(70, 199, 174, 0.2), transparent 70%),
-          radial-gradient(700px 500px at 75% 20%, rgba(157, 183, 255, 0.1), transparent 70%),
+          radial-gradient(900px 500px at 0% 0%, rgba(245, 184, 61, 0.26), transparent 70%),
+          radial-gradient(900px 600px at 100% 100%, rgba(70, 199, 174, 0.2), transparent 70%),
+          radial-gradient(700px 400px at 70% 10%, rgba(157, 183, 255, 0.1), transparent 70%),
           linear-gradient(160deg, #111a30, #080b14);
       "
     >
-      <div class="copy" style="width: 720px">
-        <div class="brand" style="font-size: 34px">
-          <span data-mark style="--s: 92px"></span>Study Squad
-        </div>
-        <h1 style="font-size: 104px">Focus <em>together.</em></h1>
-        <p class="sub" style="font-size: 32px">
-          The group study timer for your Root community. Study side by side, beat the weekly boss,
-          and keep your streak alive.
-        </p>
-        <div class="pills">
-          <span class="pill">Shared focus timer</span><span class="pill">Weekly boss</span
-          ><span class="pill">Streaks &amp; medals</span><span class="pill">Leaderboards</span>
+      <div
+        style="
+          position: absolute;
+          left: 170px;
+          top: 0;
+          bottom: 0;
+          display: flex;
+          align-items: center;
+          gap: 48px;
+        "
+      >
+        <span data-mark style="--s: 230px"></span>
+        <div>
+          <div class="brand" style="font-size: 34px; margin-bottom: 10px">Study Squad</div>
+          <h1 style="font-size: 110px">Focus <em>together.</em></h1>
+          <p class="sub" style="font-size: 32px; margin-top: 16px">
+            The group study timer for your Root community.
+          </p>
         </div>
       </div>
       <div
         class="shot"
         style="
-          left: 880px;
-          top: 150px;
-          width: 1300px;
+          left: 1480px;
+          top: 50px;
+          width: 1150px;
           transform: perspective(2400px) rotateY(-14deg) rotateX(4deg);
           transform-origin: left center;
         "
@@ -270,15 +279,15 @@
       <img
         class="float"
         src="boss.png"
-        style="left: 830px; top: 690px; width: 430px; border-radius: 22px"
+        style="left: 1380px; top: 180px; width: 340px; border-radius: 22px"
       />
       <img
         src="medal.png"
         style="
           position: absolute;
-          left: 1450px;
-          top: 590px;
-          width: 400px;
+          left: 2020px;
+          top: 120px;
+          width: 340px;
           -webkit-mask-image: radial-gradient(circle, #000 34%, transparent 66%);
         "
       />
@@ -292,7 +301,7 @@
           See who's focusing and on what. Join one shared timer and keep each other going.
         </p>
       </div>
-      <div class="shot" style="top: 330px; width: 1560px"><img src="room.png" /></div>
+      <div class="shot" style="top: 330px; width: 1460px"><img src="room.png" /></div>
     </section>
 
     <!-- 2 BREAK -->
@@ -303,8 +312,8 @@
           Breaks start for everyone at once. XP gets a combo boost and the boss takes the hit.
         </p>
       </div>
-      <div class="shot" style="top: 330px; width: 1560px">
-        <img src="break.png" style="margin-top: -110px" />
+      <div class="shot" style="top: 330px; width: 1460px">
+        <img src="break.png" style="margin-top: -100px" />
       </div>
     </section>
 
@@ -312,7 +321,7 @@
     <section class="frame" id="s3-badges">
       <img
         src="unlock.png"
-        style="position: absolute; left: 0; top: 60px; width: 1920px; opacity: 0.95"
+        style="position: absolute; left: -150px; top: 60px; width: 1920px; opacity: 0.95"
       />
       <div
         style="
@@ -333,18 +342,18 @@
         style="position: absolute; left: 0; right: 0; top: 72px; text-align: center"
       >
         <h1>Collect <em>49 medals</em></h1>
-        <p class="sub" style="margin: 20px auto 0; max-width: 1200px">
-          Twenty of them are secret. Every unlock gets its own full-screen moment and sound.
+        <p class="sub" style="margin: 20px auto 0; max-width: 1100px">
+          Twenty are secret. Every unlock gets a full-screen moment and sound.
         </p>
       </div>
       <img
         class="float"
         src="badges.png"
         style="
-          left: 80px;
-          top: 470px;
-          width: 420px;
-          height: 560px;
+          left: 50px;
+          top: 480px;
+          width: 380px;
+          height: 540px;
           object-fit: cover;
           object-position: top;
           border-radius: 20px;
@@ -356,9 +365,9 @@
         class="float"
         src="profile-sheet.png"
         style="
-          right: 80px;
-          top: 470px;
-          width: 420px;
+          right: 50px;
+          top: 480px;
+          width: 380px;
           border-radius: 20px;
           border: 1.5px solid #2c3854;
           transform: rotate(3deg);
@@ -379,9 +388,9 @@
         class="float"
         src="streak.png"
         style="
-          left: 900px;
+          left: 720px;
           top: 70px;
-          width: 880px;
+          width: 830px;
           border-radius: 22px;
           border: 1.5px solid #2c3854;
         "
@@ -390,9 +399,9 @@
         class="float"
         src="quests.png"
         style="
-          left: 900px;
-          top: 860px;
-          width: 880px;
+          left: 720px;
+          top: 820px;
+          width: 830px;
           border-radius: 22px;
           border: 1.5px solid #2c3854;
         "
@@ -412,9 +421,9 @@
         class="float"
         src="leaderboard.png"
         style="
-          left: 820px;
+          left: 690px;
           top: 150px;
-          width: 560px;
+          width: 500px;
           border-radius: 22px;
           border: 1.5px solid #2c3854;
         "
@@ -423,9 +432,9 @@
         class="float"
         src="profile-sheet.png"
         style="
-          left: 1420px;
-          top: 250px;
-          width: 430px;
+          left: 1220px;
+          top: 260px;
+          width: 370px;
           border-radius: 22px;
           border: 1.5px solid #2c3854;
         "
@@ -445,9 +454,9 @@
         class="float"
         src="settings-sheet.png"
         style="
-          left: 880px;
+          left: 700px;
           top: 80px;
-          width: 780px;
+          width: 840px;
           border-radius: 22px;
           border: 1.5px solid #2c3854;
         "
@@ -455,8 +464,8 @@
       <div
         style="
           position: absolute;
-          left: 1060px;
-          top: 640px;
+          left: 780px;
+          top: 690px;
           display: flex;
           flex-direction: column;
           gap: 18px;
@@ -500,7 +509,10 @@
         el.replaceWith(img);
       });
       const id = location.hash.slice(1) || "hero";
-      document.getElementById(id).classList.add("on");
+      const frame = document.getElementById(id);
+      frame.classList.add("on");
+      // capture.mjs sizes the viewport to the frame.
+      window.frameSize = { width: frame.offsetWidth, height: frame.offsetHeight };
     </script>
   </body>
 </html>

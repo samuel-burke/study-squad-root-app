@@ -1,6 +1,6 @@
 # Study Squad privacy policy
 
-_Effective October 30, 2026_
+_Effective November 1, 2026_
 
 Study Squad is a group study timer for [Root](https://www.rootapp.com) communities, made by Samuel Burke ("we", "us"). This page explains, in plain language, what Study Squad keeps, why, who sees it, and how you can delete it whenever you like.
 
@@ -69,7 +69,7 @@ A couple of things live outside Study Squad, so deleting doesn't touch them:
 - **Channel posts that already went out**, such as a recap that mentioned you. These are regular Root messages, so a community admin can remove them, or you can through Root.
 - **App logs**, which Root keeps for a limited time under its own rules.
 
-If you use Study Squad in more than one community, delete your data in each one. If you can't reach the app, for example after leaving a community, just contact us (below) and we'll take care of it.
+If you use Study Squad in more than one community, delete your data in each one. If you can't reach the app, for example after leaving a community, just email [hello@samuelburke.dev](mailto:hello@samuelburke.dev) and we'll take care of it.
 
 ## Children
 
@@ -77,12 +77,12 @@ Study Squad isn't made for children under 13, and you need to meet Root's own ag
 
 ## Keeping it safe
 
-Study Squad only trusts your signed-in Root connection to know who you are, checks that a goal is yours before changing it, keeps private goals and personal results off other people's screens, and limits how fast requests can be made. There's more in [SECURITY.md](SECURITY.md).
+Study Squad only trusts your signed-in Root connection to know who you are, checks that a goal is yours before changing it, keeps private goals and personal results off other people's screens, and limits how fast requests can be made. There's more in our [security policy](https://github.com/samuel-burke/study-squad-root-app/blob/main/SECURITY.md).
 
 ## Changes
 
-If we update this policy, we'll change the date at the top and note what changed in the [changelog](CHANGELOG.md). If a change affects how your existing data is used, we'll let you know in the app first.
+If we update this policy, we'll change the date at the top and note what changed in the [changelog](https://github.com/samuel-burke/study-squad-root-app/blob/main/CHANGELOG.md). If a change affects how your existing data is used, we'll let you know in the app first.
 
 ## Contact
 
-Questions or requests? Use the developer contact on Study Squad's listing in Root's app directory, or open an issue at [github.com/samuel-burke/study-squad-root-app](https://github.com/samuel-burke/study-squad-root-app/issues). Please don't put personal details in a public issue.
+Questions or requests? Email us at [hello@samuelburke.dev](mailto:hello@samuelburke.dev). You can also use the developer contact on Study Squad's listing in Root's app directory, or open an issue at [github.com/samuel-burke/study-squad-root-app](https://github.com/samuel-burke/study-squad-root-app/issues). Please don't put personal details in a public issue.

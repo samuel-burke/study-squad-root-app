@@ -43,7 +43,7 @@ export const BOSSES: readonly BossKind[] = [
   { name: "The Forgotten Password", strength: 0.5 },
   { name: "Mister Five More Minutes", strength: 0.75 },
   { name: "The Typo Troll", strength: 0.5 },
-  { name: "Grand Wizard of Excuses", strength: 0.75 },
+  { name: "The Excuse Generator", strength: 0.75 },
   { name: "The Messy Desk Monster", strength: 0.75 },
   { name: "The Laptop at 1% Battery", strength: 0.75 },
   { name: "Queen of Open Tabs", strength: 0.75 },

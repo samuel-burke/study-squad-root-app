@@ -148,7 +148,7 @@ export const FANFARES: Record<BadgeTier, Fanfare> = {
     ],
   },
   // An uneasy, wobbling drone while the mystery gem shakes, a burst as it
-  // cracks, a magical whole-tone run upward and a shimmering chord.
+  // cracks, a bright whole-tone run upward and a shimmering chord.
   secret: {
     volume: 0.17,
     reverb: 3,

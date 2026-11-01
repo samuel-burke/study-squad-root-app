@@ -57,7 +57,7 @@ export const SQUAD_LINES: Readonly<
     ],
     chaos: [
       "A wild study session appeared! 🦆",
-      "The textbooks have been summoned. There is no escape. 📖",
+      "The textbooks have been opened. There is no escape. 📖",
       "Today's forecast: 100% chance of knowledge. 🌩️",
     ],
   },
@@ -170,7 +170,7 @@ export const SQUAD_LINES: Readonly<
     ],
     gamer: ["Player joined the party. 🎮", "A new challenger approaches. ⚔️"],
     chaos: [
-      "The study portal opened and someone fell through. 🌀",
+      "Someone tripped into the study room. Act like you meant it. 🌀",
       "Look who wandered in. Act natural. 🦆",
     ],
   },

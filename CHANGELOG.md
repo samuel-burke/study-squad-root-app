@@ -6,7 +6,7 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ### Changed
 
-- The squad bot no longer says "The prophecy is being fulfilled" when someone unlocks a badge. A new Chaos line replaces it.
+- Removed the sorcery-themed wording. The squad bot no longer says "The prophecy is being fulfilled" or that textbooks were "summoned", the "study portal" join line is gone, and the boss "Grand Wizard of Excuses" is now "The Excuse Generator".
 
 ## [0.3.3] - 2026-11-01
 

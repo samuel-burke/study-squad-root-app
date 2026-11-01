@@ -2561,3 +2561,14 @@ textarea.input {
   font-weight: 700;
   color: var(--amber);
 }
+
+/* Holds the leaderboard and data card inside the progress page's column. */
+.progress-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.progress-stack[hidden] {
+  display: none;
+}

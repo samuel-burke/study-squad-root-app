@@ -63,10 +63,13 @@ export function WeeklyLeaderboard({
   gateway,
   onOpenMember,
   refreshKey,
+  onSettled,
 }: {
   gateway: StudyRoomGateway;
   /** Opens a member's profile. */
   onOpenMember?(userId: string): void;
+  /** Called once the first load has finished, whether it worked or not. */
+  onSettled?(): void;
   /** Reloads quietly whenever this changes, such as on each room update while people focus. */
   refreshKey?: unknown;
 }) {
@@ -83,6 +86,10 @@ export function WeeklyLeaderboard({
   // asked for, so their failures show. A refresh in the background keeps the
   // board on screen and tries again on the next update.
   const asked = useRef(true);
+  const settle = useRef(onSettled);
+  useEffect(() => {
+    settle.current = onSettled;
+  }, [onSettled]);
   useEffect(() => {
     let cancelled = false;
     gateway
@@ -92,9 +99,12 @@ export function WeeklyLeaderboard({
         asked.current = false;
         setBoard(b);
         setError(null);
+        settle.current?.();
       })
       .catch((e: unknown) => {
-        if (!cancelled && asked.current) setError(toGatewayError(e).message);
+        if (cancelled) return;
+        if (asked.current) setError(toGatewayError(e).message);
+        settle.current?.();
       });
     return () => {
       cancelled = true;

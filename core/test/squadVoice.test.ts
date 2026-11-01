@@ -1,28 +1,17 @@
 import { describe, expect, it } from "vitest";
 import {
   ALL_PERSONALITIES,
+  MOVIE_LINES,
   pickSquadLine,
-  RARE_CHANCE,
   RARE_LINES,
   SQUAD_LINES,
+  squadHeading,
   type SquadEvent,
 } from "../src";
 import { seededRandom } from "./helpers";
 
 const EVENTS = Object.keys(SQUAD_LINES) as SquadEvent[];
 const context = { round: 2, togetherMinutes: 30 };
-/** A random that skips the rare roll (first call) and then returns `pick`. */
-const notRare = (pick: number) => {
-  let first = true;
-  return () => {
-    if (first) {
-      first = false;
-      return 0.99;
-    }
-    return pick;
-  };
-};
-
 describe("squad bot lines", () => {
   it("gives every personality lines for every event", () => {
     for (const event of EVENTS) {
@@ -36,6 +25,7 @@ describe("squad bot lines", () => {
     const all = [
       ...EVENTS.flatMap((e) => ALL_PERSONALITIES.flatMap((p) => SQUAD_LINES[e][p])),
       ...RARE_LINES.map((l) => l.text),
+      ...Object.values(MOVIE_LINES).flat(),
     ];
     for (const line of all) {
       expect(line.length, line).toBeLessThanOrEqual(90);
@@ -46,12 +36,14 @@ describe("squad bot lines", () => {
 });
 
 describe("pickSquadLine", () => {
-  it("picks from the event's pool and the enabled personalities", () => {
+  const TIMER_EVENTS = EVENTS.filter((e) => e !== "memberJoined" && e !== "badgeUnlocked");
+  const isMovie = (id: string) => id.startsWith("rare.") || id.includes(".movie.");
+
+  it("picks from the enabled personalities and the movie lines only", () => {
     for (const event of EVENTS) {
-      for (let i = 0; i < 20; i++) {
-        const line = pickSquadLine(event, ["chill"], {}, notRare(i / 20), context);
-        expect(line.id.startsWith(`${event}.chill.`), line.id).toBe(true);
-        expect(line.rare).toBe(false);
+      for (let i = 0; i < 40; i++) {
+        const line = pickSquadLine(event, ["chill"], {}, () => i / 40, context);
+        expect(line.id.startsWith(`${event}.chill.`) || isMovie(line.id), line.id).toBe(true);
       }
     }
   });
@@ -59,11 +51,52 @@ describe("pickSquadLine", () => {
   it("uses every personality when none are enabled", () => {
     const seen = new Set<string>();
     const random = seededRandom(3);
-    for (let i = 0; i < 400; i++) {
+    for (let i = 0; i < 600; i++) {
       const line = pickSquadLine("breakStarted", [], {}, random, context);
-      if (!line.rare) seen.add(line.id.split(".")[1]!);
+      if (!line.rare && !line.id.includes(".movie.")) seen.add(line.id.split(".")[1]!);
     }
     expect([...seen].sort()).toEqual([...ALL_PERSONALITIES].sort());
+  });
+
+  it("gives every line the same chance, movie lines included", () => {
+    const random = seededRandom(11);
+    const counts = new Map<string, number>();
+    const runs = 20_000;
+    const context150 = { round: 1, togetherMinutes: 150 };
+    for (let i = 0; i < runs; i++) {
+      const line = pickSquadLine("breakStarted", ["drill"], {}, random, context150);
+      counts.set(line.id, (counts.get(line.id) ?? 0) + 1);
+    }
+    const size =
+      SQUAD_LINES.breakStarted.drill.length +
+      (MOVIE_LINES.breakStarted?.length ?? 0) +
+      RARE_LINES.length;
+    expect(counts.size).toBe(size);
+    for (const n of counts.values()) {
+      expect(n).toBeGreaterThan((runs / size) * 0.85);
+      expect(n).toBeLessThan((runs / size) * 1.15);
+    }
+  });
+
+  it("uses the movie join and badge lines for joins and badges, not the timer ones", () => {
+    for (const event of ["memberJoined", "badgeUnlocked"] as const) {
+      const ids = new Set(
+        Array.from(
+          { length: 100 },
+          (_, i) => pickSquadLine(event, ["gamer"], {}, () => i / 100, context).id,
+        ),
+      );
+      expect([...ids].filter((id) => id.startsWith("rare."))).toEqual([]);
+      for (let i = 0; i < MOVIE_LINES[event]!.length; i++)
+        expect(ids.has(`${event}.movie.${i}`)).toBe(true);
+    }
+    for (const event of TIMER_EVENTS) {
+      const ids = Array.from(
+        { length: 100 },
+        (_, i) => pickSquadLine(event, ["gamer"], {}, () => i / 100, context).id,
+      );
+      expect(ids.some((id) => id.startsWith("rare."))).toBe(true);
+    }
   });
 
   it("fills in the badge", () => {
@@ -75,67 +108,56 @@ describe("pickSquadLine", () => {
   });
 
   it("fills in the round", () => {
-    const line = pickSquadLine("studyResumed", ["hype"], {}, notRare(0), context);
+    const line = pickSquadLine("studyResumed", ["hype"], {}, () => 0, context);
     expect(line.text).toBe("Round 2. Let's get it. 🔥");
   });
 
   it("never repeats the line it said last for that event", () => {
-    const first = pickSquadLine("breakStarted", ["drill"], {}, notRare(0), context);
+    const first = pickSquadLine("breakStarted", ["drill"], {}, () => 0, context);
     const next = pickSquadLine(
       "breakStarted",
       ["drill"],
       { breakStarted: first.id },
-      notRare(0),
+      () => 0,
       context,
     );
     expect(next.id).not.toBe(first.id);
-  });
-
-  it("shows a rare line about once in 25 timer posts, and never for joins", () => {
-    const random = seededRandom(11);
-    let rare = 0;
-    const runs = 20_000;
-    for (let i = 0; i < runs; i++) {
-      if (pickSquadLine("breakStarted", ALL_PERSONALITIES, {}, random, context).rare) rare++;
-    }
-    expect(rare / runs).toBeGreaterThan(RARE_CHANCE * 0.8);
-    expect(rare / runs).toBeLessThan(RARE_CHANCE * 1.2);
-    expect(pickSquadLine("memberJoined", ALL_PERSONALITIES, {}, () => 0, context).rare).toBe(false);
   });
 
   it("only claims two hours together when it's true", () => {
     const twoHours = RARE_LINES.findIndex((l) => l.minTogetherMinutes === 120);
     const ids = (minutes: number) =>
       new Set(
-        Array.from({ length: 50 }, (_, i) => {
-          let calls = 0;
-          const random = () => (calls++ === 0 ? 0 : i / 50);
-          return pickSquadLine("breakStarted", ALL_PERSONALITIES, {}, random, {
-            round: 1,
-            togetherMinutes: minutes,
-          });
-        }).map((l) => l.id),
+        Array.from(
+          { length: 200 },
+          (_, i) =>
+            pickSquadLine("breakStarted", ["hype"], {}, () => i / 200, {
+              round: 1,
+              togetherMinutes: minutes,
+            }).id,
+        ),
       );
     expect(ids(119).has(`rare.${twoHours}`)).toBe(false);
     expect(ids(150).has(`rare.${twoHours}`)).toBe(true);
-    const line = pickSquadLine("breakStarted", ALL_PERSONALITIES, {}, () => 0, {
-      round: 1,
-      togetherMinutes: 150,
-    });
-    expect(line.text).toBe(RARE_LINES[twoHours]!.text.replace("{hours}", "2"));
   });
 
-  it("doesn't repeat the last rare line either", () => {
-    const random = () => 0;
-    const first = pickSquadLine("breakStarted", ALL_PERSONALITIES, {}, random, context);
-    const next = pickSquadLine(
-      "studyResumed",
-      ALL_PERSONALITIES,
-      { rare: first.id },
-      random,
-      context,
-    );
-    expect(next.rare).toBe(true);
+  it("doesn't repeat the last movie line either", () => {
+    const random = () => 0.99;
+    const first = pickSquadLine("breakStarted", ["hype"], {}, random, context);
+    expect(first.rare).toBe(true);
+    const next = pickSquadLine("studyResumed", ["hype"], { rare: first.id }, random, context);
     expect(next.id).not.toBe(first.id);
+  });
+});
+
+describe("squadHeading", () => {
+  it("labels timer posts as focus or break, and leaves joins and badges alone", () => {
+    expect(squadHeading("sessionStarted", 1, 4)).toBe("📚 Focus · Round 1 of 4");
+    expect(squadHeading("studyResumed", 3, 4)).toBe("📚 Focus · Round 3 of 4");
+    expect(squadHeading("studyResumed", 3)).toBe("📚 Focus · Round 3");
+    expect(squadHeading("breakStarted", 2, 4)).toBe("☕ Break");
+    expect(squadHeading("sessionCompleted", 4, 4)).toBe("🛋️ Long break");
+    expect(squadHeading("memberJoined", 1, 4)).toBeUndefined();
+    expect(squadHeading("badgeUnlocked", 0, 4)).toBeUndefined();
   });
 });

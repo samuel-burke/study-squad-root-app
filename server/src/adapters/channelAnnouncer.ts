@@ -72,13 +72,17 @@ export class ChannelAnnouncer implements Announcer {
     event: SquadEvent,
     text: string,
     userIds: string[],
+    heading?: string,
   ): Promise<void> {
     // Only the people the post shows get looked up; the rest are counted.
     const mentions: string[] = [];
     for (const userId of userIds.slice(0, SQUAD_MAX_MENTIONS)) {
       mentions.push(await this.mention(userId));
     }
-    await this.channel.postMessage(channelId, squadPost(event, text, mentions, userIds.length));
+    await this.channel.postMessage(
+      channelId,
+      squadPost(event, text, mentions, userIds.length, heading),
+    );
   }
 
   /** Root's mention markup, which pings the member: [@Name](root://user/id). */

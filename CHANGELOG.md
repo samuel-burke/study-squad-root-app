@@ -4,6 +4,16 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ## [Unreleased]
 
+### Added
+
+- Eight movie-reference lines for the squad bot, like "I'll be back. Right after this round." and "May the focus be with you."
+- Squad bot timer posts now start with a heading that says whether it's focus or a break: "📚 Focus · Round 2 of 4", "☕ Break" or "🛋️ Long break".
+
+### Changed
+
+- Movie lines are no longer rare: each one is as likely as any personality line. Joins and badges get their own movie lines too, like "Hello there!", "The game is afoot!" and "The Force is strong with this one." Sherlock Holmes lines too, like "Elementary, my dear squad."
+- Removed sorcery and spooky wording. The squad bot no longer says "The prophecy is being fulfilled" or that textbooks were "summoned". Renamed bosses: Grand Wizard of Excuses is now The Excuse Generator, The Group Project Ghost is The Group Project Freeloader, The Word Count Wraith is The Word Count Wall, The Messy Desk Monster is The Messy Desk Mountain, The Auto-Correct Imp is The Auto-Correct Gremlin, and The Phantom Assignment is The Surprise Assignment.
+
 ## [0.3.3] - 2026-11-01
 
 Fairer secret badges, a Custom solo timer, and the first release shipped to Root automatically.

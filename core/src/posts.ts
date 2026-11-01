@@ -63,10 +63,35 @@ export function squadPost(
   text: string,
   mentions: readonly string[],
   memberCount: number,
+  heading?: string,
 ): string {
   const shown = mentions.slice(0, SQUAD_MAX_MENTIONS);
   const extra = Math.max(0, memberCount - shown.length);
   const who = extra > 0 ? `${shown.join(" ")} and ${pluralize(extra, "other")}` : shown.join(" ");
   const footer = event === "sessionCompleted" ? ` ${KEEP_GOING_FOOTER}` : "";
-  return `${who} ${text}${footer}`.trim();
+  const body = `${who} ${text}${footer}`.trim();
+  return heading ? `${heading}\n${body}` : body;
+}
+
+/**
+ * The first line of a timer post, so it's clear at a glance whether it's
+ * study time or a break, even when the bot posts a movie line. Join and badge
+ * posts aren't about the timer and get none.
+ */
+export function squadHeading(
+  event: SquadEvent,
+  round: number,
+  rounds?: number,
+): string | undefined {
+  switch (event) {
+    case "sessionStarted":
+    case "studyResumed":
+      return rounds ? `📚 Focus · Round ${round} of ${rounds}` : `📚 Focus · Round ${round}`;
+    case "breakStarted":
+      return "☕ Break";
+    case "sessionCompleted":
+      return "🛋️ Long break";
+    default:
+      return undefined;
+  }
 }

@@ -279,12 +279,16 @@ export interface Announcer {
     lootXp: number,
   ): Promise<void>;
   dailyRecap(channelId: string, recap: RecapDto): Promise<void>;
-  /** A squad bot post: `text` from the line pools, addressed to (mentioning) `userIds`. */
+  /**
+   * A squad bot post: `text` from the line pools, addressed to (mentioning)
+   * `userIds`, under an optional `heading` line such as "☕ Break".
+   */
   squadMessage(
     channelId: string,
     event: SquadEvent,
     text: string,
     userIds: string[],
+    heading?: string,
   ): Promise<void>;
 }
 

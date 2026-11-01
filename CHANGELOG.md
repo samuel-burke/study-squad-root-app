@@ -4,6 +4,10 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ## [Unreleased]
 
+## [0.3.3] - 2026-11-01
+
+Fairer secret badges, a Custom solo timer, and the first release shipped to Root automatically.
+
 ### Added
 
 - A **Send feedback** box under Room settings, marked "Coming soon". It can't be filled in or sent yet.

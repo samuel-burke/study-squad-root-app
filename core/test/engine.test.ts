@@ -5,6 +5,7 @@ import {
   ErrorCode,
   LIMITS,
   PRESETS,
+  RARE_LINES,
   SQUAD_LINES,
   type RecapDto,
 } from "../src";
@@ -720,27 +721,6 @@ describe("channel posts", () => {
       expect(events(announcer.posts)).toEqual(["sessionStarted ana", "studyResumed ana"]);
     });
 
-    it("keeps one mood per session and moves to the next one each session", async () => {
-      // One personality, so the moods take turns: hype, then movie lines.
-      const config = configWith({ squadBot: { enabled: true, personalities: ["hype"] } });
-      const { engine, announcer, advance } = createHarness(config, T0, () => 0.01);
-      await engine.joinRoomTimer("ana");
-      await advance(115 * MINUTE);
-      await engine.keepGoing("ana");
-      await advance(15 * MINUTE + FOCUS);
-      const posts = squad(announcer.posts);
-      const firstSession = posts.slice(0, 8);
-      const hypeLines = Object.values(SQUAD_LINES).flatMap((byMood) => byMood.hype);
-      for (const p of firstSession) {
-        const template = p.text.replace(/Round \d+/, "Round {round}");
-        expect(hypeLines, p.text).toContain(template);
-      }
-      // The next cycle (at 2h10m) is a new session in the movie mood, and the
-      // room has been going two hours, so the two-hour line can come up.
-      expect(posts[8]!.event).toBe("studyResumed");
-      expect(posts[8]!.text).toContain("studying together for 2 hours");
-    });
-
     it("heads each timer post with whether it's focus or a break", async () => {
       const { engine, announcer, advance } = createHarness();
       await engine.joinRoomTimer("ana");
@@ -752,15 +732,29 @@ describe("channel posts", () => {
       ]);
     });
 
-    it("only uses the personalities admins picked", async () => {
+    it("only uses the personalities admins picked, plus the movie lines", async () => {
       const config = configWith({ squadBot: { enabled: true, personalities: ["drill"] } });
-      const { engine, announcer, advance } = createHarness(config, T0, () => 0.5);
+      const { engine, announcer, advance } = createHarness(config, T0, () => 0.1);
       await engine.joinRoomTimer("ana");
       await advance(FOCUS);
       expect(squad(announcer.posts).map((p) => p.text)).toEqual([
         SQUAD_LINES.sessionStarted.drill[1],
         SQUAD_LINES.breakStarted.drill[1],
       ]);
+      const allowed = new Set([
+        ...Object.values(SQUAD_LINES).flatMap((byVoice) => byVoice.drill),
+        ...RARE_LINES.map((l) => l.text),
+      ]);
+      const {
+        engine: e2,
+        announcer: a2,
+        advance: adv2,
+      } = createHarness(config, T0, seededRandom(4));
+      await e2.joinRoomTimer("ana");
+      await adv2(FOCUS * 3);
+      for (const p of squad(a2.posts)) {
+        expect(allowed, p.text).toContain(p.text.replace(/Round \d+/, "Round {round}"));
+      }
     });
 
     it("stays quiet when turned off or without a post channel", async () => {

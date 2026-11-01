@@ -4,6 +4,7 @@ node_modules/
 # build output
 dist/
 dist-demo/
+_site/
 *.tsbuildinfo
 networking/gen/
 

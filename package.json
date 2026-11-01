@@ -1,7 +1,7 @@
 {
   "name": "@studyroom/app",
   "description": "Study Squad: a group study timer for Root communities. Pomodoro focus timer, study together with friends.",
-  "version": "0.3.0",
+  "version": "0.3.2",
   "private": true,
   "license": "MIT",
   "engines": {
@@ -35,7 +35,7 @@
     "vitest": "^5.0.5"
   },
   "scripts": {
-    "generate": "npm run build -w @studyroom/networking",
+    "generate": "node -e \"require('node:fs').rmSync('networking/gen',{recursive:true,force:true})\" && npm run build -w @studyroom/networking && node scripts/stamp-gen-version.mjs",
     "build": "npm run build -w @studyroom/core && npm run build -w @studyroom/contract && npm run build -w @studyroom/server && npm run build -w @studyroom/client",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "lint": "eslint . --max-warnings=0",
@@ -44,7 +44,7 @@
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "npm run e2e -w @studyroom/client",
-    "verify": "npm run format:check && npm run lint && npm run typecheck && npm test && npm run build",
+    "verify": "node scripts/stamp-gen-version.mjs --check && npm run format:check && npm run lint && npm run typecheck && npm test && npm run build",
     "server": "npm run server -w @studyroom/server",
     "client": "npm run client -w @studyroom/client",
     "demo": "npm run demo -w @studyroom/client",

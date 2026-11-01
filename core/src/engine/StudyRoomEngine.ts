@@ -68,6 +68,7 @@ import {
   phaseAt,
   type CyclePhase,
 } from "../timer/roomCycle";
+import { squadHeading } from "../posts";
 import { SECRET_BADGE_NAME, type SquadEvent } from "../squad/squadLines";
 import { pickSquadLine, type LastSquadLines } from "../squad/squadVoice";
 import {
@@ -910,7 +911,9 @@ export class StudyRoomEngine {
       ...last,
       ...(line.rare ? { rare: line.id } : { [event]: line.id }),
     });
-    effects.posts.push((a) => a.squadMessage(channelId, event, line.text, userIds));
+    const rounds = (await tx.room.getCycle())?.preset.rounds;
+    const heading = squadHeading(event, round, rounds);
+    effects.posts.push((a) => a.squadMessage(channelId, event, line.text, userIds, heading));
   }
 
   /** The squad bot congratulates a member on badges they just earned, in one post. */

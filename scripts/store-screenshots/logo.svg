@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#141c30"/><stop offset="1" stop-color="#0a0f1c"/>
+    </linearGradient>
+  </defs>
+  <rect width="1024" height="1024" rx="224" fill="url(#bg)"/>
+  <!-- timer crown -->
+  <rect x="440" y="96" width="144" height="56" rx="28" fill="#4a5677"/>
+  <!-- track -->
+  <circle cx="512" cy="560" r="330" fill="none" stroke="#2c3652" stroke-width="58"/>
+  <!-- progress: from 12 o'clock clockwise, ~62% -->
+  <circle cx="512" cy="560" r="330" fill="none" stroke="#f5b83d" stroke-width="58" stroke-linecap="round"
+    pathLength="100" stroke-dasharray="62 100" transform="rotate(-90 512 560)"/>
+  <!-- side friends -->
+  <g fill="#6b7aa0">
+    <circle cx="352" cy="478" r="58"/>
+    <path d="M262 640 c0-62 40-104 96-104 h26 c-28 26-42 58-46 86 c-28 6-52 14-76 26z"/>
+    <circle cx="672" cy="478" r="58"/>
+    <path d="M762 640 c0-62-40-104-96-104 h-26 c28 26 42 58 46 86 c28 6 52 14 76 26z"/>
+  </g>
+  <!-- you -->
+  <circle cx="512" cy="436" r="82" fill="#eef1f7"/>
+  <path d="M374 626 c10-60 62-100 120-100 h36 c58 0 110 40 120 100 c-52 4-100 18-138 44 c-38-26-86-40-138-44z" fill="#eef1f7"/>
+  <!-- book -->
+  <g fill="#f5b83d">
+    <path d="M354 664 q0-12 12-12 c58 0 104 12 136 34 v138 c-34-22-80-32-136-32 q-12 0-12-12z"/>
+    <path d="M670 664 q0-12-12-12 c-58 0-104 12-136 34 v138 c34-22 80-32 136-32 q12 0 12-12z"/>
+  </g>
+</svg>

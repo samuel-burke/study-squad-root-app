@@ -1,6 +1,6 @@
 {
   "id": "ADIjs4fHiQmWa4Qi7Kaa4w",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "package": {
     "client": {
       "deploy": "client/dist"
@@ -31,6 +31,14 @@
         "key": "room",
         "title": "Timer and room",
         "items": [
+          {
+            "key": "postChannel",
+            "title": "Bot messages channel",
+            "description": "The text channel where the Squad bot posts, along with daily recaps, busy-room and streak milestone posts. Leave empty to turn all posts off.",
+            "channel": {
+              "multiSelect": false
+            }
+          },
           {
             "key": "timerPreset",
             "title": "Default room timer",
@@ -142,14 +150,6 @@
                   "value": "30 min"
                 }
               ]
-            }
-          },
-          {
-            "key": "postChannel",
-            "title": "Post updates in",
-            "description": "Daily recaps, busy-room, milestone and squad bot posts go here. Leave empty to turn posts off.",
-            "channel": {
-              "multiSelect": false
             }
           },
           {

@@ -41,7 +41,7 @@ describe("demoOptionsFromSearch", () => {
   it("reads the test knobs", () => {
     expect(
       demoOptionsFromSearch(
-        "?bossLeft=2&bossName=The%20Final%20Final%20Exam&bossHp=100&cap=1000&streak=6&xp=0&missed=1&unlock=giant-slayer,nope",
+        "?bossLeft=2&bossName=The%20Final%20Final%20Exam&bossHp=100&cap=1000&streak=6&xp=0&missed=1&unlock=giant-slayer,nope&weekHours=6",
       ),
     ).toMatchObject({
       bossHpLeft: 2,
@@ -52,6 +52,7 @@ describe("demoOptionsFromSearch", () => {
       xp: 0,
       missedDays: 1,
       unlock: ["giant-slayer"],
+      weekHours: 6,
     });
   });
 

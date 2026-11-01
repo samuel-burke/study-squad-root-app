@@ -1,24 +1,22 @@
 import {
   ALL_PERSONALITIES,
+  MOVIE_LINES,
   RARE_LINES,
   SQUAD_LINES,
   type Personality,
   type SquadEvent,
 } from "./squadLines";
 
-/** About one timer post in 25 is a rare line instead. Joins and badges never are. */
-export const RARE_CHANCE = 1 / 25;
-
 export interface SquadLineContext {
   /** The focus round the post is about, for `{round}`. */
   round: number;
-  /** How long the room has been running without emptying, for rare lines. */
+  /** How long the room has been running without emptying, for lines like "studying together for 2 hours". */
   togetherMinutes: number;
   /** The badge names for `{badge}`, already joined ("Night Owl and Week Warrior"). */
   badge?: string;
 }
 
-/** The last line posted for each event, and the last rare line, so nothing repeats back to back. */
+/** The last line posted for each event, and the last movie line, so nothing repeats back to back. */
 export type LastSquadLines = Partial<Record<SquadEvent | "rare", string>>;
 
 export interface PickedLine {
@@ -34,19 +32,11 @@ function fill(text: string, context: SquadLineContext): string {
     .replace("{badge}", context.badge ?? "a badge");
 }
 
-function pickFrom<T extends { id: string }>(
-  options: readonly T[],
-  avoid: string | undefined,
-  random: () => number,
-): T | undefined {
-  const fresh = options.length > 1 ? options.filter((o) => o.id !== avoid) : options;
-  return fresh[Math.min(fresh.length - 1, Math.floor(random() * fresh.length))];
-}
-
 /**
  * Picks what the bot says for `event`: a random line from the enabled
- * personalities, or now and then a rare one. Never the same line twice in a
- * row for an event. `random` returns [0, 1) like Math.random.
+ * personalities or the movie lines, every line equally likely. Never the same
+ * line twice in a row for an event, and never the last timer movie line again.
+ * `random` returns [0, 1) like Math.random.
  */
 export function pickSquadLine(
   event: SquadEvent,
@@ -55,20 +45,22 @@ export function pickSquadLine(
   random: () => number,
   context: SquadLineContext,
 ): PickedLine & { rare: boolean } {
-  if (event !== "memberJoined" && event !== "badgeUnlocked" && random() < RARE_CHANCE) {
-    const rare = pickFrom(
-      RARE_LINES.map((line, i) => ({ ...line, id: `rare.${i}` })).filter(
-        (line) => context.togetherMinutes >= (line.minTogetherMinutes ?? 0),
-      ),
-      last.rare,
-      random,
-    );
-    if (rare) return { id: rare.id, text: fill(rare.text, context), rare: true };
-  }
   const voices = personalities.length > 0 ? personalities : ALL_PERSONALITIES;
   const pool = voices.flatMap((p) =>
-    SQUAD_LINES[event][p].map((text, i) => ({ id: `${event}.${p}.${i}`, text })),
+    SQUAD_LINES[event][p].map((text, i) => ({ id: `${event}.${p}.${i}`, text, rare: false })),
   );
-  const line = pickFrom(pool, last[event], random)!;
-  return { id: line.id, text: fill(line.text, context), rare: false };
+  (MOVIE_LINES[event] ?? []).forEach((text, i) =>
+    pool.push({ id: `${event}.movie.${i}`, text, rare: false }),
+  );
+  if (event !== "memberJoined" && event !== "badgeUnlocked") {
+    RARE_LINES.forEach((line, i) => {
+      if (context.togetherMinutes >= (line.minTogetherMinutes ?? 0)) {
+        pool.push({ id: `rare.${i}`, text: line.text, rare: true });
+      }
+    });
+  }
+  const fresh = pool.filter((l) => l.id !== last[event] && l.id !== last.rare);
+  const options = fresh.length > 0 ? fresh : pool;
+  const line = options[Math.min(options.length - 1, Math.floor(random() * options.length))]!;
+  return { id: line.id, text: fill(line.text, context), rare: line.rare };
 }

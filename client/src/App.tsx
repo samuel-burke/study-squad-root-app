@@ -34,6 +34,8 @@ export function App({ gateway }: { gateway: StudyRoomGateway }) {
   const compact = useMediaQuery("(max-width: 760px)");
   const [screen, setScreen] = useState<"room" | "progress">("room");
   const [overlay, setOverlay] = useState<Overlay>(null);
+  // A badge the member asked to see unlock again, from the progress screen.
+  const [replayBadge, setReplayBadge] = useState<string | null>(null);
   const sounds = useSoundCues(state.me?.status ?? null);
   const serverNow = useCallback(() => gateway.now(), [gateway]);
   // Room timer members follow the room clock, which every phase change updates.
@@ -114,6 +116,7 @@ export function App({ gateway }: { gateway: StudyRoomGateway }) {
             onBack={() => setScreen("room")}
             onDeleteData={actions.deleteMyData}
             onOpenMember={(userId) => setOverlay({ kind: "member", userId })}
+            onReplayBadge={setReplayBadge}
             // The room is pushed every focus minute, so stats stay live while this is open.
             refreshKey={room}
           />
@@ -208,6 +211,15 @@ export function App({ gateway }: { gateway: StudyRoomGateway }) {
           badgeId={state.newBadges[0]}
           muted={sounds.muted}
           onDismiss={actions.dismissBadge}
+        />
+      )}
+      {/* A freshly earned badge always goes first; a replay waits behind it. */}
+      {!state.newBadges[0] && replayBadge && (
+        <BadgeUnlocked
+          key={`replay-${replayBadge}`}
+          badgeId={replayBadge}
+          muted={sounds.muted}
+          onDismiss={() => setReplayBadge(null)}
         />
       )}
       {me.keepGoingEndsAt > now && (

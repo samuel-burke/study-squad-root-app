@@ -215,6 +215,38 @@ describe("Study Squad app", () => {
     expect(await screen.findByRole("timer")).toBeInTheDocument();
   });
 
+  it("waits for the stats and the leaderboard before showing either, so nothing jumps", async () => {
+    const { gateway, user } = await renderApp();
+    let releaseProgress!: () => void;
+    const progressGate = new Promise<void>((resolve) => (releaseProgress = resolve));
+    const getProgress = gateway.getProgress.bind(gateway);
+    vi.spyOn(gateway, "getProgress").mockImplementationOnce(async () => {
+      await progressGate;
+      return getProgress();
+    });
+    const leaderboard = vi.spyOn(gateway, "getLeaderboard");
+    await user.click(screen.getByRole("button", { name: "Your progress" }));
+    // The board has loaded, but stays out of sight while the stats are on their way.
+    await waitFor(() => expect(leaderboard).toHaveBeenCalledTimes(1));
+    await act(() => leaderboard.mock.results[0]!.value);
+    expect(screen.queryByRole("region", { name: "Leaderboard" })).not.toBeInTheDocument();
+    expect(screen.getByText("Loading…")).toBeInTheDocument();
+    // Then both arrive together.
+    await act(async () => releaseProgress());
+    expect(await screen.findByText("5 day streak")).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "Leaderboard" })).toBeInTheDocument();
+    expect(screen.queryByText("Loading…")).not.toBeInTheDocument();
+  });
+
+  it("still opens the progress screen when the leaderboard fails to load", async () => {
+    const { gateway, user } = await renderApp();
+    vi.spyOn(gateway, "getLeaderboard").mockRejectedValueOnce(new Error("offline"));
+    await user.click(screen.getByRole("button", { name: "Your progress" }));
+    expect(await screen.findByText("5 day streak")).toBeInTheDocument();
+    const board = screen.getByRole("region", { name: "Leaderboard" });
+    expect(within(board).getByRole("button", { name: "Try again" })).toBeInTheDocument();
+  });
+
   it("keeps progress and the leaderboard live while the room updates", async () => {
     const { gateway, user } = await renderApp();
     const progress = vi.spyOn(gateway, "getProgress");
@@ -260,6 +292,35 @@ describe("Study Squad app", () => {
         "true",
       ),
     );
+  });
+
+  it("shows badge details right below the tapped badge, with a Replay for earned ones", async () => {
+    const { user } = await renderApp({ badges: ["squad-up", "first-session"] });
+    await user.click(screen.getByRole("button", { name: "Your progress" }));
+    const shelf = await screen.findByRole("region", { name: "Badges" });
+
+    const tile = within(shelf).getByRole("button", { name: "Squad Up, earned" });
+    await user.click(tile);
+    const detail = within(shelf).getByRole("region", { name: "Badge details" });
+    // The details are the very next item in the grid after the tapped badge.
+    expect(tile.closest("li")?.nextElementSibling).toContainElement(detail);
+    // Replay sits in the box's header, Show on my card at the bottom.
+    const buttons = within(detail).getAllByRole("button");
+    expect(buttons.map((b) => b.textContent)).toEqual(["Replay", "Show on my card"]);
+    expect(within(detail).getByRole("button", { name: "Replay" })).toHaveClass(
+      "badge-detail-replay",
+    );
+
+    await user.click(within(detail).getByRole("button", { name: "Replay" }));
+    const moment = screen.getByRole("dialog", { name: "Squad Up" });
+    await user.click(within(moment).getByRole("button", { name: "Nice!" }));
+    expect(screen.queryByRole("dialog", { name: "Squad Up" })).not.toBeInTheDocument();
+
+    // Locked badges can't be replayed.
+    await user.click(within(shelf).getByRole("button", { name: "Night Owl, locked" }));
+    const locked = within(shelf).getByRole("region", { name: "Badge details" });
+    expect(locked).toHaveTextContent("Not earned yet");
+    expect(within(locked).queryByRole("button", { name: "Replay" })).not.toBeInTheDocument();
   });
 
   it("uses the phone layout with a bottom action bar on small screens", async () => {

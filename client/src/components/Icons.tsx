@@ -122,3 +122,39 @@ export const SoundOffIcon = (p: IconProps) => (
     <path d="M22 9l-6 6M16 9l6 6" />
   </Svg>
 );
+
+/** The Study Squad logo: a timer ring around the squad and an open book. Same as scripts/store-screenshots/logo.svg. */
+export const AppLogo = ({ size = 32 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 1024 1024" aria-hidden="true" focusable="false">
+    <rect width="1024" height="1024" rx="224" fill="#141c30" />
+    <rect x="440" y="96" width="144" height="56" rx="28" fill="#4a5677" />
+    <circle cx="512" cy="560" r="330" fill="none" stroke="#2c3652" strokeWidth="58" />
+    <circle
+      cx="512"
+      cy="560"
+      r="330"
+      fill="none"
+      stroke="#f5b83d"
+      strokeWidth="58"
+      strokeLinecap="round"
+      pathLength={100}
+      strokeDasharray="62 100"
+      transform="rotate(-90 512 560)"
+    />
+    <g fill="#6b7aa0">
+      <circle cx="352" cy="478" r="58" />
+      <path d="M262 640c0-62 40-104 96-104h26c-28 26-42 58-46 86-28 6-52 14-76 26z" />
+      <circle cx="672" cy="478" r="58" />
+      <path d="M762 640c0-62-40-104-96-104h-26c28 26 42 58 46 86 28 6 52 14 76 26z" />
+    </g>
+    <circle cx="512" cy="436" r="82" fill="#eef1f7" />
+    <path
+      fill="#eef1f7"
+      d="M374 626c10-60 62-100 120-100h36c58 0 110 40 120 100-52 4-100 18-138 44-38-26-86-40-138-44z"
+    />
+    <g fill="#f5b83d">
+      <path d="M354 664q0-12 12-12c58 0 104 12 136 34v138c-34-22-80-32-136-32q-12 0-12-12z" />
+      <path d="M670 664q0-12-12-12c-58 0-104 12-136 34v138c34-22 80-32 136-32q12 0 12-12z" />
+    </g>
+  </svg>
+);

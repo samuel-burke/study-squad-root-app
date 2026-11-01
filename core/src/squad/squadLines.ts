@@ -57,7 +57,7 @@ export const SQUAD_LINES: Readonly<
     ],
     chaos: [
       "A wild study session appeared! 🦆",
-      "The textbooks have been summoned. There is no escape. 📖",
+      "The textbooks have been opened. There is no escape. 📖",
       "Today's forecast: 100% chance of knowledge. 🌩️",
     ],
   },
@@ -198,7 +198,7 @@ export const SQUAD_LINES: Readonly<
       "leveled up their collection with {badge}. 🎮",
     ],
     chaos: [
-      "unlocked {badge}. The prophecy is being fulfilled. 🔮",
+      "grabbed {badge} and ran. Nobody saw anything. 🏃",
       "now owns {badge}. Nobody knows how. Nobody asks. 🦆",
     ],
   },
@@ -213,7 +213,10 @@ export interface RareLine {
   minTogetherMinutes?: number;
 }
 
-/** Surprises that replace a timer post now and then, whatever the personality. */
+/**
+ * Shared lines any personality can say for a timer post. Each is as likely as
+ * any personality line.
+ */
 export const RARE_LINES: readonly RareLine[] = [
   {
     text: "You've been studying together for {hours} hours. That's actually insane. 🤯",
@@ -223,7 +226,37 @@ export const RARE_LINES: readonly RareLine[] = [
   { text: "Achievement unlocked: Professional Procrastination Recovery. 🏅" },
   { text: "The academic comeback is officially underway. 📈" },
   { text: "Somewhere, a professor just felt a disturbance in the force. 🌌" },
+  { text: "Just keep studying, just keep studying. 🐠" },
+  { text: "Houston, we have a study session. 🚀" },
+  { text: "I'll be back. Right after this round. 🤖" },
+  { text: "Hasta la vista, procrastination. 🕶️" },
+  { text: "May the focus be with you. 🌌" },
+  { text: "Do or do not. There is no try. There is only study. 🌌" },
+  { text: "This is the way. The study way. 🪖" },
+  { text: "Study. James Study. 🍸" },
+  { text: "Elementary, my dear squad. 🔍" },
 ];
+
+/**
+ * Movie lines that only fit one event, like a break line. Movie lines that fit
+ * any timer post are RARE_LINES.
+ */
+export const MOVIE_LINES: Readonly<Partial<Record<SquadEvent, readonly string[]>>> = {
+  breakStarted: ["Break time. Even Sherlock needs a cup of tea. ☕"],
+  studyResumed: ["You see, but you do not observe. Eyes on the notes. 🔍"],
+  memberJoined: [
+    "Hello there! 👋",
+    "The game is afoot! 🔍",
+    "Elementary. Of course they showed up. 🔍",
+  ],
+  badgeUnlocked: [
+    "unlocked {badge}. The Force is strong with this one. 🌌",
+    "earned {badge}. This is the way. 🪖",
+    "got {badge}. I'll be back for more. 🤖",
+    "unlocked {badge}. Shaken, not stirred. 🍸",
+    "earned {badge}. Houston, we have a winner. 🚀",
+  ],
+};
 
 /** Added to the end-of-cycle post, since that's when "Keep going?" shows. */
 export const KEEP_GOING_FOOTER = "Tap Keep going in Study Squad to roll into the next cycle.";

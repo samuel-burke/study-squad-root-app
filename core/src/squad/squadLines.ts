@@ -234,11 +234,21 @@ export const RARE_LINES: readonly RareLine[] = [
   { text: "Do or do not. There is no try. There is only study. 🌌" },
   { text: "This is the way. The study way. 🪖" },
   { text: "Study. James Study. 🍸" },
+  { text: "Elementary, my dear squad. 🔍" },
 ];
 
-/** Movie lines for joins and badges. The movie lines for timer posts are RARE_LINES. */
-export const MOVIE_LINES: Readonly<Record<"memberJoined" | "badgeUnlocked", readonly string[]>> = {
-  memberJoined: ["Hello there! 👋", "The game is afoot! 🔍"],
+/**
+ * Movie lines that only fit one event, like a break line. Movie lines that fit
+ * any timer post are RARE_LINES.
+ */
+export const MOVIE_LINES: Readonly<Partial<Record<SquadEvent, readonly string[]>>> = {
+  breakStarted: ["Break time. Even Sherlock needs a cup of tea. ☕"],
+  studyResumed: ["You see, but you do not observe. Eyes on the notes. 🔍"],
+  memberJoined: [
+    "Hello there! 👋",
+    "The game is afoot! 🔍",
+    "Elementary. Of course they showed up. 🔍",
+  ],
   badgeUnlocked: [
     "unlocked {badge}. The Force is strong with this one. 🌌",
     "earned {badge}. This is the way. 🪖",

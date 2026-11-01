@@ -5,6 +5,7 @@ import {
   ErrorCode,
   LIMITS,
   PRESETS,
+  MOVIE_LINES,
   RARE_LINES,
   SQUAD_LINES,
   type RecapDto,
@@ -744,6 +745,7 @@ describe("channel posts", () => {
       const allowed = new Set([
         ...Object.values(SQUAD_LINES).flatMap((byVoice) => byVoice.drill),
         ...RARE_LINES.map((l) => l.text),
+        ...Object.values(MOVIE_LINES).flat(),
       ]);
       const {
         engine: e2,

@@ -49,11 +49,10 @@ export function pickSquadLine(
   const pool = voices.flatMap((p) =>
     SQUAD_LINES[event][p].map((text, i) => ({ id: `${event}.${p}.${i}`, text, rare: false })),
   );
-  if (event === "memberJoined" || event === "badgeUnlocked") {
-    MOVIE_LINES[event].forEach((text, i) =>
-      pool.push({ id: `${event}.movie.${i}`, text, rare: false }),
-    );
-  } else {
+  (MOVIE_LINES[event] ?? []).forEach((text, i) =>
+    pool.push({ id: `${event}.movie.${i}`, text, rare: false }),
+  );
+  if (event !== "memberJoined" && event !== "badgeUnlocked") {
     RARE_LINES.forEach((line, i) => {
       if (context.togetherMinutes >= (line.minTogetherMinutes ?? 0)) {
         pool.push({ id: `rare.${i}`, text: line.text, rare: true });

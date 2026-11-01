@@ -25,6 +25,7 @@ describe("squad bot lines", () => {
     const all = [
       ...EVENTS.flatMap((e) => ALL_PERSONALITIES.flatMap((p) => SQUAD_LINES[e][p])),
       ...RARE_LINES.map((l) => l.text),
+      ...Object.values(MOVIE_LINES).flat(),
     ];
     for (const line of all) {
       expect(line.length, line).toBeLessThanOrEqual(90);
@@ -52,7 +53,7 @@ describe("pickSquadLine", () => {
     const random = seededRandom(3);
     for (let i = 0; i < 600; i++) {
       const line = pickSquadLine("breakStarted", [], {}, random, context);
-      if (!line.rare) seen.add(line.id.split(".")[1]!);
+      if (!line.rare && !line.id.includes(".movie.")) seen.add(line.id.split(".")[1]!);
     }
     expect([...seen].sort()).toEqual([...ALL_PERSONALITIES].sort());
   });
@@ -66,7 +67,10 @@ describe("pickSquadLine", () => {
       const line = pickSquadLine("breakStarted", ["drill"], {}, random, context150);
       counts.set(line.id, (counts.get(line.id) ?? 0) + 1);
     }
-    const size = SQUAD_LINES.breakStarted.drill.length + RARE_LINES.length;
+    const size =
+      SQUAD_LINES.breakStarted.drill.length +
+      (MOVIE_LINES.breakStarted?.length ?? 0) +
+      RARE_LINES.length;
     expect(counts.size).toBe(size);
     for (const n of counts.values()) {
       expect(n).toBeGreaterThan((runs / size) * 0.85);
@@ -83,7 +87,7 @@ describe("pickSquadLine", () => {
         ),
       );
       expect([...ids].filter((id) => id.startsWith("rare."))).toEqual([]);
-      for (let i = 0; i < MOVIE_LINES[event].length; i++)
+      for (let i = 0; i < MOVIE_LINES[event]!.length; i++)
         expect(ids.has(`${event}.movie.${i}`)).toBe(true);
     }
     for (const event of TIMER_EVENTS) {

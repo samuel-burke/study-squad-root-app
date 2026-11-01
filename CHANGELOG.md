@@ -4,6 +4,14 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ## [Unreleased]
 
+### Added
+
+- A Study Squad website with a styled copy of the privacy policy, published to GitHub Pages from `PRIVACY.md`. See `docs/WEBSITE.md`.
+
+### Changed
+
+- The privacy policy now lists an email contact, hello@samuelburke.dev, for questions and deletion requests.
+
 ## [0.3.4] - 2026-11-01
 
 Badge details right where you tap, a Replay button, the bot channel setting up top, and new movie lines for the squad bot.

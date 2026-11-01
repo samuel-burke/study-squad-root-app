@@ -36,6 +36,8 @@ jobs:
       - name: Unit and integration tests
         run: npm run test:coverage
       - run: npm run build
+      - name: Build the website
+        run: node scripts/build-site.mjs _site
       - name: Upload coverage
         if: always()
         uses: actions/upload-artifact@v7

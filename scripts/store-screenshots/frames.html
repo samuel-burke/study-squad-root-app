@@ -68,20 +68,6 @@
         font-size: 26px;
         color: var(--text);
       }
-      .mark {
-        width: 48px;
-        height: 48px;
-        border-radius: 13px;
-        background: var(--amber);
-        color: #1a1300;
-        display: grid;
-        place-items: center;
-        box-shadow: 0 8px 30px rgba(245, 184, 61, 0.35);
-      }
-      .mark svg {
-        width: 28px;
-        height: 28px;
-      }
       h1 {
         font-family: "Space Grotesk";
         font-weight: 700;
@@ -186,11 +172,6 @@
         width: 760px;
         box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
       }
-      .post .mark {
-        width: 52px;
-        height: 52px;
-        flex: none;
-      }
       .post .who {
         font-weight: 700;
         font-size: 20px;
@@ -238,25 +219,16 @@
         color: var(--teal);
         margin-bottom: 14px;
       }
+      .logo {
+        flex: none;
+        border-radius: 22%;
+        box-shadow:
+          0 10px 34px rgba(0, 0, 0, 0.45),
+          0 0 0 1px rgba(255, 255, 255, 0.06);
+      }
     </style>
   </head>
   <body>
-    <template id="markT"
-      ><div class="mark">
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2.4"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <circle cx="12" cy="13" r="8" />
-          <path d="M12 9v4l2.5 2" />
-          <path d="M9 2h6" />
-        </svg></div
-    ></template>
-
     <!-- HERO -->
     <section
       class="frame split"
@@ -271,7 +243,7 @@
     >
       <div class="copy" style="width: 720px">
         <div class="brand" style="font-size: 34px">
-          <span data-mark style="--s: 64px"></span>Study Squad
+          <span data-mark style="--s: 92px"></span>Study Squad
         </div>
         <h1 style="font-size: 104px">Focus <em>together.</em></h1>
         <p class="sub" style="font-size: 32px">
@@ -519,18 +491,14 @@
     </section>
 
     <script>
-      const t = document.getElementById("markT");
+      // The full logo in the hero, the small-size version next to posts.
       document.querySelectorAll("[data-mark]").forEach((el) => {
-        const m = t.content.firstElementChild.cloneNode(true);
         const s = el.style.getPropertyValue("--s");
-        if (s) {
-          m.style.width = s;
-          m.style.height = s;
-          m.style.borderRadius = "18px";
-          m.querySelector("svg").style.width = m.querySelector("svg").style.height =
-            "calc(" + s + " * .58)";
-        }
-        el.replaceWith(m);
+        const img = document.createElement("img");
+        img.className = "logo";
+        img.src = s ? "logo.svg" : "logo-small.svg";
+        img.style.width = img.style.height = s || "52px";
+        el.replaceWith(img);
       });
       const id = location.hash.slice(1) || "hero";
       document.getElementById(id).classList.add("on");

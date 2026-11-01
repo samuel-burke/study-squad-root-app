@@ -3,7 +3,7 @@ import type { Profile } from "../api/gateway";
 import { phasePill } from "../lib/view";
 import { BossCard, MobileBoss } from "./BossCard";
 import { ComboCard, ComboPill } from "./ComboCard";
-import { ChartIcon, PeopleIcon, SlidersIcon, SoundOffIcon, SoundOnIcon, TimerIcon } from "./Icons";
+import { AppLogo, ChartIcon, PeopleIcon, SlidersIcon, SoundOffIcon, SoundOnIcon } from "./Icons";
 import { MemberBoard } from "./MemberBoard";
 import { SessionPanel } from "./SessionPanel";
 import { TimerCard } from "./TimerCard";
@@ -47,7 +47,7 @@ function Header({
       <div className="brand">
         {!compact && (
           <div className="brand-mark" aria-hidden="true">
-            <TimerIcon size={18} strokeWidth={2.2} />
+            <AppLogo size={32} />
           </div>
         )}
         <div style={{ minWidth: 0 }}>

@@ -122,3 +122,37 @@ export const SoundOffIcon = (p: IconProps) => (
     <path d="M22 9l-6 6M16 9l6 6" />
   </Svg>
 );
+
+/**
+ * The Study Squad logo, simplified for small sizes: a timer ring around a
+ * studier with an open book. The full logo with the squad is
+ * scripts/store-screenshots/logo.svg.
+ */
+export const AppLogo = ({ size = 32 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 1024 1024" aria-hidden="true" focusable="false">
+    <rect width="1024" height="1024" rx="224" fill="#141c30" />
+    <rect x="432" y="80" width="160" height="64" rx="32" fill="#4a5677" />
+    <circle cx="512" cy="560" r="320" fill="none" stroke="#2c3652" strokeWidth="96" />
+    <circle
+      cx="512"
+      cy="560"
+      r="320"
+      fill="none"
+      stroke="#f5b83d"
+      strokeWidth="96"
+      strokeLinecap="round"
+      pathLength={100}
+      strokeDasharray="62 100"
+      transform="rotate(-90 512 560)"
+    />
+    <circle cx="512" cy="470" r="92" fill="#eef1f7" />
+    <path
+      fill="#f5b83d"
+      d="M330 610q0-14 14-14c70 0 124 14 160 40v168c-40-26-94-38-160-38q-14 0-14-14z"
+    />
+    <path
+      fill="#f5b83d"
+      d="M694 610q0-14-14-14c-70 0-124 14-160 40v168c40-26 94-38 160-38q14 0 14-14z"
+    />
+  </svg>
+);

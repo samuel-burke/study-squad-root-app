@@ -279,8 +279,7 @@ h3 {
   width: 32px;
   height: 32px;
   border-radius: 9px;
-  background: var(--amber);
-  color: var(--amber-ink);
+  overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;

@@ -20,6 +20,7 @@ Run `npm run demo` and add these to the printed URL. They only exist in the demo
 | `xp`             | `xp=2440`                       | Your starting lifetime XP, for level-ups, Jackpot (any total ending in 777) and Over 9000.                                                                                       |
 | `unlock`         | `unlock=giant-slayer,blitz`     | Plays those badges' unlock animations, without awarding them, after your first click on the page (browsers only allow sound after a click). `unlock=all` plays one of each tier. |
 | `badges`         | `badges=first-session,squad-up` | Starts you holding those badges. Without it you start with none, so your first round and goal earn badges live with their unlock moments.                                        |
+| `weekHours`      | `weekHours=6`                   | Adds that many focus hours to your earlier days this week, to place you on the weekly leaderboard (used for store screenshots).                                                  |
 
 Useful combinations:
 

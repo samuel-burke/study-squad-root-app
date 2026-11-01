@@ -52,6 +52,8 @@ export interface DemoOptions {
   unlock?: string[];
   /** Badges you already hold when the page opens. You start with none otherwise. */
   badges?: string[];
+  /** Extra hours you focused on earlier days this week, to place you on the weekly leaderboard. */
+  weekHours?: number;
 }
 
 interface Bot {
@@ -152,7 +154,7 @@ function onePerTier(): string[] {
 /**
  * Reads demo knobs from the URL, e.g. `?focus=0.2&break=0.1&bots=0`. Test
  * knobs (`bossLeft`, `bossName`, `bossHp`, `cap`, `streak`, `xp`, `missed`,
- * `unlock`, `badges`) set up states that take days or hours to reach for real. See
+ * `unlock`, `badges`, `weekHours`) set up states that take days or hours to reach for real. See
  * docs/TESTING.md.
  */
 export function demoOptionsFromSearch(search: string): DemoOptions {
@@ -189,6 +191,8 @@ export function demoOptionsFromSearch(search: string): DemoOptions {
   if (streak !== undefined) options.streak = streak;
   const xp = whole("xp", 10_000_000);
   if (xp !== undefined) options.xp = xp;
+  const weekHours = positive("weekHours");
+  if (weekHours !== undefined) options.weekHours = Math.min(100, weekHours);
   const missedDays = whole("missed", 30);
   if (missedDays !== undefined) options.missedDays = missedDays;
   const held = params.get("badges");
@@ -369,6 +373,7 @@ export class DemoGateway implements StudyRoomGateway {
           xp: Math.min(this.config.xp.dailyCap, minutes * 2),
         });
     }
+    await this.seedWeekHours(today);
     await this.seedBoss();
     if (!this.options.bots) return;
     // Some earlier weeks, so month, year and all time rank differently from this week.
@@ -401,6 +406,17 @@ export class DemoGateway implements StudyRoomGateway {
       if (bot.cardStyle)
         await this.store.cards.save({ userId: bot.userId, style: bot.cardStyle, showcase: null });
     }
+  }
+
+  /** `?weekHours=`: spreads extra focus over the earlier days of this week, with their XP. */
+  private async seedWeekHours(today: string) {
+    const hours = this.options.weekHours;
+    const days: string[] = [];
+    for (let day = weekKey(today); day < today; day = addDays(day, 1)) days.push(day);
+    if (!hours || days.length === 0) return;
+    const minutes = Math.round((hours * 60) / days.length);
+    for (const day of days)
+      await this.store.stats.add(DEMO_USER_ID, day, { focusMinutes: minutes, xp: minutes * 2 });
   }
 
   /** This week's boss, part way down. Without bots it starts fresh unless `?bossLeft=` says otherwise. */

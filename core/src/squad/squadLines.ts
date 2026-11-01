@@ -198,7 +198,7 @@ export const SQUAD_LINES: Readonly<
       "leveled up their collection with {badge}. 🎮",
     ],
     chaos: [
-      "unlocked {badge}. The prophecy is being fulfilled. 🔮",
+      "grabbed {badge} and ran. Nobody saw anything. 🏃",
       "now owns {badge}. Nobody knows how. Nobody asks. 🦆",
     ],
   },

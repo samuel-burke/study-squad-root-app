@@ -4,6 +4,10 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ## [Unreleased]
 
+### Changed
+
+- The squad bot no longer says "The prophecy is being fulfilled" when someone unlocks a badge. A new Chaos line replaces it.
+
 ## [0.3.3] - 2026-11-01
 
 Fairer secret badges, a Custom solo timer, and the first release shipped to Root automatically.

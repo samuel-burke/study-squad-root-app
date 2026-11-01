@@ -170,7 +170,7 @@ export const SQUAD_LINES: Readonly<
     ],
     gamer: ["Player joined the party. 🎮", "A new challenger approaches. ⚔️"],
     chaos: [
-      "Someone tripped into the study room. Act like you meant it. 🌀",
+      "The study portal opened and someone fell through. 🌀",
       "Look who wandered in. Act natural. 🦆",
     ],
   },

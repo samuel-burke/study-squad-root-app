@@ -6,7 +6,7 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ### Changed
 
-- Removed the sorcery-themed wording. The squad bot no longer says "The prophecy is being fulfilled" or that textbooks were "summoned", the "study portal" join line is gone, and the boss "Grand Wizard of Excuses" is now "The Excuse Generator".
+- Removed sorcery and spooky wording. The squad bot no longer says "The prophecy is being fulfilled" or that textbooks were "summoned". Renamed bosses: Grand Wizard of Excuses is now The Excuse Generator, The Group Project Ghost is The Group Project Freeloader, The Word Count Wraith is The Word Count Wall, The Messy Desk Monster is The Messy Desk Mountain, The Auto-Correct Imp is The Auto-Correct Gremlin, and The Phantom Assignment is The Surprise Assignment.
 
 ## [0.3.3] - 2026-11-01
 

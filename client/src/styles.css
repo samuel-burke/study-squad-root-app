@@ -1845,6 +1845,23 @@ textarea.input {
   line-height: 1.2;
 }
 
+/* Dense packing lets the badges after an open detail row fill the rest of the
+   tapped badge's row, so the details land in the row right below it. */
+.badge-grid-shelf {
+  grid-auto-flow: row dense;
+}
+
+.badge-detail-row {
+  grid-column: 1 / -1;
+}
+
+.badge-detail-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
 .badge-detail-head {
   display: flex;
   align-items: center;

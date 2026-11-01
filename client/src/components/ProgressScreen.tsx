@@ -15,6 +15,7 @@ export function ProgressScreen({
   onBack,
   onDeleteData,
   onOpenMember,
+  onReplayBadge,
   refreshKey,
 }: {
   gateway: StudyRoomGateway;
@@ -25,6 +26,8 @@ export function ProgressScreen({
   onDeleteData(): Promise<boolean>;
   /** Opens a member's profile from the leaderboard. */
   onOpenMember?(userId: string): void;
+  /** Plays an earned badge's unlock moment again. */
+  onReplayBadge?(badgeId: string): void;
   /** Reloads quietly whenever this changes, such as on each room update while people focus. */
   refreshKey?: unknown;
 }) {
@@ -139,6 +142,7 @@ export function ProgressScreen({
             card={progress.card}
             busy={saving}
             onShowcase={(ids) => void save(() => gateway.setBadgeShowcase(ids))}
+            onReplay={onReplayBadge}
           />
           <CardStylePicker
             level={progress.me.level}

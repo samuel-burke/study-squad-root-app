@@ -30,18 +30,22 @@ const earnedDate = (at: number) =>
 /**
  * Every badge, grouped by category. Locked badges are dimmed and say how to
  * earn them; secret ones stay "?" until someone finds them. Tapping a badge
- * shows its details, and earned ones can be pinned to your card.
+ * shows its details in the row right below it, and earned ones can be
+ * replayed or pinned to your card.
  */
 export function BadgeShelf({
   earned,
   card,
   busy,
   onShowcase,
+  onReplay,
 }: {
   earned: EarnedBadgeDto[];
   card: CardLookDto;
   busy: boolean;
   onShowcase(badgeIds: string[]): void;
+  /** Plays an earned badge's full-screen unlock moment again. */
+  onReplay?(badgeId: string): void;
 }) {
   const [selected, setSelected] = useState<string | null>(null);
   const earnedAt = new Map(earned.map((b) => [b.id, b.earnedAt]));
@@ -65,6 +69,52 @@ export function BadgeShelf({
 
   const detail = selected ? badgeById(selected) : undefined;
   const detailEarned = selected ? earnedAt.get(selected) : undefined;
+
+  const detailRow = (badge: BadgeDefinition) => (
+    <li key={`${badge.id}-detail`} className="badge-detail-row">
+      <div className="badge-detail" role="region" aria-label="Badge details">
+        {badge.secret && detailEarned === undefined ? (
+          <>
+            <strong>A secret badge</strong>
+            <span className="small muted">
+              Nobody tells you how to get these. Keep studying and see what happens.
+            </span>
+          </>
+        ) : (
+          <>
+            <div className="badge-detail-head">
+              <BadgeMedal badge={badge} size={44} locked={detailEarned === undefined} />
+              <strong>{badge.name}</strong>
+            </div>
+            <span className="small muted">{badge.description}</span>
+            {detailEarned !== undefined ? (
+              <div className="row-between small">
+                <span className="dim">Earned {earnedDate(detailEarned)}</span>
+                {/* Replay sits just above "Show on my card". */}
+                <div className="badge-detail-actions">
+                  {onReplay && (
+                    <button type="button" className="link-btn" onClick={() => onReplay(badge.id)}>
+                      Replay
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    className="link-btn"
+                    disabled={busy}
+                    onClick={() => togglePin(badge.id)}
+                  >
+                    {card.showcase.includes(badge.id) ? "Take off my card" : "Show on my card"}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <span className="small dim">Not earned yet</span>
+            )}
+          </>
+        )}
+      </div>
+    </li>
+  );
 
   return (
     <section className="card" aria-label="Badges">
@@ -109,14 +159,14 @@ export function BadgeShelf({
       {[...groups.entries()].map(([category, badges]) => (
         <div key={category} className="badge-group">
           <h3 className="badge-group-title">{CATEGORY_TITLES[category]}</h3>
-          <ul className="badge-grid">
-            {badges.map((badge) => {
+          <ul className="badge-grid badge-grid-shelf">
+            {badges.flatMap((badge) => {
               const has = earnedAt.has(badge.id);
               const hidden = badge.secret === true && !has;
               const label = hidden
                 ? "Secret badge, not found yet"
                 : `${badge.name}${has ? ", earned" : ", locked"}`;
-              return (
+              const tile = (
                 <li key={badge.id}>
                   <button
                     type="button"
@@ -132,43 +182,10 @@ export function BadgeShelf({
                   </button>
                 </li>
               );
+              // The details take a full row of their own, right below the tapped badge.
+              return detail?.id === badge.id ? [tile, detailRow(detail)] : [tile];
             })}
           </ul>
-          {detail && detail.category === category && (
-            <div className="badge-detail" role="region" aria-label="Badge details">
-              {detail.secret && detailEarned === undefined ? (
-                <>
-                  <strong>A secret badge</strong>
-                  <span className="small muted">
-                    Nobody tells you how to get these. Keep studying and see what happens.
-                  </span>
-                </>
-              ) : (
-                <>
-                  <div className="badge-detail-head">
-                    <BadgeMedal badge={detail} size={44} locked={detailEarned === undefined} />
-                    <strong>{detail.name}</strong>
-                  </div>
-                  <span className="small muted">{detail.description}</span>
-                  {detailEarned !== undefined ? (
-                    <div className="row-between small">
-                      <span className="dim">Earned {earnedDate(detailEarned)}</span>
-                      <button
-                        type="button"
-                        className="link-btn"
-                        disabled={busy}
-                        onClick={() => togglePin(detail.id)}
-                      >
-                        {card.showcase.includes(detail.id) ? "Take off my card" : "Show on my card"}
-                      </button>
-                    </div>
-                  ) : (
-                    <span className="small dim">Not earned yet</span>
-                  )}
-                </>
-              )}
-            </div>
-          )}
         </div>
       ))}
     </section>

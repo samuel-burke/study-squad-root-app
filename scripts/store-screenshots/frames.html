@@ -1,0 +1,539 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      @font-face {
+        font-family: "Space Grotesk";
+        src: url(space-grotesk-latin.woff2) format("woff2");
+        font-weight: 300 700;
+      }
+      @font-face {
+        font-family: "DM Sans";
+        src: url(dm-sans-latin.woff2) format("woff2");
+        font-weight: 100 1000;
+      }
+      :root {
+        --bg: #0b1020;
+        --text: #eef1f7;
+        --muted: #a3adc2;
+        --amber: #f5b83d;
+        --teal: #46c7ae;
+        --coral: #ff6b57;
+        --border: #263047;
+        --surface: #161d2d;
+      }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+      }
+      html,
+      body {
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        background: var(--bg);
+      }
+      body {
+        font-family: "DM Sans", sans-serif;
+        color: var(--text);
+      }
+      .frame {
+        position: absolute;
+        inset: 0;
+        overflow: hidden;
+        display: none;
+        background:
+          radial-gradient(900px 600px at 8% -5%, rgba(245, 184, 61, 0.2), transparent 70%),
+          radial-gradient(900px 700px at 105% 110%, rgba(70, 199, 174, 0.16), transparent 70%),
+          linear-gradient(180deg, #0e1424, #090d18);
+      }
+      .frame.on {
+        display: block;
+      }
+      .frame::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background-image: radial-gradient(rgba(255, 255, 255, 0.05) 1.2px, transparent 1.2px);
+        background-size: 28px 28px;
+        mask-image: linear-gradient(180deg, #000, transparent 70%);
+      }
+      .brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 14px;
+        font-family: "Space Grotesk";
+        font-weight: 700;
+        font-size: 26px;
+        color: var(--text);
+      }
+      .mark {
+        width: 48px;
+        height: 48px;
+        border-radius: 13px;
+        background: var(--amber);
+        color: #1a1300;
+        display: grid;
+        place-items: center;
+        box-shadow: 0 8px 30px rgba(245, 184, 61, 0.35);
+      }
+      .mark svg {
+        width: 28px;
+        height: 28px;
+      }
+      h1 {
+        font-family: "Space Grotesk";
+        font-weight: 700;
+        font-size: 82px;
+        line-height: 1.02;
+        letter-spacing: -1.5px;
+      }
+      h1 em {
+        font-style: normal;
+        color: var(--amber);
+      }
+      h1 em.teal {
+        color: var(--teal);
+      }
+      h1 em.coral {
+        color: var(--coral);
+      }
+      p.sub {
+        font-size: 30px;
+        line-height: 1.4;
+        color: var(--muted);
+      }
+      .shot {
+        position: absolute;
+        border-radius: 22px;
+        overflow: hidden;
+        border: 1.5px solid #2c3854;
+        box-shadow:
+          0 40px 120px rgba(0, 0, 0, 0.65),
+          0 0 0 1px rgba(0, 0, 0, 0.4);
+        background: #0e1320;
+      }
+      .shot img {
+        display: block;
+        width: 100%;
+      }
+      .float {
+        position: absolute;
+        border-radius: 20px;
+        box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
+      }
+      /* top layout */
+      .top .copy {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 72px;
+        text-align: center;
+      }
+      .top .copy .brand {
+        margin-bottom: 26px;
+      }
+      .top .copy p.sub {
+        margin: 20px auto 0;
+        max-width: 1180px;
+      }
+      .top .shot {
+        left: 50%;
+        transform: translateX(-50%);
+        top: 400px;
+        width: 1500px;
+      }
+      /* split layout */
+      .split .copy {
+        position: absolute;
+        left: 110px;
+        top: 0;
+        bottom: 0;
+        width: 640px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+      }
+      .split .copy .brand {
+        margin-bottom: 34px;
+      }
+      .split .copy p.sub {
+        margin-top: 26px;
+      }
+      .pills {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 36px;
+      }
+      .pill {
+        font-size: 22px;
+        font-weight: 600;
+        padding: 10px 18px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid #2c3854;
+        color: var(--text);
+      }
+      .post {
+        background: #141b2b;
+        border: 1.5px solid #2c3854;
+        border-radius: 18px;
+        padding: 20px 24px;
+        display: flex;
+        gap: 16px;
+        width: 760px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+      }
+      .post .mark {
+        width: 52px;
+        height: 52px;
+        flex: none;
+      }
+      .post .who {
+        font-weight: 700;
+        font-size: 20px;
+      }
+      .post .who span {
+        font-weight: 500;
+        color: #8792a8;
+        font-size: 16px;
+        margin-left: 8px;
+      }
+      .post .tag {
+        display: inline-block;
+        font-size: 13px;
+        font-weight: 800;
+        letter-spacing: 0.5px;
+        background: rgba(245, 184, 61, 0.16);
+        color: #f5b83d;
+        padding: 2px 7px;
+        border-radius: 5px;
+        margin-left: 8px;
+        vertical-align: 2px;
+      }
+      .post .head {
+        font-weight: 700;
+        font-size: 19px;
+        margin-top: 6px;
+      }
+      .post .body {
+        font-size: 19px;
+        color: #dce1ec;
+        margin-top: 4px;
+        line-height: 1.4;
+      }
+      .post .at {
+        color: #9db7ff;
+        background: rgba(157, 183, 255, 0.12);
+        border-radius: 5px;
+        padding: 0 4px;
+      }
+      .cap {
+        font-size: 18px;
+        font-weight: 700;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: var(--teal);
+        margin-bottom: 14px;
+      }
+    </style>
+  </head>
+  <body>
+    <template id="markT"
+      ><div class="mark">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.4"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <circle cx="12" cy="13" r="8" />
+          <path d="M12 9v4l2.5 2" />
+          <path d="M9 2h6" />
+        </svg></div
+    ></template>
+
+    <!-- HERO -->
+    <section
+      class="frame split"
+      id="hero"
+      style="
+        background:
+          radial-gradient(1000px 700px at 0% 0%, rgba(245, 184, 61, 0.26), transparent 70%),
+          radial-gradient(1100px 800px at 100% 100%, rgba(70, 199, 174, 0.2), transparent 70%),
+          radial-gradient(700px 500px at 75% 20%, rgba(157, 183, 255, 0.1), transparent 70%),
+          linear-gradient(160deg, #111a30, #080b14);
+      "
+    >
+      <div class="copy" style="width: 720px">
+        <div class="brand" style="font-size: 34px">
+          <span data-mark style="--s: 64px"></span>Study Squad
+        </div>
+        <h1 style="font-size: 104px">Focus <em>together.</em></h1>
+        <p class="sub" style="font-size: 32px">
+          The group study timer for your Root community. Study side by side, beat the weekly boss,
+          and keep your streak alive.
+        </p>
+        <div class="pills">
+          <span class="pill">Shared focus timer</span><span class="pill">Weekly boss</span
+          ><span class="pill">Streaks &amp; medals</span><span class="pill">Leaderboards</span>
+        </div>
+      </div>
+      <div
+        class="shot"
+        style="
+          left: 880px;
+          top: 150px;
+          width: 1300px;
+          transform: perspective(2400px) rotateY(-14deg) rotateX(4deg);
+          transform-origin: left center;
+        "
+      >
+        <img src="room.png" />
+      </div>
+      <img
+        class="float"
+        src="boss.png"
+        style="left: 830px; top: 690px; width: 430px; border-radius: 22px"
+      />
+      <img
+        src="medal.png"
+        style="
+          position: absolute;
+          left: 1450px;
+          top: 590px;
+          width: 400px;
+          -webkit-mask-image: radial-gradient(circle, #000 34%, transparent 66%);
+        "
+      />
+    </section>
+
+    <!-- 1 ROOM -->
+    <section class="frame top" id="s1-room">
+      <div class="copy">
+        <h1>Study <em>together</em>, live</h1>
+        <p class="sub">
+          See who's focusing and on what. Join one shared timer and keep each other going.
+        </p>
+      </div>
+      <div class="shot" style="top: 330px; width: 1560px"><img src="room.png" /></div>
+    </section>
+
+    <!-- 2 BREAK -->
+    <section class="frame top" id="s2-break">
+      <div class="copy">
+        <h1>Every round ends in a <em class="teal">team win</em></h1>
+        <p class="sub">
+          Breaks start for everyone at once. XP gets a combo boost and the boss takes the hit.
+        </p>
+      </div>
+      <div class="shot" style="top: 330px; width: 1560px">
+        <img src="break.png" style="margin-top: -110px" />
+      </div>
+    </section>
+
+    <!-- 3 UNLOCK -->
+    <section class="frame" id="s3-badges">
+      <img
+        src="unlock.png"
+        style="position: absolute; left: 0; top: 60px; width: 1920px; opacity: 0.95"
+      />
+      <div
+        style="
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(
+            180deg,
+            #0b1020 0%,
+            rgba(11, 16, 32, 0.85) 22%,
+            transparent 42%,
+            transparent 80%,
+            rgba(11, 16, 32, 0.9) 100%
+          );
+        "
+      ></div>
+      <div
+        class="copy"
+        style="position: absolute; left: 0; right: 0; top: 72px; text-align: center"
+      >
+        <h1>Collect <em>49 medals</em></h1>
+        <p class="sub" style="margin: 20px auto 0; max-width: 1200px">
+          Twenty of them are secret. Every unlock gets its own full-screen moment and sound.
+        </p>
+      </div>
+      <img
+        class="float"
+        src="badges.png"
+        style="
+          left: 80px;
+          top: 470px;
+          width: 420px;
+          height: 560px;
+          object-fit: cover;
+          object-position: top;
+          border-radius: 20px;
+          border: 1.5px solid #2c3854;
+          transform: rotate(-3deg);
+        "
+      />
+      <img
+        class="float"
+        src="profile-sheet.png"
+        style="
+          right: 80px;
+          top: 470px;
+          width: 420px;
+          border-radius: 20px;
+          border: 1.5px solid #2c3854;
+          transform: rotate(3deg);
+        "
+      />
+    </section>
+
+    <!-- 4 STREAK -->
+    <section class="frame split" id="s4-streaks">
+      <div class="copy">
+        <h1>Build a streak that <em class="coral">forgives</em> a bad day</h1>
+        <p class="sub">
+          Daily streaks with a free freeze each week, levels that grow with you, and new quests
+          every Monday.
+        </p>
+      </div>
+      <img
+        class="float"
+        src="streak.png"
+        style="
+          left: 900px;
+          top: 70px;
+          width: 880px;
+          border-radius: 22px;
+          border: 1.5px solid #2c3854;
+        "
+      />
+      <img
+        class="float"
+        src="quests.png"
+        style="
+          left: 900px;
+          top: 860px;
+          width: 880px;
+          border-radius: 22px;
+          border: 1.5px solid #2c3854;
+        "
+      />
+    </section>
+
+    <!-- 5 LEADERBOARD -->
+    <section class="frame split" id="s5-leaderboard">
+      <div class="copy">
+        <h1>Race your squad to the <em>top</em></h1>
+        <p class="sub">
+          Weekly, monthly and all-time boards by minutes or XP. Tap anyone to see their level,
+          streak and medals.
+        </p>
+      </div>
+      <img
+        class="float"
+        src="leaderboard.png"
+        style="
+          left: 820px;
+          top: 150px;
+          width: 560px;
+          border-radius: 22px;
+          border: 1.5px solid #2c3854;
+        "
+      />
+      <img
+        class="float"
+        src="profile-sheet.png"
+        style="
+          left: 1420px;
+          top: 250px;
+          width: 430px;
+          border-radius: 22px;
+          border: 1.5px solid #2c3854;
+        "
+      />
+    </section>
+
+    <!-- 6 ADMINS -->
+    <section class="frame split" id="s6-admins">
+      <div class="copy">
+        <h1>Your community, <em class="teal">your rules</em></h1>
+        <p class="sub">
+          Admins pick the timer, daily XP cap, boss and a channel for squad bot posts. Members can
+          keep goals private or delete their data any time.
+        </p>
+      </div>
+      <img
+        class="float"
+        src="settings-sheet.png"
+        style="
+          left: 880px;
+          top: 80px;
+          width: 780px;
+          border-radius: 22px;
+          border: 1.5px solid #2c3854;
+        "
+      />
+      <div
+        style="
+          position: absolute;
+          left: 1060px;
+          top: 640px;
+          display: flex;
+          flex-direction: column;
+          gap: 18px;
+        "
+      >
+        <div class="post">
+          <span data-mark></span>
+          <div>
+            <div class="who">
+              Study Squad<span class="tag">APP</span><span>in #study-hall</span>
+            </div>
+            <div class="head">📚 Focus · Round 1 of 4</div>
+            <div class="body">
+              <span class="at">@Ana R.</span> <span class="at">@Marcus</span>
+              <span class="at">@Kai</span> and 3 others Alright squad, lock in. The grind starts
+              now. 📚
+            </div>
+          </div>
+        </div>
+        <div class="post">
+          <span data-mark></span>
+          <div>
+            <div class="who">
+              Study Squad<span class="tag">APP</span><span>in #study-hall</span>
+            </div>
+            <div class="body">
+              <span class="at">@Priya</span> just unlocked Half Century! Absolute legend. 🏅
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <script>
+      const t = document.getElementById("markT");
+      document.querySelectorAll("[data-mark]").forEach((el) => {
+        const m = t.content.firstElementChild.cloneNode(true);
+        const s = el.style.getPropertyValue("--s");
+        if (s) {
+          m.style.width = s;
+          m.style.height = s;
+          m.style.borderRadius = "18px";
+          m.querySelector("svg").style.width = m.querySelector("svg").style.height =
+            "calc(" + s + " * .58)";
+        }
+        el.replaceWith(m);
+      });
+      const id = location.hash.slice(1) || "hero";
+      document.getElementById(id).classList.add("on");
+    </script>
+  </body>
+</html>

@@ -30,3 +30,7 @@ client/blob-report/
 
 # Root packages
 *.pkg
+
+# store screenshot output
+scripts/store-screenshots/raw/
+scripts/store-screenshots/out/

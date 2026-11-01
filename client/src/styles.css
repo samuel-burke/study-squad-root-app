@@ -881,6 +881,19 @@ h3 {
   min-width: 0;
 }
 
+textarea.input {
+  padding: 10px 12px;
+  resize: vertical;
+  font: inherit;
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+.input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .input:focus {
   border-color: var(--amber);
   outline: none;
@@ -993,6 +1006,26 @@ h3 {
   border-color: var(--blue);
   background: var(--blue-bg);
   color: var(--blue);
+}
+
+.custom-minutes {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  margin-top: 4px;
+  font-weight: 700;
+}
+
+.custom-minutes input {
+  width: 88px;
+  min-height: 40px;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border-strong);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
 }
 
 .btn-start {

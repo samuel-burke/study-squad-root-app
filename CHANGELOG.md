@@ -4,6 +4,37 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ## [Unreleased]
 
+## [0.3.3] - 2026-11-01
+
+Fairer secret badges, a Custom solo timer, and the first release shipped to Root automatically.
+
+### Added
+
+- A **Send feedback** box under Room settings, marked "Coming soon". It can't be filled in or sent yet.
+- Continuous deployment: a push to `main` that passes CI uploads a new version to Root by itself, once a `ROOT_AUTH_TOKEN` secret is set. See docs/DEPLOYING.md.
+- A **Custom** solo timer length: type any whole number of minutes from 5 to 180. Before this, Deep Thought (42 minutes) and Ultramarathon (3 hours) couldn't be earned, because neither length was on the list.
+
+### Changed
+
+- The Friday the 13th secret badge is now **Luck of the Irish**: finish a session on St. Patrick's Day, March 17.
+- Jackpot now unlocks on any total XP ending in 777 (777, 1,777, 2,777 and so on), so missing 777 no longer means missing it for good.
+
+### Fixed
+
+- Squad bot posts now @mention everyone they name. Members whose Root id contains an underscore (most of them) used to show up as plain text.
+
+## [0.3.2] - 2026-10-31
+
+### Fixed
+
+- 0.3.1 still crashed on start in Root with the same `LeaderboardMetric` error, although its package was correct. The generated `@studyroom/gen-*` packages always carried the same version in `package-lock.json`, so Root could keep serving an old copy. Their version now comes from a hash of the `.proto` files, `npm run generate` keeps `package-lock.json` in step, and `npm run verify` fails if it is out of date.
+
+## [0.3.1] - 2026-10-31
+
+### Fixed
+
+- The server crashed on start in Root ("Cannot read properties of undefined (reading 'MINUTES')") when a package was built on top of old generated networking code. `npm run generate` now clears `networking/gen` first, so every build uses fresh code.
+
 ## [0.3.0] - 2026-10-30
 
 A chattier, more alive room: the Squad bot, live stats and boss damage, a bigger leaderboard, your own avatar and countdown chirps.

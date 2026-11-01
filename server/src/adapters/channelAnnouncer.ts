@@ -18,8 +18,11 @@ export interface ChannelPort {
 }
 
 const NAME_TTL_MS = 10 * 60 * 1000;
-/** Root user ids are GUIDs. Anything else is written as a plain name, never a link. */
-const MENTIONABLE_ID = /^[A-Za-z0-9-]{1,64}$/;
+/**
+ * Root user ids are GUIDs written as 22 base64url characters, so they can hold
+ * "-" and "_". Anything else is written as a plain name, never a link.
+ */
+const MENTIONABLE_ID = /^[A-Za-z0-9_-]{1,64}$/;
 
 /** Formats and posts channel messages. Display names are sanitised before use. */
 export class ChannelAnnouncer implements Announcer {

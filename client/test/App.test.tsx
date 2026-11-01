@@ -88,6 +88,23 @@ describe("Study Squad app", () => {
     expect(screen.getByRole("button", { name: "End solo timer" })).toBeInTheDocument();
   });
 
+  it("starts a solo timer with a custom length, and refuses one out of range", async () => {
+    const { user } = await renderApp();
+    await user.click(screen.getByRole("button", { name: "Start a solo timer" }));
+    const dialog = screen.getByRole("dialog");
+    await user.click(within(dialog).getByRole("radio", { name: "Custom" }));
+    const field = within(dialog).getByLabelText("Minutes");
+    const start = within(dialog).getByRole("button", { name: "Start focusing" });
+    await user.clear(field);
+    await user.type(field, "181");
+    expect(start).toBeDisabled();
+    await user.clear(field);
+    await user.type(field, "42");
+    expect(start).toBeEnabled();
+    await user.click(start);
+    expect(await screen.findByRole("listitem", { name: /You, Solo · 42:00/ })).toBeInTheDocument();
+  });
+
   it("adds and completes goals, earning XP once", async () => {
     const { user } = await renderApp();
     const panel = screen.getByRole("region", { name: "Your session" });
@@ -113,6 +130,17 @@ describe("Study Squad app", () => {
     await user.keyboard("{Escape}");
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     expect(opener).toHaveFocus();
+  });
+
+  it("shows the feedback box as coming soon, with no way to send", async () => {
+    const { user } = await renderApp();
+    await user.click(screen.getByRole("button", { name: "Room settings" }));
+    await user.click(screen.getByRole("button", { name: "Send feedback" }));
+    const dialog = screen.getByRole("dialog", { name: "Send feedback" });
+    expect(within(dialog).getByRole("textbox")).toBeDisabled();
+    expect(within(dialog).getByRole("button", { name: "Coming soon" })).toBeDisabled();
+    await user.click(within(dialog).getByRole("button", { name: "Close" }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
   it("mutes and unmutes sound effects from the header", async () => {

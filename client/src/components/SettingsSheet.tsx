@@ -5,7 +5,15 @@ import { Sheet } from "./Sheet";
  * Read-only summary of the room's rules. Admins change them in Root's
  * App settings, which Root already restricts to people allowed to manage apps.
  */
-export function SettingsSheet({ room, onClose }: { room: RoomStateDto; onClose(): void }) {
+export function SettingsSheet({
+  room,
+  onClose,
+  onSendFeedback,
+}: {
+  room: RoomStateDto;
+  onClose(): void;
+  onSendFeedback(): void;
+}) {
   const f = room.features;
   const rows: [string, string][] = [
     [
@@ -40,6 +48,9 @@ export function SettingsSheet({ room, onClose }: { room: RoomStateDto; onClose()
       <div className="tiny dim">
         Community admins can change these in App settings for Study Squad.
       </div>
+      <button type="button" className="btn btn-quiet" onClick={onSendFeedback}>
+        Send feedback
+      </button>
       <button type="button" className="btn" onClick={onClose} data-autofocus>
         Close
       </button>

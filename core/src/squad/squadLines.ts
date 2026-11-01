@@ -236,5 +236,17 @@ export const RARE_LINES: readonly RareLine[] = [
   { text: "Study. James Study. 🍸" },
 ];
 
+/** Movie Night's own lines for joins and badges. Its timer lines are RARE_LINES. */
+export const MOVIE_LINES: Readonly<Record<"memberJoined" | "badgeUnlocked", readonly string[]>> = {
+  memberJoined: ["Hello there! 👋"],
+  badgeUnlocked: [
+    "unlocked {badge}. The Force is strong with this one. 🌌",
+    "earned {badge}. This is the way. 🪖",
+    "got {badge}. I'll be back for more. 🤖",
+    "unlocked {badge}. Shaken, not stirred. 🍸",
+    "earned {badge}. Houston, we have a winner. 🚀",
+  ],
+};
+
 /** Added to the end-of-cycle post, since that's when "Keep going?" shows. */
 export const KEEP_GOING_FOOTER = "Tap Keep going in Study Squad to roll into the next cycle.";

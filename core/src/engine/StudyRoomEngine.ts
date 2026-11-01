@@ -911,7 +911,7 @@ export class StudyRoomEngine {
     if (turn !== storedTurn) await tx.kv.set(SQUAD_MOOD_KEY, turn);
     const personalities = this.config.squadBot.personalities;
     const mood = moodForTurn(personalities, turn);
-    const line = pickSquadLine(event, mood, personalities, last, this.deps.random, {
+    const line = pickSquadLine(event, mood, last, this.deps.random, {
       round,
       togetherMinutes: Math.max(0, now - startedAt) / MINUTE_MS,
       badge,

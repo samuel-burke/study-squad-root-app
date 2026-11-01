@@ -1,5 +1,6 @@
 import {
   ALL_PERSONALITIES,
+  MOVIE_LINES,
   RARE_LINES,
   SQUAD_LINES,
   type Personality,
@@ -49,39 +50,32 @@ export function moodForTurn(personalities: readonly Personality[], turn: number)
   return moods[((turn % moods.length) + moods.length) % moods.length]!;
 }
 
-/** Joins and badges aren't about the timer, so the movie mood has no lines for them. */
-function isTimerEvent(event: SquadEvent): boolean {
-  return event !== "memberJoined" && event !== "badgeUnlocked";
-}
-
 /**
  * Picks what the bot says for `event` in `mood`. Every line in the mood is
- * equally likely. In the movie mood, joins and badges borrow the enabled
- * personalities' lines. Never the same line twice in a row for an event, and
+ * equally likely. Never the same line twice in a row for an event, and
  * never the last movie line again. `random` returns [0, 1) like Math.random.
  */
 export function pickSquadLine(
   event: SquadEvent,
   mood: SquadMood,
-  personalities: readonly Personality[],
   last: LastSquadLines,
   random: () => number,
   context: SquadLineContext,
 ): PickedLine & { rare: boolean } {
-  const movieLines = () =>
-    RARE_LINES.flatMap((line, i) =>
-      context.togetherMinutes >= (line.minTogetherMinutes ?? 0)
-        ? [{ id: `rare.${i}`, text: line.text, rare: true }]
-        : [],
-    );
-  const voices: readonly Personality[] =
-    mood !== "movie" ? [mood] : personalities.length > 0 ? personalities : ALL_PERSONALITIES;
   const pool =
-    mood === "movie" && isTimerEvent(event)
-      ? movieLines()
-      : voices.flatMap((p) =>
-          SQUAD_LINES[event][p].map((text, i) => ({ id: `${event}.${p}.${i}`, text, rare: false })),
-        );
+    mood !== "movie"
+      ? SQUAD_LINES[event][mood].map((text, i) => ({
+          id: `${event}.${mood}.${i}`,
+          text,
+          rare: false,
+        }))
+      : event === "memberJoined" || event === "badgeUnlocked"
+        ? MOVIE_LINES[event].map((text, i) => ({ id: `${event}.movie.${i}`, text, rare: false }))
+        : RARE_LINES.flatMap((line, i) =>
+            context.togetherMinutes >= (line.minTogetherMinutes ?? 0)
+              ? [{ id: `rare.${i}`, text: line.text, rare: true }]
+              : [],
+          );
   const fresh = pool.filter((l) => l.id !== last[event] && l.id !== last.rare);
   const options = fresh.length > 0 ? fresh : pool;
   const line = options[Math.min(options.length - 1, Math.floor(random() * options.length))]!;

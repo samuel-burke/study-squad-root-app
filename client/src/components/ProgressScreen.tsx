@@ -35,6 +35,10 @@ export function ProgressScreen({
   const loaded = useRef(false);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  // The leaderboard loads on its own. Both wait for each other so the stats don't
+  // appear above an already-drawn board and push it down the screen.
+  const [boardSettled, setBoardSettled] = useState(false);
+  const ready = (progress !== null || error !== null) && boardSettled;
 
   async function save(work: () => Promise<ProgressDto>) {
     setSaving(true);
@@ -81,14 +85,14 @@ export function ProgressScreen({
         <h1 style={{ fontSize: 20 }}>Your progress</h1>
       </header>
 
-      {error && (
+      {!ready && <div className="muted">Loading…</div>}
+
+      {ready && error && (
         <div className="toast" role="alert" style={{ position: "static", transform: "none" }}>
           {error}
         </div>
       )}
-      {!progress && !error && <div className="muted">Loading…</div>}
-
-      {progress && (
+      {ready && progress && (
         <>
           {xpEnabled && (
             <section
@@ -154,9 +158,17 @@ export function ProgressScreen({
         </>
       )}
 
-      <WeeklyLeaderboard gateway={gateway} onOpenMember={onOpenMember} refreshKey={refreshKey} />
+      {/* Mounted from the start so it loads alongside the stats, but kept out of sight until both are in. */}
+      <div className="progress-stack" hidden={!ready}>
+        <WeeklyLeaderboard
+          gateway={gateway}
+          onOpenMember={onOpenMember}
+          refreshKey={refreshKey}
+          onSettled={() => setBoardSettled(true)}
+        />
 
-      <DeleteMyData onDelete={onDeleteData} onDone={onBack} />
+        <DeleteMyData onDelete={onDeleteData} onDone={onBack} />
+      </div>
     </main>
   );
 }

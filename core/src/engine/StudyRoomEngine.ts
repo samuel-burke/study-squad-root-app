@@ -68,8 +68,9 @@ import {
   phaseAt,
   type CyclePhase,
 } from "../timer/roomCycle";
+import { squadHeading } from "../posts";
 import { SECRET_BADGE_NAME, type SquadEvent } from "../squad/squadLines";
-import { pickSquadLine, type LastSquadLines } from "../squad/squadVoice";
+import { moodForTurn, pickSquadLine, type LastSquadLines } from "../squad/squadVoice";
 import {
   validateGoalText,
   validateId,
@@ -126,6 +127,8 @@ const SQUAD_LAST_KEY = "squadLastLines";
 const SQUAD_SESSION_KEY = "squadSessionStartedAt";
 /** When each member's join was last announced. */
 const SQUAD_JOINS_KEY = "squadJoinPosts";
+/** Which session the bot is on, so each one gets the next mood in turn. */
+const SQUAD_MOOD_KEY = "squadMoodTurn";
 /** A member's join is announced at most once in this long, so popping in and out stays quiet. */
 const SQUAD_JOIN_COOLDOWN_MS = 2 * 60 * MINUTE_MS;
 /**
@@ -901,7 +904,14 @@ export class StudyRoomEngine {
     if (!this.config.squadBot.enabled || !channelId || userIds.length === 0) return;
     const last = (await tx.kv.get<LastSquadLines>(SQUAD_LAST_KEY)) ?? {};
     const startedAt = (await tx.kv.get<number>(SQUAD_SESSION_KEY)) ?? now;
-    const line = pickSquadLine(event, this.config.squadBot.personalities, last, this.deps.random, {
+    // A new session (the room starting, or the next cycle's first round) moves to the next mood.
+    const newSession = event === "sessionStarted" || (event === "studyResumed" && round === 1);
+    const storedTurn = await tx.kv.get<number>(SQUAD_MOOD_KEY);
+    const turn = newSession ? (storedTurn ?? -1) + 1 : (storedTurn ?? 0);
+    if (turn !== storedTurn) await tx.kv.set(SQUAD_MOOD_KEY, turn);
+    const personalities = this.config.squadBot.personalities;
+    const mood = moodForTurn(personalities, turn);
+    const line = pickSquadLine(event, mood, personalities, last, this.deps.random, {
       round,
       togetherMinutes: Math.max(0, now - startedAt) / MINUTE_MS,
       badge,
@@ -910,7 +920,9 @@ export class StudyRoomEngine {
       ...last,
       ...(line.rare ? { rare: line.id } : { [event]: line.id }),
     });
-    effects.posts.push((a) => a.squadMessage(channelId, event, line.text, userIds));
+    const rounds = (await tx.room.getCycle())?.preset.rounds;
+    const heading = squadHeading(event, round, rounds);
+    effects.posts.push((a) => a.squadMessage(channelId, event, line.text, userIds, heading));
   }
 
   /** The squad bot congratulates a member on badges they just earned, in one post. */

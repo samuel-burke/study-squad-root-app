@@ -213,7 +213,10 @@ export interface RareLine {
   minTogetherMinutes?: number;
 }
 
-/** Surprises that replace a timer post now and then, whatever the personality. */
+/**
+ * Shared lines any personality can say for a timer post. Each is as likely as
+ * any personality line.
+ */
 export const RARE_LINES: readonly RareLine[] = [
   {
     text: "You've been studying together for {hours} hours. That's actually insane. 🤯",

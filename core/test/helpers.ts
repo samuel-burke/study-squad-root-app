@@ -96,8 +96,14 @@ export class RecordingAnnouncer implements Announcer {
   async dailyRecap(channelId: string, recap: RecapDto) {
     this.posts.push({ kind: "recap", channelId, detail: recap });
   }
-  async squadMessage(channelId: string, event: SquadEvent, text: string, userIds: string[]) {
-    this.posts.push({ kind: "squad", channelId, detail: { event, text, userIds } });
+  async squadMessage(
+    channelId: string,
+    event: SquadEvent,
+    text: string,
+    userIds: string[],
+    heading?: string,
+  ) {
+    this.posts.push({ kind: "squad", channelId, detail: { event, text, userIds, heading } });
   }
 }
 

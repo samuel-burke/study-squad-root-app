@@ -6,19 +6,16 @@ import {
   type SquadEvent,
 } from "./squadLines";
 
-/** About one timer post in 25 is a rare line instead. Joins and badges never are. */
-export const RARE_CHANCE = 1 / 25;
-
 export interface SquadLineContext {
   /** The focus round the post is about, for `{round}`. */
   round: number;
-  /** How long the room has been running without emptying, for rare lines. */
+  /** How long the room has been running without emptying, for lines like "studying together for 2 hours". */
   togetherMinutes: number;
   /** The badge names for `{badge}`, already joined ("Night Owl and Week Warrior"). */
   badge?: string;
 }
 
-/** The last line posted for each event, and the last rare line, so nothing repeats back to back. */
+/** The last line posted for each event, and the last movie line, so nothing repeats back to back. */
 export type LastSquadLines = Partial<Record<SquadEvent | "rare", string>>;
 
 export interface PickedLine {
@@ -34,41 +31,59 @@ function fill(text: string, context: SquadLineContext): string {
     .replace("{badge}", context.badge ?? "a badge");
 }
 
-function pickFrom<T extends { id: string }>(
-  options: readonly T[],
-  avoid: string | undefined,
-  random: () => number,
-): T | undefined {
-  const fresh = options.length > 1 ? options.filter((o) => o.id !== avoid) : options;
-  return fresh[Math.min(fresh.length - 1, Math.floor(random() * fresh.length))];
+/**
+ * The bot keeps one mood for a whole session so its tone stays consistent:
+ * one of the personalities, or "movie" for the shared movie-reference lines
+ * (RARE_LINES).
+ */
+export type SquadMood = Personality | "movie";
+
+/** The moods the bot takes turns with, one per session: the enabled personalities, then movie lines. */
+export function squadMoods(personalities: readonly Personality[]): SquadMood[] {
+  return [...(personalities.length > 0 ? personalities : ALL_PERSONALITIES), "movie"];
+}
+
+/** The mood for the session numbered `turn`, counting up from 0. */
+export function moodForTurn(personalities: readonly Personality[], turn: number): SquadMood {
+  const moods = squadMoods(personalities);
+  return moods[((turn % moods.length) + moods.length) % moods.length]!;
+}
+
+/** Joins and badges aren't about the timer, so the movie mood has no lines for them. */
+function isTimerEvent(event: SquadEvent): boolean {
+  return event !== "memberJoined" && event !== "badgeUnlocked";
 }
 
 /**
- * Picks what the bot says for `event`: a random line from the enabled
- * personalities, or now and then a rare one. Never the same line twice in a
- * row for an event. `random` returns [0, 1) like Math.random.
+ * Picks what the bot says for `event` in `mood`. Every line in the mood is
+ * equally likely. In the movie mood, joins and badges borrow the enabled
+ * personalities' lines. Never the same line twice in a row for an event, and
+ * never the last movie line again. `random` returns [0, 1) like Math.random.
  */
 export function pickSquadLine(
   event: SquadEvent,
+  mood: SquadMood,
   personalities: readonly Personality[],
   last: LastSquadLines,
   random: () => number,
   context: SquadLineContext,
 ): PickedLine & { rare: boolean } {
-  if (event !== "memberJoined" && event !== "badgeUnlocked" && random() < RARE_CHANCE) {
-    const rare = pickFrom(
-      RARE_LINES.map((line, i) => ({ ...line, id: `rare.${i}` })).filter(
-        (line) => context.togetherMinutes >= (line.minTogetherMinutes ?? 0),
-      ),
-      last.rare,
-      random,
+  const movieLines = () =>
+    RARE_LINES.flatMap((line, i) =>
+      context.togetherMinutes >= (line.minTogetherMinutes ?? 0)
+        ? [{ id: `rare.${i}`, text: line.text, rare: true }]
+        : [],
     );
-    if (rare) return { id: rare.id, text: fill(rare.text, context), rare: true };
-  }
-  const voices = personalities.length > 0 ? personalities : ALL_PERSONALITIES;
-  const pool = voices.flatMap((p) =>
-    SQUAD_LINES[event][p].map((text, i) => ({ id: `${event}.${p}.${i}`, text })),
-  );
-  const line = pickFrom(pool, last[event], random)!;
-  return { id: line.id, text: fill(line.text, context), rare: false };
+  const voices: readonly Personality[] =
+    mood !== "movie" ? [mood] : personalities.length > 0 ? personalities : ALL_PERSONALITIES;
+  const pool =
+    mood === "movie" && isTimerEvent(event)
+      ? movieLines()
+      : voices.flatMap((p) =>
+          SQUAD_LINES[event][p].map((text, i) => ({ id: `${event}.${p}.${i}`, text, rare: false })),
+        );
+  const fresh = pool.filter((l) => l.id !== last[event] && l.id !== last.rare);
+  const options = fresh.length > 0 ? fresh : pool;
+  const line = options[Math.min(options.length - 1, Math.floor(random() * options.length))]!;
+  return { id: line.id, text: fill(line.text, context), rare: line.rare };
 }

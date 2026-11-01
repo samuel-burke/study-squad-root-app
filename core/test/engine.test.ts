@@ -624,6 +624,7 @@ describe("channel posts", () => {
       event: string;
       text: string;
       userIds: string[];
+      heading?: string;
     }
     // Timer and join posts; badge posts are covered in badgesEngine.test.ts.
     const squad = (posts: { kind: string; detail: unknown }[]) =>
@@ -719,17 +720,36 @@ describe("channel posts", () => {
       expect(events(announcer.posts)).toEqual(["sessionStarted ana", "studyResumed ana"]);
     });
 
-    it("can say the rare two-hour line once the room has been going that long", async () => {
-      // 0.01 is always under the rare chance, so every timer post is a rare line.
-      const { engine, announcer, advance } = createHarness(configWith(), T0, () => 0.01);
+    it("keeps one mood per session and moves to the next one each session", async () => {
+      // One personality, so the moods take turns: hype, then movie lines.
+      const config = configWith({ squadBot: { enabled: true, personalities: ["hype"] } });
+      const { engine, announcer, advance } = createHarness(config, T0, () => 0.01);
       await engine.joinRoomTimer("ana");
       await advance(115 * MINUTE);
       await engine.keepGoing("ana");
       await advance(15 * MINUTE + FOCUS);
-      const texts = squad(announcer.posts).map((p) => p.text);
-      expect(texts.slice(0, 8).some((t) => t.includes("2 hours"))).toBe(false);
-      // The first post after two hours (the new cycle at 2h10m) is the two-hour line.
-      expect(texts[8]).toContain("studying together for 2 hours");
+      const posts = squad(announcer.posts);
+      const firstSession = posts.slice(0, 8);
+      const hypeLines = Object.values(SQUAD_LINES).flatMap((byMood) => byMood.hype);
+      for (const p of firstSession) {
+        const template = p.text.replace(/Round \d+/, "Round {round}");
+        expect(hypeLines, p.text).toContain(template);
+      }
+      // The next cycle (at 2h10m) is a new session in the movie mood, and the
+      // room has been going two hours, so the two-hour line can come up.
+      expect(posts[8]!.event).toBe("studyResumed");
+      expect(posts[8]!.text).toContain("studying together for 2 hours");
+    });
+
+    it("heads each timer post with whether it's focus or a break", async () => {
+      const { engine, announcer, advance } = createHarness();
+      await engine.joinRoomTimer("ana");
+      await advance(FOCUS + BREAK);
+      expect(squad(announcer.posts).map((p) => [p.event, p.heading])).toEqual([
+        ["sessionStarted", "📚 Focus · Round 1 of 4"],
+        ["breakStarted", "☕ Break"],
+        ["studyResumed", "📚 Focus · Round 2 of 4"],
+      ]);
     });
 
     it("only uses the personalities admins picked", async () => {

@@ -132,6 +132,17 @@ describe("Study Squad app", () => {
     expect(opener).toHaveFocus();
   });
 
+  it("shows the feedback box as coming soon, with no way to send", async () => {
+    const { user } = await renderApp();
+    await user.click(screen.getByRole("button", { name: "Room settings" }));
+    await user.click(screen.getByRole("button", { name: "Send feedback" }));
+    const dialog = screen.getByRole("dialog", { name: "Send feedback" });
+    expect(within(dialog).getByRole("textbox")).toBeDisabled();
+    expect(within(dialog).getByRole("button", { name: "Coming soon" })).toBeDisabled();
+    await user.click(within(dialog).getByRole("button", { name: "Close" }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
   it("mutes and unmutes sound effects from the header", async () => {
     const { user } = await renderApp();
     const button = screen.getByRole("button", { name: "Sound effects" });

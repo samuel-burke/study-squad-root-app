@@ -19,6 +19,10 @@ Fairer secret badges, a Custom solo timer, and the first release shipped to Root
 - The Friday the 13th secret badge is now **Luck of the Irish**: finish a session on St. Patrick's Day, March 17.
 - Jackpot now unlocks on any total XP ending in 777 (777, 1,777, 2,777 and so on), so missing 777 no longer means missing it for good.
 
+### Fixed
+
+- Squad bot posts now @mention everyone they name. Members whose Root id contains an underscore (most of them) used to show up as plain text.
+
 ## [0.3.2] - 2026-10-31
 
 ### Fixed

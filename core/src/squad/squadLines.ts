@@ -238,7 +238,7 @@ export const RARE_LINES: readonly RareLine[] = [
 
 /** Movie Night's own lines for joins and badges. Its timer lines are RARE_LINES. */
 export const MOVIE_LINES: Readonly<Record<"memberJoined" | "badgeUnlocked", readonly string[]>> = {
-  memberJoined: ["Hello there! 👋"],
+  memberJoined: ["Hello there! 👋", "The game is afoot! 🔍"],
   badgeUnlocked: [
     "unlocked {badge}. The Force is strong with this one. 🌌",
     "earned {badge}. This is the way. 🪖",

@@ -11,7 +11,7 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ### Changed
 
-- The squad bot keeps one mood for a whole session, so its tone stays consistent, and takes turns through the enabled personalities and a new Movie Night mood (the movie-reference lines), one per session. Every line in a mood is equally likely, so movie lines are no longer rare. Movie Night has its own join and badge lines too, like "Hello there!" and "The Force is strong with this one."
+- The squad bot keeps one mood for a whole session, so its tone stays consistent, and takes turns through the enabled personalities and a new Movie Night mood (the movie-reference lines), one per session. Every line in a mood is equally likely, so movie lines are no longer rare. Movie Night has its own join and badge lines too, like "Hello there!", "The game is afoot!" and "The Force is strong with this one."
 - Removed sorcery and spooky wording. The squad bot no longer says "The prophecy is being fulfilled" or that textbooks were "summoned". Renamed bosses: Grand Wizard of Excuses is now The Excuse Generator, The Group Project Ghost is The Group Project Freeloader, The Word Count Wraith is The Word Count Wall, The Messy Desk Monster is The Messy Desk Mountain, The Auto-Correct Imp is The Auto-Correct Gremlin, and The Phantom Assignment is The Surprise Assignment.
 
 ## [0.3.3] - 2026-11-01

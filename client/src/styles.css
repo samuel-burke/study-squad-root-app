@@ -1855,11 +1855,10 @@ textarea.input {
   grid-column: 1 / -1;
 }
 
-.badge-detail-actions {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 6px;
+/* Replay sits in the top right corner, well away from "Show on my card". */
+.badge-detail-replay {
+  margin-left: auto;
+  align-self: flex-start;
 }
 
 .badge-detail-head {

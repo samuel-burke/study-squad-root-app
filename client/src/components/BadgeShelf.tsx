@@ -85,27 +85,28 @@ export function BadgeShelf({
             <div className="badge-detail-head">
               <BadgeMedal badge={badge} size={44} locked={detailEarned === undefined} />
               <strong>{badge.name}</strong>
+              {onReplay && detailEarned !== undefined && (
+                <button
+                  type="button"
+                  className="link-btn small badge-detail-replay"
+                  onClick={() => onReplay(badge.id)}
+                >
+                  Replay
+                </button>
+              )}
             </div>
             <span className="small muted">{badge.description}</span>
             {detailEarned !== undefined ? (
               <div className="row-between small">
                 <span className="dim">Earned {earnedDate(detailEarned)}</span>
-                {/* Replay sits just above "Show on my card". */}
-                <div className="badge-detail-actions">
-                  {onReplay && (
-                    <button type="button" className="link-btn" onClick={() => onReplay(badge.id)}>
-                      Replay
-                    </button>
-                  )}
-                  <button
-                    type="button"
-                    className="link-btn"
-                    disabled={busy}
-                    onClick={() => togglePin(badge.id)}
-                  >
-                    {card.showcase.includes(badge.id) ? "Take off my card" : "Show on my card"}
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  className="link-btn"
+                  disabled={busy}
+                  onClick={() => togglePin(badge.id)}
+                >
+                  {card.showcase.includes(badge.id) ? "Take off my card" : "Show on my card"}
+                </button>
               </div>
             ) : (
               <span className="small dim">Not earned yet</span>

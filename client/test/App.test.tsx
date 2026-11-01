@@ -272,8 +272,12 @@ describe("Study Squad app", () => {
     const detail = within(shelf).getByRole("region", { name: "Badge details" });
     // The details are the very next item in the grid after the tapped badge.
     expect(tile.closest("li")?.nextElementSibling).toContainElement(detail);
+    // Replay sits in the box's header, Show on my card at the bottom.
     const buttons = within(detail).getAllByRole("button");
     expect(buttons.map((b) => b.textContent)).toEqual(["Replay", "Show on my card"]);
+    expect(within(detail).getByRole("button", { name: "Replay" })).toHaveClass(
+      "badge-detail-replay",
+    );
 
     await user.click(within(detail).getByRole("button", { name: "Replay" }));
     const moment = screen.getByRole("dialog", { name: "Squad Up" });

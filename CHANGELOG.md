@@ -8,7 +8,7 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 - Eight movie-reference lines for the squad bot, like "I'll be back. Right after this round." and "May the focus be with you."
 - Squad bot timer posts now start with a heading that says whether it's focus or a break: "📚 Focus · Round 2 of 4", "☕ Break" or "🛋️ Long break".
-- A **Replay** button on earned badges in Your progress, just above "Show on my card". It plays that badge's full-screen unlock moment and sound again.
+- A **Replay** button on earned badges in Your progress, in the top right corner of the badge details. It plays that badge's full-screen unlock moment and sound again.
 
 ### Changed
 

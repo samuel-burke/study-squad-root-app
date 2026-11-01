@@ -79,6 +79,10 @@ describe("MemberProfileSheet", () => {
     const tiles = within(badges).getAllByRole("button");
     const secret = tiles.find((t) => t.getAttribute("data-secret") === "true")!;
     await user.click(secret);
+    // The details open right below the tapped badge.
+    expect(secret.closest("li")?.nextElementSibling).toContainElement(
+      screen.getByRole("region", { name: "Badge details" }),
+    );
     expect(screen.getByRole("region", { name: "Badge details" })).toHaveTextContent(
       "Nobody tells you how to get these",
     );

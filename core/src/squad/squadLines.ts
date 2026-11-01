@@ -223,6 +223,14 @@ export const RARE_LINES: readonly RareLine[] = [
   { text: "Achievement unlocked: Professional Procrastination Recovery. 🏅" },
   { text: "The academic comeback is officially underway. 📈" },
   { text: "Somewhere, a professor just felt a disturbance in the force. 🌌" },
+  { text: "Just keep studying, just keep studying. 🐠" },
+  { text: "Houston, we have a study session. 🚀" },
+  { text: "I'll be back. Right after this round. 🤖" },
+  { text: "Hasta la vista, procrastination. 🕶️" },
+  { text: "May the focus be with you. 🌌" },
+  { text: "Do or do not. There is no try. There is only study. 🌌" },
+  { text: "This is the way. The study way. 🪖" },
+  { text: "Study. James Study. 🍸" },
 ];
 
 /** Added to the end-of-cycle post, since that's when "Keep going?" shows. */

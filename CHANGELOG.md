@@ -4,6 +4,10 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ## [Unreleased]
 
+### Added
+
+- Eight movie-reference rare lines for the squad bot, like "I'll be back. Right after this round." and "May the focus be with you."
+
 ### Changed
 
 - Removed sorcery and spooky wording. The squad bot no longer says "The prophecy is being fulfilled" or that textbooks were "summoned". Renamed bosses: Grand Wizard of Excuses is now The Excuse Generator, The Group Project Ghost is The Group Project Freeloader, The Word Count Wraith is The Word Count Wall, The Messy Desk Monster is The Messy Desk Mountain, The Auto-Correct Imp is The Auto-Correct Gremlin, and The Phantom Assignment is The Surprise Assignment.

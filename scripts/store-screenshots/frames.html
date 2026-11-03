@@ -230,7 +230,11 @@
     </style>
   </head>
   <body>
-    <!-- HERO: the wide banner at the top of the store page -->
+    <!--
+      HERO: the banner. The store card shows only the middle 960x500 (about 1.9:1),
+      with the app icon over its bottom-left corner; the listing page shows all of it.
+      So the headline sits in the middle and the app screens only on the sides.
+    -->
     <section
       class="frame"
       id="hero"
@@ -238,40 +242,20 @@
         width: 2400px;
         height: 500px;
         background:
-          radial-gradient(900px 500px at 0% 0%, rgba(245, 184, 61, 0.26), transparent 70%),
-          radial-gradient(900px 600px at 100% 100%, rgba(70, 199, 174, 0.2), transparent 70%),
-          radial-gradient(700px 400px at 70% 10%, rgba(157, 183, 255, 0.1), transparent 70%),
+          radial-gradient(700px 420px at 50% 40%, rgba(245, 184, 61, 0.18), transparent 70%),
+          radial-gradient(800px 500px at 0% 100%, rgba(70, 199, 174, 0.16), transparent 70%),
+          radial-gradient(800px 500px at 100% 0%, rgba(157, 183, 255, 0.12), transparent 70%),
           linear-gradient(160deg, #111a30, #080b14);
       "
     >
       <div
-        style="
-          position: absolute;
-          left: 170px;
-          top: 0;
-          bottom: 0;
-          display: flex;
-          align-items: center;
-          gap: 48px;
-        "
-      >
-        <span data-mark style="--s: 230px"></span>
-        <div>
-          <div class="brand" style="font-size: 34px; margin-bottom: 10px">Study Squad</div>
-          <h1 style="font-size: 110px">Focus <em>together.</em></h1>
-          <p class="sub" style="font-size: 32px; margin-top: 16px">
-            The group study timer for your Root community.
-          </p>
-        </div>
-      </div>
-      <div
         class="shot"
         style="
-          left: 1480px;
-          top: 50px;
-          width: 1150px;
-          transform: perspective(2400px) rotateY(-14deg) rotateX(4deg);
-          transform-origin: left center;
+          left: -320px;
+          top: 40px;
+          width: 1000px;
+          transform: perspective(2400px) rotateY(16deg) rotateX(4deg);
+          transform-origin: right center;
         "
       >
         <img src="room.png" />
@@ -279,18 +263,28 @@
       <img
         class="float"
         src="boss.png"
-        style="left: 1380px; top: 180px; width: 340px; border-radius: 22px"
+        style="left: 1760px; top: 70px; width: 380px; border-radius: 22px"
       />
       <img
         src="medal.png"
         style="
           position: absolute;
-          left: 2020px;
-          top: 120px;
+          left: 2080px;
+          top: 150px;
           width: 340px;
           -webkit-mask-image: radial-gradient(circle, #000 34%, transparent 66%);
         "
       />
+      <div style="position: absolute; left: 720px; width: 960px; top: 112px; text-align: center">
+        <h1 style="font-size: 104px">Focus <em>together.</em></h1>
+        <p class="sub" style="font-size: 32px; margin-top: 18px">
+          The group study timer for your Root community.
+        </p>
+        <div class="pills" style="justify-content: center; margin-top: 30px">
+          <span class="pill">Shared focus timer</span><span class="pill">Weekly boss</span
+          ><span class="pill">Streaks &amp; medals</span>
+        </div>
+      </div>
     </section>
 
     <!-- 1 ROOM -->

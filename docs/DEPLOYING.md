@@ -24,8 +24,8 @@ Never put the token in code, chat or an issue. GitHub hides it in logs.
 1. Create a **private** repo for the notes, for example `study-squad-feedback`.
 2. Create a fine-grained token at GitHub → Settings → Developer settings → **Fine-grained tokens**: **Only select repositories** with that repo, and **Issues: Read and write** as the only permission. Set an expiry and a calendar reminder to renew it.
 3. Make a relay key: a long random string, for example from `openssl rand -hex 32`.
-4. In the Vercel project for the relay (root directory `feedback-relay`), add environment variables `GITHUB_TOKEN` (the token, marked Sensitive), `GITHUB_REPO` (`owner/name`) and `RELAY_KEY` (the key), then redeploy.
-5. In this repo's Actions secrets, add `FEEDBACK_RELAY_URL` (`https://<relay>.vercel.app/api/feedback`) and `FEEDBACK_RELAY_KEY` (the same key). For Docker builds, put the same two lines in `server/.env`.
+4. In the Vercel project for the relay (`study-squad-feedback`, live at `https://study-squad-feedback.vercel.app/api/feedback`), add environment variables `GITHUB_TOKEN` (the token, marked Sensitive), `GITHUB_REPO` (`owner/name`) and `RELAY_KEY` (the key), then redeploy.
+5. In this repo's Actions secrets, add `FEEDBACK_RELAY_URL` (`https://study-squad-feedback.vercel.app/api/feedback`) and `FEEDBACK_RELAY_KEY` (the same key). For Docker builds, put the same two lines in `server/.env`.
 
 The relay accepts up to 50 notes a day from all communities together (`DAILY_CAP` changes it). Someone who pulled the key out of a package could only post notes up to that cap; they can't read anything. If that happens, change `RELAY_KEY` on Vercel and in the secrets, and ship a new version.
 

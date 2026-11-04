@@ -13,4 +13,4 @@ Environment variables (Vercel → Project → Settings → Environment Variables
 | `RELAY_KEY`    | A long random string; the same value goes in the app's `FEEDBACK_RELAY_KEY` |
 | `DAILY_CAP`    | Optional, default 50                                                        |
 
-The Vercel project's root directory is `feedback-relay`. See `docs/DEPLOYING.md`.
+It runs as the Vercel project `study-squad-feedback` at `https://study-squad-feedback.vercel.app/api/feedback`. The project isn't linked to git yet, so a change here needs a redeploy of this folder. See `docs/DEPLOYING.md`.

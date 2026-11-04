@@ -42,6 +42,14 @@ enum ResultSource {
   RESULT_SOURCE_SOLO = 2;
 }
 
+// What a finished session did to the weekly boss. Unspecified reads as a hit.
+enum BossOutcome {
+  BOSS_OUTCOME_UNSPECIFIED = 0;
+  BOSS_OUTCOME_HIT = 1;
+  BOSS_OUTCOME_FINAL_BLOW = 2;
+  BOSS_OUTCOME_ALREADY_DEFEATED = 3;
+}
+
 message TimerPreset {
   double focus_minutes = 1;
   double break_minutes = 2;
@@ -374,6 +382,7 @@ message PersonalResultEvent {
   optional Goal goal_prompt = 13;
   double break_ends_at_ms = 14;
   MyStatus me = 15;
+  BossOutcome boss_outcome = 16;
 }
 
 message MyStatusEvent {

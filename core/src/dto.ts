@@ -140,6 +140,12 @@ export interface PhaseCompletedDto {
   room: RoomStateDto;
 }
 
+/**
+ * What a session did to the weekly boss: dealt damage, landed the final blow,
+ * or found it already defeated (so no damage counted).
+ */
+export type BossOutcome = "hit" | "finalBlow" | "alreadyDefeated";
+
 /** Sent only to the member it is about, after a focus block they took part in. */
 export interface PersonalResultDto {
   source: "room" | "solo";
@@ -154,8 +160,9 @@ export interface PersonalResultDto {
   streak: number;
   streakExtended: boolean;
   finisherIds: string[];
-  /** Boss damage, in XP. */
+  /** Boss damage, in XP. 0 when the boss was already defeated. */
   roomDamageXp: number;
+  bossOutcome: BossOutcome;
   goalPrompt: GoalDto | null;
   breakEndsAt: number;
   me: MyStatusDto;

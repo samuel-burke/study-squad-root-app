@@ -10,6 +10,7 @@ import type {
   MemberProfileDto,
   MyStatusDto,
   PersonalResultDto,
+  BossOutcome,
   ProgressDto,
   QuestDto,
   RecapDto,
@@ -1090,7 +1091,7 @@ export class StudyRoomEngine {
       .map((s) => s.participant.userId);
     const combo = comboFor(finisherIds.length, this.config.comboEnabled);
     // Damage is the XP the round earns before the daily cap, so capped members still hit the boss.
-    const roomDamageXp = minuteShares.reduce((sum, s) => sum + focusXp(s.minutes, combo), 0);
+    const roundXp = minuteShares.reduce((sum, s) => sum + focusXp(s.minutes, combo), 0);
     // Stayed for the whole cycle: this is its last round and they finished round 1 too.
     const focusPhases = phases.filter((p) => p.kind === "focus");
     const lastRound = focusPhases.at(-1)?.index === phase.index;
@@ -1131,6 +1132,8 @@ export class StudyRoomEngine {
       minuteShares.map((s) => s.participant.userId),
       phase.endsAt,
     );
+    const bossOutcome = await this.bossOutcome(tx, phase.startsAt, phase.endsAt);
+    const roomDamageXp = bossOutcome === "alreadyDefeated" ? 0 : roundXp;
     for (const p of participants) {
       if (p.bossXpDealt !== 0 || p.liveMinutes !== 0 || p.liveXp !== 0)
         await tx.room.addParticipant({ ...p, ...NO_LIVE_CREDIT });
@@ -1163,6 +1166,7 @@ export class StudyRoomEngine {
         streakExtended: credit.streakExtended,
         finisherIds,
         roomDamageXp,
+        bossOutcome,
         goalPrompt: await this.goalPrompt(tx, userId),
         breakEndsAt,
         me: withNewBadges(await this.buildMyStatus(tx, userId, phase.endsAt), effects),
@@ -1189,6 +1193,7 @@ export class StudyRoomEngine {
         const damageXp = focusXp(solo.minutes, 1);
         const rest = damageXp - solo.bossXpDealt;
         await this.damageBoss(tx, effects, rest, [solo.userId], solo.endsAt);
+        const bossOutcome = await this.bossOutcome(tx, solo.startedAt, solo.endsAt);
         const stillOnBreak = solo.breakEndsAt > now;
         if (stillOnBreak) await tx.solos.save({ ...solo, phase: "break", ...NO_LIVE_CREDIT });
         else await tx.solos.delete(solo.userId);
@@ -1204,7 +1209,8 @@ export class StudyRoomEngine {
           streak: credit.streak,
           streakExtended: credit.streakExtended,
           finisherIds: [solo.userId],
-          roomDamageXp: damageXp,
+          roomDamageXp: bossOutcome === "alreadyDefeated" ? 0 : damageXp,
+          bossOutcome,
           goalPrompt: await this.goalPrompt(tx, solo.userId),
           breakEndsAt: solo.breakEndsAt,
           me: withNewBadges(await this.buildMyStatus(tx, solo.userId, now), effects),
@@ -1563,6 +1569,17 @@ export class StudyRoomEngine {
 
   private async loadCard(tx: Store, userId: string): Promise<CardRecord> {
     return (await tx.cards.list([userId]))[0] ?? { userId, style: null, showcase: null };
+  }
+
+  /**
+   * What a session that ran from startedAt to endedAt did to the boss, read
+   * after its damage is applied. A boss that fell before the session started
+   * took none of it, so the break screen shouldn't claim a hit.
+   */
+  private async bossOutcome(tx: Store, startedAt: number, endedAt: number): Promise<BossOutcome> {
+    const { defeatedAt } = await this.loadBoss(tx, endedAt);
+    if (defeatedAt === null) return "hit";
+    return defeatedAt > startedAt ? "finalBlow" : "alreadyDefeated";
   }
 
   private async loadBoss(tx: Store, now: number): Promise<BossState> {

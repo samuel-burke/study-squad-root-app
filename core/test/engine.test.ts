@@ -545,6 +545,41 @@ describe("weekly boss", () => {
     ]);
   });
 
+  it("reports the final blow, then no damage for sessions after the defeat", async () => {
+    // A tiny boss: whatever this week's built-in name, its HP is at most 20.
+    const config = configWith({ boss: { enabled: true, name: "", baseHpXp: 10 } });
+    const { engine, notifier, advance } = createHarness(config);
+    await engine.startSolo("ana", 25);
+    await advance(25 * MINUTE + BREAK);
+    expect(notifier.personal.at(-1)!.event).toMatchObject({
+      bossOutcome: "finalBlow",
+      roomDamageXp: 50,
+    });
+
+    await engine.startSolo("ana", 25);
+    await advance(25 * MINUTE + BREAK);
+    expect(notifier.personal.at(-1)!.event).toMatchObject({
+      bossOutcome: "alreadyDefeated",
+      roomDamageXp: 0,
+    });
+
+    await engine.joinRoomTimer("ana");
+    await advance(FOCUS);
+    expect(notifier.phases.at(-1)!.roomDamageXp).toBe(0);
+    expect(notifier.personal.at(-1)!.event).toMatchObject({
+      source: "room",
+      bossOutcome: "alreadyDefeated",
+      roomDamageXp: 0,
+    });
+  });
+
+  it("reports a plain hit while the boss is still standing", async () => {
+    const { engine, notifier, advance } = createHarness();
+    await engine.startSolo("ana", 25);
+    await advance(25 * MINUTE);
+    expect(notifier.personal.at(-1)!.event).toMatchObject({ bossOutcome: "hit", roomDamageXp: 50 });
+  });
+
   it("takes the XP a session earns before the daily cap", async () => {
     const { engine, advance } = createHarness(configWith({ xp: { enabled: true, dailyCap: 20 } }));
     await engine.startSolo("ana", 25);

@@ -4,6 +4,10 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ## [Unreleased]
 
+### Added
+
+- **Bot @mentions** setting for admins, next to Bot messages channel. It's off by default, so the Squad bot writes people's names as plain text instead of pinging them. Turn it on to bring the pings back.
+
 ## [0.3.5] - 2026-11-04
 
 Send feedback now reaches the developer, and the privacy policy has its own website.

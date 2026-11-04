@@ -303,8 +303,9 @@ export interface Announcer {
   ): Promise<void>;
   dailyRecap(channelId: string, recap: RecapDto): Promise<void>;
   /**
-   * A squad bot post: `text` from the line pools, addressed to (mentioning)
-   * `userIds`, under an optional `heading` line such as "☕ Break".
+   * A squad bot post: `text` from the line pools, addressed to `userIds`,
+   * under an optional `heading` line such as "☕ Break". With `mention` the
+   * people are pinged; without it their names are plain text.
    */
   squadMessage(
     channelId: string,
@@ -312,6 +313,7 @@ export interface Announcer {
     text: string,
     userIds: string[],
     heading?: string,
+    mention?: boolean,
   ): Promise<void>;
 }
 

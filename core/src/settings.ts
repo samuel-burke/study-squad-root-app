@@ -20,6 +20,7 @@ export const SETTINGS = {
     customFocus: "customFocusMinutes",
     customBreak: "customBreakMinutes",
     postChannel: "postChannel",
+    squadMentions: "squadMentions",
     voiceChannel: "voiceChannelName",
     recapEnabled: "recapEnabled",
     recapTime: "recapTime",
@@ -70,7 +71,12 @@ export interface AppConfig {
    * The squad bot: posts in the channel when the room timer starts, switches
    * and finishes, and when someone joins, in the voices admins picked.
    */
-  squadBot: { enabled: boolean; personalities: Personality[] };
+  squadBot: {
+    enabled: boolean;
+    personalities: Personality[];
+    /** @mention (ping) people in its posts. Off = their names in plain text. */
+    mentions: boolean;
+  };
   xp: { enabled: boolean; dailyCap: number };
   comboEnabled: boolean;
   /**
@@ -95,7 +101,7 @@ export const DEFAULT_CONFIG: AppConfig = {
   recapLeaderboardEnabled: true,
   goalsPublicByDefault: true,
   busyPosts: { enabled: true, threshold: 5 },
-  squadBot: { enabled: true, personalities: [...ALL_PERSONALITIES] },
+  squadBot: { enabled: true, personalities: [...ALL_PERSONALITIES], mentions: false },
   xp: { enabled: true, dailyCap: 300 },
   comboEnabled: true,
   boss: { enabled: true, name: "", baseHpXp: 10_000 },
@@ -188,6 +194,7 @@ export function parseSettings(raw: RawSettings): AppConfig {
     squadBot: {
       enabled: bool(room[r.squadBot], d.squadBot.enabled),
       personalities: personalities(room[r.squadPersonalities]),
+      mentions: bool(room[r.squadMentions], d.squadBot.mentions),
     },
     xp: {
       enabled: bool(game[g.xpEnabled], d.xp.enabled),

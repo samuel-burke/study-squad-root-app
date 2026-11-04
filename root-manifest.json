@@ -40,6 +40,14 @@
             }
           },
           {
+            "key": "squadMentions",
+            "title": "Bot @mentions",
+            "description": "Ping people with an @mention when the Squad bot posts about them. Off shows their names as plain text, with no notification.",
+            "checkbox": {
+              "defaultValue": false
+            }
+          },
+          {
             "key": "timerPreset",
             "title": "Default room timer",
             "description": "Focus minutes / break minutes. Rounds of 4, then a long break. Changes apply from the next cycle.",
@@ -346,7 +354,7 @@
           {
             "key": "squadBot",
             "title": "Squad bot",
-            "description": "Post a fun message in the updates channel when the room timer starts, switches between study and break, or finishes, when someone joins, and when someone unlocks a badge. Mentions the people in the room.",
+            "description": "Post a fun message in the updates channel when the room timer starts, switches between study and break, or finishes, when someone joins, and when someone unlocks a badge. Names the people in the room.",
             "checkbox": {
               "defaultValue": true
             }

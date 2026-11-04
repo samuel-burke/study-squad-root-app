@@ -4,6 +4,10 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ## [Unreleased]
 
+### Added
+
+- **Bot @mentions** setting for admins, next to Bot messages channel. It's off by default, so the Squad bot writes people's names as plain text instead of pinging them. Turn it on to bring the pings back.
+
 ### Changed
 
 - The early countdown chirp now comes at 1 minute left instead of 10 seconds. The last-five-seconds chirps stay the same.

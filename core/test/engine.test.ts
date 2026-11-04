@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   bossNameFor,
+  DEFAULT_CONFIG,
   DomainError,
   ErrorCode,
   LIMITS,
@@ -628,6 +629,7 @@ describe("channel posts", () => {
       text: string;
       userIds: string[];
       heading?: string;
+      mention?: boolean;
     }
     // Timer and join posts; badge posts are covered in badgesEngine.test.ts.
     const squad = (posts: { kind: string; detail: unknown }[]) =>
@@ -735,7 +737,9 @@ describe("channel posts", () => {
     });
 
     it("only uses the personalities admins picked, plus the movie lines", async () => {
-      const config = configWith({ squadBot: { enabled: true, personalities: ["drill"] } });
+      const config = configWith({
+        squadBot: { enabled: true, personalities: ["drill"], mentions: false },
+      });
       const { engine, announcer, advance } = createHarness(config, T0, () => 0.1);
       await engine.joinRoomTimer("ana");
       await advance(FOCUS);
@@ -760,9 +764,21 @@ describe("channel posts", () => {
       }
     });
 
+    it("pings people only when admins turn bot mentions on", async () => {
+      for (const mentions of [false, true]) {
+        const config = configWith({
+          squadBot: { ...DEFAULT_CONFIG.squadBot, mentions },
+        });
+        const { engine, announcer } = createHarness(config);
+        await engine.joinRoomTimer("ana");
+        await engine.idle();
+        expect(squad(announcer.posts).map((p) => p.mention)).toEqual([mentions]);
+      }
+    });
+
     it("stays quiet when turned off or without a post channel", async () => {
       for (const config of [
-        configWith({ squadBot: { enabled: false, personalities: ["hype"] } }),
+        configWith({ squadBot: { enabled: false, personalities: ["hype"], mentions: false } }),
         configWith({ postChannelId: null }),
       ]) {
         const { engine, announcer, advance } = createHarness(config);

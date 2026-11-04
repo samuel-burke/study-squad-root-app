@@ -1,6 +1,6 @@
 {
   "name": "@studyroom/contract",
-  "version": "0.3.6",
+  "version": "0.3.7",
   "private": true,
   "description": "Maps engine DTOs to the generated Protobuf messages and back.",
   "main": "./dist/index.js",

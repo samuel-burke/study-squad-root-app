@@ -199,15 +199,8 @@ export function roomToProto(room: RoomStateDto): RoomState {
       bossEnabled: room.features.bossEnabled,
       streakFreezesEnabled: room.features.streakFreezesEnabled,
       goalsPublicByDefault: room.features.goalsPublicByDefault,
-      dailyXpCap: room.features.dailyXpCap,
       postChannelName: room.features.postChannelName,
-      voiceChannelStatus: room.features.voiceChannelStatus,
       feedbackEnabled: room.features.feedbackEnabled,
-    },
-    voice: {
-      channelName: room.voice.channelName,
-      joinUrl: room.voice.joinUrl,
-      userIds: room.voice.userIds,
     },
   };
 }
@@ -317,7 +310,6 @@ export function personalResultToProto(event: PersonalResultDto): PersonalResultE
     baseXp: event.baseXp,
     combo: event.combo,
     xpEarned: event.xpEarned,
-    capped: event.capped,
     streak: event.streak,
     streakExtended: event.streakExtended,
     finisherUserIds: event.finisherIds,
@@ -398,15 +390,8 @@ export function roomFromProto(room: RoomState | undefined): RoomStateDto {
       bossEnabled: features?.bossEnabled ?? false,
       streakFreezesEnabled: features?.streakFreezesEnabled ?? true,
       goalsPublicByDefault: features?.goalsPublicByDefault ?? true,
-      dailyXpCap: features?.dailyXpCap ?? 0,
       postChannelName: features?.postChannelName ?? "",
-      voiceChannelStatus: features?.voiceChannelStatus ?? "",
       feedbackEnabled: features?.feedbackEnabled ?? false,
-    },
-    voice: {
-      channelName: room?.voice?.channelName ?? "",
-      joinUrl: room?.voice?.joinUrl ?? "",
-      userIds: room?.voice?.userIds ?? [],
     },
   };
 }
@@ -518,7 +503,6 @@ export function personalResultFromProto(event: PersonalResultEvent): PersonalRes
     baseXp: event.baseXp,
     combo: event.combo,
     xpEarned: event.xpEarned,
-    capped: event.capped,
     streak: event.streak,
     streakExtended: event.streakExtended,
     finisherIds: event.finisherUserIds,

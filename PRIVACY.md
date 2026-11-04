@@ -30,7 +30,6 @@ A few things Study Squad **uses but doesn't save**:
 
 - Your Root nickname and picture, to show your card. Nicknames are held in memory for up to 10 minutes so the app doesn't have to keep asking Root.
 - Whether you have Study Squad open right now, to show who's in the room.
-- Whether you're in the community voice channel an admin picked, to show headphones on your card. Study Squad never hears or records the call itself.
 - Whether sounds are muted. This is saved only on your own device, in your browser.
 
 Each community's Study Squad data lives in that community's own app storage, hosted by Root. Communities never see each other's data.

@@ -3,7 +3,6 @@ import {
   addDays,
   dayKey,
   daysBetween,
-  isValidTimeZone,
   monthKey,
   nextMonthStart,
   nextOccurrence,
@@ -113,12 +112,5 @@ describe("month and year", () => {
     // December rolls over into the new year, at 04:00 EST = 09:00 UTC.
     expect(nextMonthStart(Date.UTC(2026, 11, 15, 12), NY)).toBe(Date.UTC(2027, 0, 1, 9));
     expect(nextYearStart(halloweenNight, NY)).toBe(Date.UTC(2027, 0, 1, 9));
-  });
-});
-
-describe("isValidTimeZone", () => {
-  it("accepts IANA names and rejects junk", () => {
-    expect(isValidTimeZone("Europe/Berlin")).toBe(true);
-    expect(isValidTimeZone("Not/AZone")).toBe(false);
   });
 });

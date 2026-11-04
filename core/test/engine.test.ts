@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   bossNameFor,
+  newBoss,
   DEFAULT_CONFIG,
   DomainError,
   ErrorCode,
@@ -17,7 +18,7 @@ import { configWith, createHarness, MINUTE, seededRandom, T0 } from "./helpers";
 const FOCUS = 25 * MINUTE;
 const BREAK = 5 * MINUTE;
 /** Without the boss, wake-ups only come at phase boundaries. */
-const NO_BOSS = configWith({ boss: { enabled: false, name: "", baseHpXp: 10_000 } });
+const NO_BOSS = configWith({ boss: { enabled: false, baseHpXp: 10_000 } });
 
 async function expectError(promise: Promise<unknown>, code: ErrorCode) {
   const error = await promise.then(
@@ -358,24 +359,25 @@ describe("goals", () => {
 });
 
 describe("XP rules", () => {
-  it("caps XP per day and resets the next day", async () => {
-    const { engine, advance } = createHarness(configWith({ xp: { enabled: true, dailyCap: 100 } }));
-    await engine.startSolo("ana", 60);
-    await advance(60 * MINUTE);
+  it("has no daily XP cap, and xpToday resets the next day", async () => {
+    const { engine, advance } = createHarness();
+    for (let i = 0; i < 5; i++) {
+      await engine.startSolo("ana", 120);
+      await advance(120 * MINUTE);
+    }
     let me = (await engine.getSnapshot("ana")).me;
-    expect(me.xpTotal).toBe(100);
-    expect(me.xpToday).toBe(100);
+    expect(me.xpTotal).toBe(1200);
+    expect(me.xpToday).toBe(1200);
     await advance(24 * 60 * MINUTE);
     await engine.startSolo("ana", 10);
     await advance(10 * MINUTE);
     me = (await engine.getSnapshot("ana")).me;
-    expect(me.xpTotal).toBe(120);
+    expect(me.xpTotal).toBe(1220);
+    expect(me.xpToday).toBe(20);
   });
 
   it("awards nothing when XP is off, but still tracks streaks", async () => {
-    const { engine, advance } = createHarness(
-      configWith({ xp: { enabled: false, dailyCap: 300 } }),
-    );
+    const { engine, advance } = createHarness(configWith({ xp: { enabled: false } }));
     await engine.startSolo("ana", 25);
     await advance(25 * MINUTE);
     const me = (await engine.getSnapshot("ana")).me;
@@ -443,15 +445,15 @@ describe("live stats", () => {
     expect(notifier.personal.find((p) => p.userId === "ana")?.event.xpEarned).toBe(55);
   });
 
-  it("stops at the daily cap live, and credits minutes with XP off", async () => {
-    const capped = createHarness(configWith({ xp: { enabled: true, dailyCap: 30 } }));
-    await capped.engine.startSolo("ana", 25);
-    await capped.advance(20 * MINUTE);
-    expect((await capped.engine.getSnapshot("ana")).me.xpTotal).toBe(30);
-    await capped.advance(5 * MINUTE);
-    expect((await capped.engine.getSnapshot("ana")).me.xpTotal).toBe(30);
+  it("credits XP live each minute, and minutes with XP off", async () => {
+    const live = createHarness();
+    await live.engine.startSolo("ana", 25);
+    await live.advance(20 * MINUTE);
+    expect((await live.engine.getSnapshot("ana")).me.xpTotal).toBe(40);
+    await live.advance(5 * MINUTE);
+    expect((await live.engine.getSnapshot("ana")).me.xpTotal).toBe(50);
 
-    const noXp = createHarness(configWith({ xp: { enabled: false, dailyCap: 300 } }));
+    const noXp = createHarness(configWith({ xp: { enabled: false } }));
     await noXp.engine.startSolo("ana", 25);
     await noXp.advance(8 * MINUTE);
     expect((await noXp.engine.getSnapshot("ana")).me.xpTotal).toBe(0);
@@ -509,22 +511,22 @@ describe("weekly boss", () => {
     expect((await engine.getSnapshot("ana")).room.boss.damageXp).toBe(38);
   });
 
-  it("takes damage from goal XP, but not past the daily cap", async () => {
-    const { engine } = createHarness(configWith({ xp: { enabled: true, dailyCap: 30 } }));
+  it("takes damage from goal XP", async () => {
+    const { engine } = createHarness();
     await engine.addGoal("ana", "Read chapter 3");
     await engine.addGoal("ana", "Read chapter 4");
     const [first, second] = (await engine.getSnapshot("ana")).me.goals;
     await engine.setGoalDone("ana", first!.id, true);
     expect((await engine.getSnapshot("ana")).room.boss.damageXp).toBe(25);
     await engine.setGoalDone("ana", second!.id, true);
-    // Only 5 XP was left under the cap.
-    expect((await engine.getSnapshot("ana")).room.boss.damageXp).toBe(30);
+    expect((await engine.getSnapshot("ana")).room.boss.damageXp).toBe(50);
   });
 
   it("is defeated by XP earned, pays out loot scaled by strength and posts once", async () => {
-    // "Quiz" is a 0.75x boss: 200 base HP becomes 150, and loot is 75 XP.
-    const config = configWith({ boss: { enabled: true, name: "Quiz", baseHpXp: 200 } });
-    const { engine, announcer, advance } = createHarness(config);
+    // Professor Pop Quiz is a 0.75x boss: 200 base HP becomes 150, and loot is 75 XP.
+    const config = configWith({ boss: { enabled: true, baseHpXp: 200 } });
+    const { engine, store, announcer, advance } = createHarness(config);
+    await store.bosses.save(newBoss("2026-10-26", "Professor Pop Quiz", 200));
     await engine.joinRoomTimer("ana");
     await engine.joinRoomTimer("kai");
     await advance(FOCUS); // 2 × 55 XP = 110 damage
@@ -540,24 +542,13 @@ describe("weekly boss", () => {
       {
         kind: "boss",
         channelId: "channel-1",
-        detail: { bossName: "Quiz", contributorCount: 2, lootXp: 75 },
+        detail: { bossName: "Professor Pop Quiz", contributorCount: 2, lootXp: 75 },
       },
     ]);
   });
 
-  it("takes the XP a session earns before the daily cap", async () => {
-    const { engine, advance } = createHarness(configWith({ xp: { enabled: true, dailyCap: 20 } }));
-    await engine.startSolo("ana", 25);
-    await advance(25 * MINUTE);
-    const snap = await engine.getSnapshot("ana");
-    expect(snap.me.xpToday).toBe(20);
-    expect(snap.room.boss.damageXp).toBe(50);
-  });
-
   it("still takes damage with XP turned off, but drops no loot", async () => {
-    const { engine, advance } = createHarness(
-      configWith({ xp: { enabled: false, dailyCap: 300 } }),
-    );
+    const { engine, advance } = createHarness(configWith({ xp: { enabled: false } }));
     await engine.startSolo("ana", 25);
     await advance(25 * MINUTE);
     const boss = (await engine.getSnapshot("ana")).room.boss;
@@ -565,22 +556,30 @@ describe("weekly boss", () => {
     expect(boss.lootXp).toBe(0);
   });
 
-  it("can be renamed and resized live by admins, with strength from the name", async () => {
+  it("uses the week's built-in boss and can be resized live by admins", async () => {
     const { engine } = createHarness();
-    await engine.setConfig(configWith({ boss: { enabled: true, name: "Finals", baseHpXp: 1000 } }));
+    await engine.setConfig(configWith({ boss: { enabled: true, baseHpXp: 1000 } }));
     const snap = await engine.getSnapshot("ana");
+    // The week of 2026-10-26 is The Procrastinator, a 1.25x boss.
     expect(snap.room.boss).toMatchObject({
-      name: "Finals",
-      maxHpXp: 2000,
-      strength: 2,
-      lootXp: 200,
+      name: bossNameFor("2026-10-26"),
+      maxHpXp: 1250,
+      strength: 1.25,
+      lootXp: 125,
       enabled: true,
     });
   });
 
+  it("swaps an old custom-named boss for the week's built-in one on the next settings change", async () => {
+    const { engine, store } = createHarness();
+    await store.bosses.save(newBoss("2026-10-26", "Calc II", 10_000));
+    await engine.setConfig(configWith());
+    expect((await engine.getSnapshot("ana")).room.boss.name).toBe("The Procrastinator");
+  });
+
   it("takes no damage when turned off", async () => {
     const { engine, advance } = createHarness(
-      configWith({ boss: { enabled: false, name: "x", baseHpXp: 100 } }),
+      configWith({ boss: { enabled: false, baseHpXp: 100 } }),
     );
     await engine.startSolo("ana", 25);
     await advance(25 * MINUTE);
@@ -736,19 +735,10 @@ describe("channel posts", () => {
       ]);
     });
 
-    it("only uses the personalities admins picked, plus the movie lines", async () => {
-      const config = configWith({
-        squadBot: { enabled: true, personalities: ["drill"], mentions: false },
-      });
-      const { engine, announcer, advance } = createHarness(config, T0, () => 0.1);
-      await engine.joinRoomTimer("ana");
-      await advance(FOCUS);
-      expect(squad(announcer.posts).map((p) => p.text)).toEqual([
-        SQUAD_LINES.sessionStarted.drill[1],
-        SQUAD_LINES.breakStarted.drill[1],
-      ]);
+    it("mixes lines from every personality and the movie lines", async () => {
+      const config = configWith();
       const allowed = new Set([
-        ...Object.values(SQUAD_LINES).flatMap((byVoice) => byVoice.drill),
+        ...Object.values(SQUAD_LINES).flatMap((byVoice) => Object.values(byVoice).flat()),
         ...RARE_LINES.map((l) => l.text),
         ...Object.values(MOVIE_LINES).flat(),
       ]);
@@ -778,7 +768,7 @@ describe("channel posts", () => {
 
     it("stays quiet when turned off or without a post channel", async () => {
       for (const config of [
-        configWith({ squadBot: { enabled: false, personalities: ["hype"], mentions: false } }),
+        configWith({ squadBot: { enabled: false, mentions: false } }),
         configWith({ postChannelId: null }),
       ]) {
         const { engine, announcer, advance } = createHarness(config);
@@ -826,7 +816,7 @@ describe("channel posts", () => {
       goalsDone: 1,
       activeMembers: 1,
       topStreaks: [{ userId: "ana", streak: 1 }],
-      boss: expect.objectContaining({ name: bossNameFor("2026-10-26", ""), daysLeft: 5 }),
+      boss: expect.objectContaining({ name: bossNameFor("2026-10-26"), daysLeft: 5 }),
     });
   });
 
@@ -898,27 +888,6 @@ describe("presence and notifications", () => {
     expect((await engine.getSnapshot("ana")).room.presentCount).toBe(2);
   });
 
-  it("shows who is in the voice channel, and nothing when none is picked", async () => {
-    const voiceConfig = configWith({
-      voiceChannelId: "voice-1",
-      voiceChannelName: "Study voice",
-      voiceChannelUrl: "https://rootapp.com/voice-1",
-    });
-    const { engine, notifier } = createHarness(voiceConfig);
-    await engine.setVoiceMembers(["ana", "kai"]);
-    expect(notifier.lastRoom?.voice).toEqual({
-      channelName: "Study voice",
-      joinUrl: "https://rootapp.com/voice-1",
-      userIds: ["ana", "kai"],
-    });
-    await engine.setConfig(configWith());
-    expect((await engine.getSnapshot("ana")).room.voice).toEqual({
-      channelName: "",
-      joinUrl: "",
-      userIds: [],
-    });
-  });
-
   it("pushes the room to everyone and status to the member after a change", async () => {
     const { engine, notifier } = createHarness();
     await engine.joinRoomTimer("ana");
@@ -971,19 +940,20 @@ describe("weekly quests", () => {
     ]);
   });
 
-  it("pays a finished quest once, outside the daily cap", async () => {
-    const { engine } = createHarness(configWith({ xp: { enabled: true, dailyCap: 50 } }));
+  it("pays a finished quest once", async () => {
+    const { engine } = createHarness();
     for (let i = 0; i < 6; i++) await engine.addGoal("ana", `Goal ${i}`);
     const goals = (await engine.getSnapshot("ana")).me.goals;
     for (const goal of goals.slice(0, 5)) await engine.setGoalDone("ana", goal.id, true);
-    // Two goals fill the 50 XP cap; the quest adds 40 on top.
-    expect((await engine.getSnapshot("ana")).me.xpTotal).toBe(50 + 40);
-    // Goal XP after the cap and the quest reward both hit the boss.
-    expect((await engine.getSnapshot("ana")).room.boss.damageXp).toBe(50 + 40);
+    // Five goals at 25 XP; the quest adds 40 on top.
+    expect((await engine.getSnapshot("ana")).me.xpTotal).toBe(5 * 25 + 40);
+    // Goal XP and the quest reward both hit the boss.
+    expect((await engine.getSnapshot("ana")).room.boss.damageXp).toBe(5 * 25 + 40);
     await engine.setGoalDone("ana", goals[5]!.id, true);
+    // Unticking and ticking a goal again pays nothing more.
     await engine.setGoalDone("ana", goals[0]!.id, false);
     await engine.setGoalDone("ana", goals[0]!.id, true);
-    expect((await engine.getSnapshot("ana")).me.xpTotal).toBe(90);
+    expect((await engine.getSnapshot("ana")).me.xpTotal).toBe(6 * 25 + 40);
     const goalsQuest = (await engine.getProgress("ana")).quests[0]!;
     expect(goalsQuest).toMatchObject({ id: "goals", progress: 5, done: true });
   });
@@ -1014,7 +984,7 @@ describe("weekly quests", () => {
   });
 
   it("shows no reward and pays none when XP is off", async () => {
-    const { engine } = createHarness(configWith({ xp: { enabled: false, dailyCap: 300 } }));
+    const { engine } = createHarness(configWith({ xp: { enabled: false } }));
     for (let i = 0; i < 5; i++) await engine.addGoal("ana", `Goal ${i}`);
     for (const goal of (await engine.getSnapshot("ana")).me.goals)
       await engine.setGoalDone("ana", goal.id, true);
@@ -1208,7 +1178,7 @@ describe("weekly leaderboard", () => {
     await expectError(engine.setLeaderboardHidden("kai", false, 2), ErrorCode.Validation);
   });
 
-  it("covers this month, this year and all time too, in the community time zone", async () => {
+  it("covers this month, this year and all time too, in US Eastern time", async () => {
     const { engine, store } = createHarness();
     await store.stats.add("ana", "2026-10-26", { focusMinutes: 60, xp: 120 });
     await store.stats.add("kai", "2026-10-05", { focusMinutes: 90, xp: 180 });
@@ -1272,7 +1242,7 @@ describe("weekly leaderboard", () => {
     await expectError(engine.getLeaderboard("ana", "minutes", "decade"), ErrorCode.Validation);
   });
 
-  it("starts over at 4am Monday in the community time zone", async () => {
+  it("starts over at 4am Monday in US Eastern time", async () => {
     // Monday 2026-11-02 03:30 in New York still belongs to the old week.
     const { engine, store, clock } = createHarness(configWith(), Date.UTC(2026, 10, 2, 8, 30));
     await store.stats.add("ana", "2026-11-01", { focusMinutes: 60 });

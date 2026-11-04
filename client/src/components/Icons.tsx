@@ -40,13 +40,6 @@ export const PeopleIcon = (p: IconProps) => (
   </Svg>
 );
 
-export const HeadphonesIcon = (p: IconProps) => (
-  <Svg {...p}>
-    <path d="M3 18v-6a9 9 0 0 1 18 0v6" />
-    <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z" />
-  </Svg>
-);
-
 export const SlidersIcon = (p: IconProps) => (
   <Svg {...p}>
     <path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0" />

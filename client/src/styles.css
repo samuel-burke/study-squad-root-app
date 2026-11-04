@@ -343,46 +343,6 @@ h3 {
   font-size: 13px;
 }
 
-.voice-btn {
-  min-height: 36px;
-  padding: 0 12px;
-  border-radius: 999px;
-  border: 1px solid var(--border);
-  background: var(--surface);
-  color: var(--text);
-  font-size: 13px;
-  font-weight: 700;
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  flex: none;
-}
-
-.voice-btn:hover {
-  border-color: var(--border-strong);
-}
-
-.voice-btn[data-compact="true"] {
-  min-height: var(--tap);
-  padding: 0 10px;
-  border-radius: 10px;
-}
-
-.voice-count {
-  font-size: 11px;
-  color: var(--teal-ink);
-  background: var(--teal);
-  border-radius: 999px;
-  padding: 1px 6px;
-}
-
-.in-voice {
-  display: inline-flex;
-  color: var(--teal);
-  flex: none;
-}
-
 .room-body {
   display: flex;
   flex-wrap: wrap;

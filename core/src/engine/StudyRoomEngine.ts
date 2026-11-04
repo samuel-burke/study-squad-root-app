@@ -45,7 +45,7 @@ import {
   SHOWCASE_SIZE,
 } from "../game/cosmetics";
 import { currentStreak, EMPTY_STREAK, freezeAvailable, recordActiveDay } from "../game/streak";
-import { applyDailyCap, baseFocusXp, focusXp, levelFromXp } from "../game/xp";
+import { baseFocusXp, focusXp, levelFromXp } from "../game/xp";
 import type { AppConfig } from "../settings";
 import {
   addDays,
@@ -60,6 +60,7 @@ import {
   weekdayName,
   weekKey,
   yearKey,
+  APP_TIME_ZONE,
 } from "../time/calendar";
 import {
   buildCycle,
@@ -199,7 +200,6 @@ export class StudyRoomEngine {
   private readonly queue = new SerialQueue();
   private readonly pendingPosts = new Set<Promise<void>>();
   private readonly present = new Set<string>();
-  private readonly inVoice = new Set<string>();
   private config: AppConfig;
   private stopped = false;
   private feedbackPass: Promise<void> | null = null;
@@ -238,7 +238,7 @@ export class StudyRoomEngine {
       this.config = config;
       if (config.boss.enabled) {
         const boss = await this.loadBoss(tx, now);
-        const name = bossNameFor(boss.weekKey, config.boss.name);
+        const name = bossNameFor(boss.weekKey);
         const result = reconfigureBoss(boss, name, config.boss.baseHpXp, now);
         await tx.bosses.save(result.boss);
         if (result.defeatedNow) await this.onBossDefeated(tx, result.boss, effects);
@@ -275,15 +275,6 @@ export class StudyRoomEngine {
     });
   }
 
-  /** Who is in the configured voice channel. The server keeps this current. */
-  setVoiceMembers(userIds: readonly string[]): Promise<void> {
-    this.inVoice.clear();
-    for (const id of userIds) this.inVoice.add(id);
-    return this.run(async (_tx, _now, effects) => {
-      effects.roomChanged = true;
-    });
-  }
-
   // ---------------------------------------------------------------- queries
 
   getSnapshot(userId: string): Promise<SnapshotDto> {
@@ -308,7 +299,7 @@ export class StudyRoomEngine {
       const member = await tx.members.get(userId);
       const members = new Map(member ? [[userId, member]] : []);
       const progress = levelFromXp(member?.xpTotal ?? 0);
-      const today = dayKey(now, this.config.timeZone);
+      const today = dayKey(now, APP_TIME_ZONE);
       const look = (await this.cardLooks(tx, [userId], members)).get(userId)!;
       return {
         userId,
@@ -640,19 +631,12 @@ export class StudyRoomEngine {
         const updated: GoalRecord = { ...goal, done, completedAt: done ? now : null };
         if (done && !goal.xpAwarded) {
           updated.xpAwarded = true;
-          const day = dayKey(now, this.config.timeZone);
-          const xp = this.config.xp.enabled
-            ? applyDailyCap(
-                GAME.xpPerGoal,
-                (await tx.stats.get(userId, day))?.xp ?? 0,
-                this.config.xp.dailyCap,
-              )
-            : 0;
+          const day = dayKey(now, APP_TIME_ZONE);
+          const xp = this.config.xp.enabled ? GAME.xpPerGoal : 0;
           const member = await this.loadMember(tx, userId);
           await tx.members.save({ ...member, xpTotal: member.xpTotal + xp });
           await tx.stats.add(userId, day, { xp, goalsDone: 1 });
-          // Goal XP hits the boss as earned, after the daily cap, so the boss
-          // can't be farmed with tiny goals.
+          // Goal XP hits the boss as earned. Each goal pays once, ever.
           await this.damageBoss(tx, effects, xp, [userId], now);
           const quests = await this.rewardQuests(tx, effects, userId, now);
           await this.awardBadges(tx, effects, userId, now, {
@@ -719,7 +703,7 @@ export class StudyRoomEngine {
     return this.run(async (tx, now, effects) => {
       const channelId = this.config.postChannelId;
       if (!this.config.recap.enabled || !channelId) return false;
-      const day = dayKey(now, this.config.timeZone);
+      const day = dayKey(now, APP_TIME_ZONE);
       if ((await tx.kv.get<string>(LAST_RECAP_KEY)) === day) return false;
       const recap = await this.recapFor(tx, now, now);
       if (recap.activeMembers === 0) return false;
@@ -824,7 +808,7 @@ export class StudyRoomEngine {
 
   /**
    * Study minutes and XP count as they happen: each whole minute of a running
-   * focus block adds its minutes and base XP (under the daily cap) right away,
+   * focus block adds its minutes and base XP right away,
    * so the leaderboard, quests, levels and the board's ranks move every
    * minute. The end of the block adds the rest, including the combo bonus.
    */
@@ -858,10 +842,8 @@ export class StudyRoomEngine {
     const newMinutes = whole - block.liveMinutes;
     if (newMinutes <= 0) return null;
     const { userId } = block;
-    const day = dayKey(now, this.config.timeZone);
-    const xpToday = (await tx.stats.get(userId, day))?.xp ?? 0;
-    const rawXp = this.config.xp.enabled ? baseFocusXp(whole) - baseFocusXp(block.liveMinutes) : 0;
-    const xp = applyDailyCap(rawXp, xpToday, this.config.xp.dailyCap);
+    const day = dayKey(now, APP_TIME_ZONE);
+    const xp = this.config.xp.enabled ? baseFocusXp(whole) - baseFocusXp(block.liveMinutes) : 0;
     if (xp > 0) {
       const member = await this.loadMember(tx, userId);
       await tx.members.save({ ...member, xpTotal: member.xpTotal + xp });
@@ -978,7 +960,7 @@ export class StudyRoomEngine {
     if (!this.config.squadBot.enabled || !channelId || userIds.length === 0) return;
     const last = (await tx.kv.get<LastSquadLines>(SQUAD_LAST_KEY)) ?? {};
     const startedAt = (await tx.kv.get<number>(SQUAD_SESSION_KEY)) ?? now;
-    const line = pickSquadLine(event, this.config.squadBot.personalities, last, this.deps.random, {
+    const line = pickSquadLine(event, last, this.deps.random, {
       round,
       togetherMinutes: Math.max(0, now - startedAt) / MINUTE_MS,
       badge,
@@ -1089,7 +1071,7 @@ export class StudyRoomEngine {
       .filter((s) => s.minutes >= finishThreshold)
       .map((s) => s.participant.userId);
     const combo = comboFor(finisherIds.length, this.config.comboEnabled);
-    // Damage is the XP the round earns before the daily cap, so capped members still hit the boss.
+    // Damage is the XP the round earns.
     const roomDamageXp = minuteShares.reduce((sum, s) => sum + focusXp(s.minutes, combo), 0);
     // Stayed for the whole cycle: this is its last round and they finished round 1 too.
     const focusPhases = phases.filter((p) => p.kind === "focus");
@@ -1158,7 +1140,6 @@ export class StudyRoomEngine {
         baseXp: credit.baseXp,
         combo,
         xpEarned: credit.xpEarned,
-        capped: credit.capped,
         streak: credit.streak,
         streakExtended: credit.streakExtended,
         finisherIds,
@@ -1200,7 +1181,6 @@ export class StudyRoomEngine {
           baseXp: credit.baseXp,
           combo: 1,
           xpEarned: credit.xpEarned,
-          capped: credit.capped,
           streak: credit.streak,
           streakExtended: credit.streakExtended,
           finisherIds: [solo.userId],
@@ -1230,7 +1210,7 @@ export class StudyRoomEngine {
     }
     // Wake when the week rolls over so everyone sees the new boss.
     if (this.config.boss.enabled && candidates.length > 0) {
-      candidates.push(nextWeekStart(now, this.config.timeZone));
+      candidates.push(nextWeekStart(now, APP_TIME_ZONE));
     }
     // While anyone is focusing, wake every minute so stats and the boss update live.
     if (await this.anyoneFocusing(tx, now)) {
@@ -1269,14 +1249,13 @@ export class StudyRoomEngine {
   ) {
     const { userId, minutes, combo, finished, now } = input;
     const live = input.live ?? { liveMinutes: 0, liveXp: 0 };
-    const day = dayKey(now, this.config.timeZone);
+    const day = dayKey(now, APP_TIME_ZONE);
     const member = await this.loadMember(tx, userId);
-    const xpToday = (await tx.stats.get(userId, day))?.xp ?? 0;
     const rawXp = this.config.xp.enabled ? focusXp(minutes, combo) : 0;
     // Live ticks paid base XP for whole minutes; the end pays the rest,
-    // including the combo bonus, under whatever room the daily cap has left.
+    // including the combo bonus.
     const liveRawXp = this.config.xp.enabled ? baseFocusXp(live.liveMinutes) : 0;
-    const restXp = applyDailyCap(Math.max(0, rawXp - liveRawXp), xpToday, this.config.xp.dailyCap);
+    const restXp = Math.max(0, rawXp - liveRawXp);
     const xpEarned = live.liveXp + restXp;
 
     let streak = member.streak;
@@ -1311,7 +1290,7 @@ export class StudyRoomEngine {
     });
     const quests = await this.rewardQuests(tx, effects, userId, now);
 
-    const tz = this.config.timeZone;
+    const tz = APP_TIME_ZONE;
     const session: SessionFacts = {
       kind: input.kind,
       finished,
@@ -1344,7 +1323,6 @@ export class StudyRoomEngine {
     return {
       baseXp: this.config.xp.enabled ? baseFocusXp(minutes) : 0,
       xpEarned,
-      capped: xpEarned < rawXp,
       streak: streak.streak,
       streakExtended,
     };
@@ -1368,7 +1346,7 @@ export class StudyRoomEngine {
 
   /**
    * Loot: every contributor gets bonus XP scaled by the boss's strength,
-   * outside the daily cap because it happens once a week.
+   * once a week.
    */
   private async onBossDefeated(
     tx: Store,
@@ -1392,7 +1370,7 @@ export class StudyRoomEngine {
           defeats: await tx.bosses.countDefeatedWith(userId),
           contributors: boss.contributorIds.length,
           finalBlow: finalBlowIds.includes(userId),
-          at: localTime(defeatedAt, this.config.timeZone),
+          at: localTime(defeatedAt, APP_TIME_ZONE),
         },
       });
     }
@@ -1407,9 +1385,7 @@ export class StudyRoomEngine {
 
   /**
    * Pays the reward for every quest the member has just finished this week.
-   * Like boss loot it is outside the daily cap: it comes at most three times
-   * a week, and a capped reward would often be zero. The reward also hits the
-   * boss. Returns the quest facts badges look at.
+   * It comes at most three times a week. The reward also hits the boss. Returns the quest facts badges look at.
    */
   private async rewardQuests(
     tx: Store,
@@ -1417,7 +1393,7 @@ export class StudyRoomEngine {
     userId: string,
     now: number,
   ): Promise<QuestFacts> {
-    const week = weekKey(dayKey(now, this.config.timeZone));
+    const week = weekKey(dayKey(now, APP_TIME_ZONE));
     const rewarded = new Set(await tx.quests.listRewarded(userId, week));
     let xp = 0;
     for (const { quest, done } of await this.weeklyQuests(tx, userId, now)) {
@@ -1447,7 +1423,7 @@ export class StudyRoomEngine {
 
   /** This week's quests and the member's progress, from daily_stats and session_log. */
   private async weeklyQuests(tx: Store, userId: string, now: number): Promise<QuestProgress[]> {
-    const tz = this.config.timeZone;
+    const tz = APP_TIME_ZONE;
     const week = weekKey(dayKey(now, tz));
     const days = await tx.stats.listForUser(userId, week, addDays(week, 6));
     const sessions = await tx.sessions.listForUser(
@@ -1566,10 +1542,9 @@ export class StudyRoomEngine {
   }
 
   private async loadBoss(tx: Store, now: number): Promise<BossState> {
-    const week = weekKey(dayKey(now, this.config.timeZone));
+    const week = weekKey(dayKey(now, APP_TIME_ZONE));
     return (
-      (await tx.bosses.get(week)) ??
-      newBoss(week, bossNameFor(week, this.config.boss.name), this.config.boss.baseHpXp)
+      (await tx.bosses.get(week)) ?? newBoss(week, bossNameFor(week), this.config.boss.baseHpXp)
     );
   }
 
@@ -1654,7 +1629,7 @@ export class StudyRoomEngine {
     const ids = [...participants.map((p) => p.userId), ...solos.map((s) => s.userId)];
     const members = new Map((await tx.members.list(ids)).map((m) => [m.userId, m]));
     const goals = await tx.goals.firstOpen(ids);
-    const today = dayKey(now, this.config.timeZone);
+    const today = dayKey(now, APP_TIME_ZONE);
     const looks = await this.cardLooks(tx, ids, members);
     // Hidden members are already left out of the standings, so they get no rank.
     const ranks = new Map(
@@ -1711,23 +1686,14 @@ export class StudyRoomEngine {
         bossEnabled: this.config.boss.enabled,
         streakFreezesEnabled: this.config.streakFreezesEnabled,
         goalsPublicByDefault: this.config.goalsPublicByDefault,
-        dailyXpCap: this.config.xp.dailyCap,
         postChannelName: this.config.postChannelId ? this.config.postChannelName : "",
         feedbackEnabled: this.deps.feedbackInbox !== undefined,
-        voiceChannelStatus: this.config.voiceChannelStatus,
       },
-      voice: this.config.voiceChannelId
-        ? {
-            channelName: this.config.voiceChannelName,
-            joinUrl: this.config.voiceChannelUrl,
-            userIds: [...this.inVoice],
-          }
-        : { channelName: "", joinUrl: "", userIds: [] },
     };
   }
 
   private async bossDto(tx: Store, now: number): Promise<BossDto> {
-    const endsAt = nextWeekStart(now, this.config.timeZone);
+    const endsAt = nextWeekStart(now, APP_TIME_ZONE);
     if (!this.config.boss.enabled) {
       return {
         enabled: false,
@@ -1780,7 +1746,7 @@ export class StudyRoomEngine {
   }
 
   private async buildProgress(tx: Store, userId: string, now: number): Promise<ProgressDto> {
-    const today = dayKey(now, this.config.timeZone);
+    const today = dayKey(now, APP_TIME_ZONE);
     const from = addDays(today, -(LIMITS.progressWindowDays - 1));
     const rows = await tx.stats.listForUser(userId, from, today);
     const byDay = new Map(rows.map((r) => [r.day, r.focusMinutes]));
@@ -1804,7 +1770,7 @@ export class StudyRoomEngine {
   }
 
   private async buildMyStatus(tx: Store, userId: string, now: number): Promise<MyStatusDto> {
-    const tz = this.config.timeZone;
+    const tz = APP_TIME_ZONE;
     const today = dayKey(now, tz);
     const member = await tx.members.get(userId);
     const streakState = member?.streak ?? EMPTY_STREAK;
@@ -1855,7 +1821,7 @@ export class StudyRoomEngine {
     by: LeaderboardMetric,
     period: LeaderboardPeriod,
   ): Promise<LeaderboardDto> {
-    const tz = this.config.timeZone;
+    const tz = APP_TIME_ZONE;
     const today = dayKey(now, tz);
     const { startDay, endsAt } = periodBounds(period, today, now, tz);
     const range: StandingsRange = {
@@ -1909,7 +1875,7 @@ export class StudyRoomEngine {
   }
 
   private async recapFor(tx: Store, at: number, now: number): Promise<RecapDto> {
-    const tz = this.config.timeZone;
+    const tz = APP_TIME_ZONE;
     const day = dayKey(at, tz);
     const stats = await tx.stats.communityDay(day);
     const hidden = new Set(await tx.leaderboard.listHidden());

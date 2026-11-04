@@ -77,11 +77,9 @@ export function BreakMoment({
               +{result.xpEarned} XP
             </div>
             <div className="stat-sub">
-              {result.capped
-                ? "Daily XP cap reached"
-                : result.combo > 1 && result.baseXp > 0
-                  ? `${result.baseXp} base × ${result.combo.toFixed(1)} combo`
-                  : `${Math.floor(result.focusedMinutes)} minutes focused`}
+              {result.combo > 1 && result.baseXp > 0
+                ? `${result.baseXp} base × ${result.combo.toFixed(1)} combo`
+                : `${Math.floor(result.focusedMinutes)} minutes focused`}
             </div>
           </div>
         )}

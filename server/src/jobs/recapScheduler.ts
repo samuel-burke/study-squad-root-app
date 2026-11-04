@@ -1,4 +1,4 @@
-import { nextOccurrence, type AppConfig, type Logger } from "@studyroom/core";
+import { APP_TIME_ZONE, nextOccurrence, type AppConfig, type Logger } from "@studyroom/core";
 
 export const RECAP_TAG = "daily-recap";
 /** A recap that fires this late is still worth posting. Later than this, skip to tomorrow. */
@@ -48,12 +48,7 @@ export class RecapScheduler {
     await this.jobs.cancelByTag(RECAP_TAG);
     const config = this.target.getConfig();
     if (!config.recap.enabled || !config.postChannelId) return;
-    const at = nextOccurrence(
-      this.now(),
-      config.recap.hours,
-      config.recap.minutes,
-      config.timeZone,
-    );
+    const at = nextOccurrence(this.now(), config.recap.hours, config.recap.minutes, APP_TIME_ZONE);
     await this.jobs.scheduleOnce(RECAP_TAG, new Date(at));
   }
 

@@ -1,9 +1,17 @@
 /**
- * Calendar math in a community time zone, using only the built-in Intl API.
+ * Calendar math in a time zone, using only the built-in Intl API.
  * Days are represented as "YYYY-MM-DD" keys so they sort and compare as strings.
  */
 
 export type DayKey = string;
+
+/**
+ * The one time zone every community's days run on. A new day starts at 4am
+ * US Eastern (DAY_START_HOUR), which is late night across the Americas and
+ * morning in Europe, so streaks, recaps, the weekly boss and the leaderboards
+ * all roll over at the same moment everywhere. It follows daylight saving.
+ */
+export const APP_TIME_ZONE = "America/New_York";
 
 /**
  * The local hour a new day starts. Before 4am still counts as the previous day,
@@ -31,15 +39,6 @@ function partsFormatter(timeZone: string): Intl.DateTimeFormat {
     formatterCache.set(timeZone, formatter);
   }
   return formatter;
-}
-
-export function isValidTimeZone(timeZone: string): boolean {
-  try {
-    partsFormatter(timeZone);
-    return true;
-  } catch {
-    return false;
-  }
 }
 
 interface ZonedParts {

@@ -1,7 +1,8 @@
 /**
  * Everything the squad bot says, kept apart from the logic that picks it.
- * To add a personality, add it to PERSONALITIES and give it lines for every
- * event; a test checks none are missing. `{round}`, `{hours}` and `{badge}` are filled in
+ * Lines are grouped by personality so the mix stays varied; the bot picks
+ * from all of them. To add a personality, add it to PERSONALITIES and give it
+ * lines for every event; a test checks none are missing. `{round}`, `{hours}` and `{badge}` are filled in
  * when the line is posted.
  */
 

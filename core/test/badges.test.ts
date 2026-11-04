@@ -264,7 +264,7 @@ describe("card styles", () => {
 });
 
 describe("localTime", () => {
-  it("gives the wall clock in the community time zone", () => {
+  it("gives the wall clock in US Eastern time", () => {
     // 2026-10-28 03:30 UTC is 23:30 the day before in New York.
     expect(localTime(Date.UTC(2026, 9, 28, 3, 30), "America/New_York")).toEqual({
       day: "2026-10-27",

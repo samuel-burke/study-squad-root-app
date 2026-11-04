@@ -41,13 +41,12 @@ describe("demoOptionsFromSearch", () => {
   it("reads the test knobs", () => {
     expect(
       demoOptionsFromSearch(
-        "?bossLeft=2&bossName=The%20Final%20Final%20Exam&bossHp=100&cap=1000&streak=6&xp=0&missed=1&unlock=giant-slayer,nope&weekHours=6",
+        "?bossLeft=2&bossName=The%20Final%20Final%20Exam&bossHp=100&streak=6&xp=0&missed=1&unlock=giant-slayer,nope&weekHours=6",
       ),
     ).toMatchObject({
       bossHpLeft: 2,
       bossName: "The Final Final Exam",
       bossBaseHp: 100,
-      dailyCap: 1000,
       streak: 6,
       xp: 0,
       missedDays: 1,
@@ -57,7 +56,10 @@ describe("demoOptionsFromSearch", () => {
   });
 
   it("leaves test knobs out when they're missing or junk", () => {
-    const options = demoOptionsFromSearch("?bossLeft=0&bossHp=0&streak=-2&xp=&unlock=nope");
+    const options = demoOptionsFromSearch(
+      "?bossLeft=0&bossHp=0&streak=-2&xp=&unlock=nope&bossName=Calc%20II",
+    );
+    expect(options).not.toHaveProperty("bossName");
     expect(options).not.toHaveProperty("bossHpLeft");
     expect(options).not.toHaveProperty("bossBaseHp");
     expect(options).not.toHaveProperty("streak");

@@ -62,22 +62,9 @@ export interface RoomFeaturesDto {
   bossEnabled: boolean;
   streakFreezesEnabled: boolean;
   goalsPublicByDefault: boolean;
-  dailyXpCap: number;
   postChannelName: string;
-  /** How the voice channel setting resolved, in words for admins. "" = not set. */
-  voiceChannelStatus: string;
   /** The server can deliver feedback to the developer, so the box is shown. */
   feedbackEnabled: boolean;
-}
-
-/** The community voice channel admins picked for studying together. */
-export interface VoiceDto {
-  /** Empty when admins haven't picked one. */
-  channelName: string;
-  /** Opens the channel in Root. Empty when no link could be made. */
-  joinUrl: string;
-  /** Members in that channel right now. */
-  userIds: string[];
 }
 
 export interface RoomStateDto {
@@ -91,7 +78,6 @@ export interface RoomStateDto {
   combo: number;
   boss: BossDto;
   features: RoomFeaturesDto;
-  voice: VoiceDto;
 }
 
 export interface GoalDto {
@@ -149,8 +135,6 @@ export interface PersonalResultDto {
   baseXp: number;
   combo: number;
   xpEarned: number;
-  /** True when the daily cap trimmed this award. */
-  capped: boolean;
   streak: number;
   streakExtended: boolean;
   finisherIds: string[];
@@ -226,7 +210,7 @@ export interface MemberProfileDto {
 export type LeaderboardMetric = "minutes" | "xp";
 
 /**
- * The stretch of time the leaderboard covers, in the community time zone:
+ * The stretch of time the leaderboard covers, in US Eastern time:
  * this week (from Monday), this month, this year, or all time.
  */
 export type LeaderboardPeriod = "week" | "month" | "year" | "all";
@@ -246,7 +230,7 @@ export interface LeaderboardDto {
   /** What `entries` and `me.rank` are ranked by. */
   by: LeaderboardMetric;
   period: LeaderboardPeriod;
-  /** First day of the period in the community time zone. "" for all time. */
+  /** First day of the period in US Eastern time. "" for all time. */
   startDay: DayKey;
   /** When the period ends and the board starts over (server time). 0 for all time. */
   endsAt: number;

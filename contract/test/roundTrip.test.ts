@@ -123,12 +123,9 @@ const room: RoomStateDto = {
     bossEnabled: true,
     streakFreezesEnabled: false,
     goalsPublicByDefault: true,
-    dailyXpCap: 300,
     postChannelName: "study-hall",
-    voiceChannelStatus: "#Study voice",
     feedbackEnabled: true,
   },
-  voice: { channelName: "Study voice", joinUrl: "https://rootapp.com/x", userIds: ["u1", "u3"] },
 };
 
 const me: MyStatusDto = {
@@ -208,7 +205,6 @@ describe("contract round trip", () => {
       baseXp: 60,
       combo: 1,
       xpEarned: 60,
-      capped: false,
       streak: 6,
       streakExtended: true,
       finisherIds: ["u1"],

@@ -26,15 +26,15 @@ export function SettingsSheet({
         ? "Shown by default. You can make yours private."
         : "Private by default.",
     ],
-    ["XP and levels", f.xpEnabled ? `On · up to ${f.dailyXpCap} XP a day` : "Off"],
+    ["XP and levels", f.xpEnabled ? "On · 2 XP per focus minute, +25 per goal" : "Off"],
     ["Combo multiplier", f.comboEnabled ? "On · +0.1x per extra person, up to 2.0x" : "Off"],
     ["Weekly boss", f.bossEnabled ? `On · ${room.boss.name}` : "Off"],
     ["Streak freezes", f.streakFreezesEnabled ? "One free missed day per week" : "Off"],
+    ["New day starts", "4am US Eastern"],
     [
       "Bot messages channel",
       f.postChannelName ? `#${f.postChannelName}` : "None picked, so posts are off",
     ],
-    ["Voice channel", f.voiceChannelStatus || "None set, so the Join voice button is hidden"],
   ];
   return (
     <Sheet labelledBy="settings-title" onClose={onClose}>

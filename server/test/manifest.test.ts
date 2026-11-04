@@ -1,13 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import {
-  DEFAULT_CONFIG,
-  isValidTimeZone,
-  NUMBER_LIMITS,
-  parseSettings,
-  SETTINGS,
-} from "@studyroom/core";
+import { DEFAULT_CONFIG, NUMBER_LIMITS, parseSettings, SETTINGS } from "@studyroom/core";
 
 interface ManifestItem {
   key: string;
@@ -63,8 +57,6 @@ describe("root-manifest.json", () => {
         if (!select) continue;
         const keys = select.options.map((o) => o.key);
         expect(keys, item.key).toEqual(expect.arrayContaining(select.values));
-        if (item.key === SETTINGS.room.timeZone)
-          for (const k of keys) expect(isValidTimeZone(k), k).toBe(true);
       }
     }
   });

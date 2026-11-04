@@ -4,12 +4,9 @@ import { isFocusing, rowTime, statusChip } from "../lib/view";
 import { Avatar } from "./Avatar";
 import { BadgeMedal } from "./BadgeMedal";
 import { FlameIcon, LockIcon } from "./Icons";
-import { InVoiceMark } from "./VoiceButton";
 
 interface BoardProps {
   members: MemberCardDto[];
-  /** Members in the community voice channel. */
-  inVoice?: readonly string[];
   profiles: Map<string, Profile>;
   youId: string;
   now: number;
@@ -91,20 +88,18 @@ function MemberCard({
   member,
   profile,
   you,
-  voice,
   now,
   onOpen,
 }: {
   member: MemberCardDto;
   profile?: Profile;
   you: boolean;
-  voice: boolean;
   now: number;
   onOpen?(): void;
 }) {
   const chip = statusChip(member, now);
   const name = profile?.name ?? (you ? "You" : "Member");
-  const label = `${name}, ${chip.label}${voice ? ", in voice" : ""}`;
+  const label = `${name}, ${chip.label}`;
   const goal = goalText(member);
   return (
     <li className="member-card" data-you={you} data-style={member.cardStyle} aria-label={label}>
@@ -115,7 +110,6 @@ function MemberCard({
           <div className="member-name">
             <span className="name">{name}</span>
             <span className="level-chip">Lv {member.level}</span>
-            {voice && <InVoiceMark />}
             <FeaturedBadge ids={member.badges} />
           </div>
           <div className="streak-line">
@@ -149,20 +143,18 @@ function MemberRow({
   member,
   profile,
   you,
-  voice,
   now,
   onOpen,
 }: {
   member: MemberCardDto;
   profile?: Profile;
   you: boolean;
-  voice: boolean;
   now: number;
   onOpen?(): void;
 }) {
   const chip = statusChip(member, now);
   const name = profile?.name ?? (you ? "You" : "Member");
-  const label = `${name}, ${chip.label}${voice ? ", in voice" : ""}`;
+  const label = `${name}, ${chip.label}`;
   const goal = goalText(member) ?? (member.goalPrivate ? "Focusing (private)" : "Focusing");
   const time = rowTime(member, now);
   return (
@@ -175,7 +167,6 @@ function MemberRow({
         >
           {name}
           <RankChip rank={member.weeklyRank} />
-          {voice && <InVoiceMark />}
           <FeaturedBadge ids={member.badges} />
         </div>
         <div className="goal-line">{goal}</div>
@@ -187,17 +178,8 @@ function MemberRow({
   );
 }
 
-export function MemberBoard({
-  members,
-  inVoice = [],
-  profiles,
-  youId,
-  now,
-  compact,
-  onOpenMember,
-}: BoardProps) {
+export function MemberBoard({ members, profiles, youId, now, compact, onOpenMember }: BoardProps) {
   const ordered = orderMembers(members, youId);
-  const voice = new Set(inVoice);
   const focusing = members.filter(isFocusing).length;
   const onBreak = members.length - focusing;
 
@@ -212,7 +194,6 @@ export function MemberBoard({
               member={m}
               profile={profiles.get(m.userId)}
               you={m.userId === youId}
-              voice={voice.has(m.userId)}
               now={now}
               onOpen={onOpenMember && (() => onOpenMember(m.userId))}
             />
@@ -242,7 +223,6 @@ export function MemberBoard({
               member={m}
               profile={profiles.get(m.userId)}
               you={m.userId === youId}
-              voice={voice.has(m.userId)}
               now={now}
               onOpen={onOpenMember && (() => onOpenMember(m.userId))}
             />

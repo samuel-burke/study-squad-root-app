@@ -1,5 +1,3 @@
-import { ALL_PERSONALITIES, type Personality } from "./squad/squadLines";
-import { isValidTimeZone } from "./time/calendar";
 import {
   customPreset,
   DEFAULT_PRESET,
@@ -21,24 +19,19 @@ export const SETTINGS = {
     customBreak: "customBreakMinutes",
     postChannel: "postChannel",
     squadMentions: "squadMentions",
-    voiceChannel: "voiceChannelName",
     recapEnabled: "recapEnabled",
     recapTime: "recapTime",
     recapLeaderboard: "recapLeaderboard",
-    timeZone: "timeZone",
     goalsPublic: "goalsPublicByDefault",
     busyPosts: "busyPosts",
     busyThreshold: "busyThreshold",
     squadBot: "squadBot",
-    squadPersonalities: "squadPersonalities",
   },
   game: {
     group: "game",
     xpEnabled: "xpEnabled",
-    dailyXpCap: "dailyXpCap",
     comboEnabled: "comboEnabled",
     bossEnabled: "bossEnabled",
-    bossName: "bossName",
     bossBaseHp: "bossBaseHpXp",
     streakFreezes: "streakFreezes",
     milestonePosts: "milestonePosts",
@@ -55,32 +48,17 @@ export const NUMBER_LIMITS = {
   customFocusMinutes: { min: 5, max: 120, step: 1, default: 25 },
   customBreakMinutes: { min: 1, max: 30, step: 1, default: 5 },
   busyThreshold: { min: 2, max: 100, step: 1, default: 5 },
-  dailyXpCap: { min: 50, max: 2000, step: 10, default: 300 },
   bossBaseHpXp: { min: 100, max: 1_000_000, step: 100, default: 10_000 },
 } as const;
 
 export interface AppConfig {
   presetKey: PresetKey;
   preset: TimerPreset;
-  timeZone: string;
   /** Channel for recaps, busy-room and milestone posts. null = don't post. */
   postChannelId: string | null;
   /** Display name of that channel, resolved by the server. Empty if unknown. */
   postChannelName: string;
-  /**
-   * Voice channel the "Join voice" button opens, found by the server from
-   * voiceChannelName. null = no button.
-   */
-  voiceChannelId: string | null;
-  /** The name the admin typed, then the channel's own name once found. "" = off. */
-  voiceChannelName: string;
-  /** A link that opens the channel in Root, resolved by the server. */
-  voiceChannelUrl: string;
-  /**
-   * What the server made of the voice channel setting, in words for admins
-   * (shown in the in-app Room settings). "" = no name typed.
-   */
-  voiceChannelStatus: string;
+  /** hours and minutes are US Eastern time (APP_TIME_ZONE). */
   recap: { enabled: boolean; hours: number; minutes: number };
   /** List the week's top focusers in the daily recap. */
   recapLeaderboardEnabled: boolean;
@@ -88,21 +66,17 @@ export interface AppConfig {
   busyPosts: { enabled: boolean; threshold: number };
   /**
    * The squad bot: posts in the channel when the room timer starts, switches
-   * and finishes, and when someone joins, in the voices admins picked.
+   * and finishes, and when someone joins.
    */
   squadBot: {
     enabled: boolean;
-    personalities: Personality[];
     /** @mention (ping) people in its posts. Off = their names in plain text. */
     mentions: boolean;
   };
-  xp: { enabled: boolean; dailyCap: number };
+  xp: { enabled: boolean };
   comboEnabled: boolean;
-  /**
-   * name is the admin's custom boss name, or "" for a new built-in name each week.
-   * baseHpXp is a 1x boss's HP in XP; each boss multiplies it by its strength.
-   */
-  boss: { enabled: boolean; name: string; baseHpXp: number };
+  /** baseHpXp is a 1x boss's HP in XP; each boss multiplies it by its strength. */
+  boss: { enabled: boolean; baseHpXp: number };
   streakFreezesEnabled: boolean;
   milestonePostsEnabled: boolean;
 }
@@ -110,21 +84,16 @@ export interface AppConfig {
 export const DEFAULT_CONFIG: AppConfig = {
   presetKey: "25-5",
   preset: DEFAULT_PRESET,
-  timeZone: "America/New_York",
   postChannelId: null,
   postChannelName: "",
-  voiceChannelId: null,
-  voiceChannelName: "",
-  voiceChannelUrl: "",
-  voiceChannelStatus: "",
   recap: { enabled: true, hours: 21, minutes: 0 },
   recapLeaderboardEnabled: true,
   goalsPublicByDefault: true,
   busyPosts: { enabled: true, threshold: NUMBER_LIMITS.busyThreshold.default },
-  squadBot: { enabled: true, personalities: [...ALL_PERSONALITIES], mentions: false },
-  xp: { enabled: true, dailyCap: NUMBER_LIMITS.dailyXpCap.default },
+  squadBot: { enabled: true, mentions: false },
+  xp: { enabled: true },
   comboEnabled: true,
-  boss: { enabled: true, name: "", baseHpXp: NUMBER_LIMITS.bossBaseHpXp.default },
+  boss: { enabled: true, baseHpXp: NUMBER_LIMITS.bossBaseHpXp.default },
   streakFreezesEnabled: true,
   milestonePostsEnabled: true,
 };
@@ -164,18 +133,6 @@ function numberSetting(value: unknown, fallback: number, min: number, max: numbe
   return int(value, fallback, min, max);
 }
 
-function text(value: unknown, fallback: string, maxLength: number): string {
-  const trimmed = typeof value === "string" ? value.trim().slice(0, maxLength) : "";
-  return trimmed.length > 0 ? trimmed : fallback;
-}
-
-/** A multi-select of personalities. Unknown keys are dropped; none picked means all. */
-function personalities(value: unknown): Personality[] {
-  const picked = Array.isArray(value) ? value : typeof value === "string" ? [value] : [];
-  const known = ALL_PERSONALITIES.filter((p) => picked.includes(p));
-  return known.length > 0 ? known : [...ALL_PERSONALITIES];
-}
-
 function timeOfDay(value: unknown, fallback: { hours: number; minutes: number }) {
   if (value && typeof value === "object") {
     const v = value as { hours?: unknown; minutes?: unknown };
@@ -206,7 +163,6 @@ export function parseSettings(raw: RawSettings): AppConfig {
   const g = SETTINGS.game;
   const d = DEFAULT_CONFIG;
 
-  const tz = firstString(room[r.timeZone]);
   const channel = firstString(room[r.postChannel]);
 
   return {
@@ -215,13 +171,8 @@ export function parseSettings(raw: RawSettings): AppConfig {
       limited(room[r.customFocus], "customFocusMinutes"),
       limited(room[r.customBreak], "customBreakMinutes"),
     ),
-    timeZone: tz && isValidTimeZone(tz) ? tz : d.timeZone,
     postChannelId: channel && channel.length > 0 ? channel : null,
     postChannelName: "",
-    voiceChannelId: null,
-    voiceChannelName: text(room[r.voiceChannel], "", 100).replace(/^#\s*/, ""),
-    voiceChannelUrl: "",
-    voiceChannelStatus: "",
     recap: {
       enabled: bool(room[r.recapEnabled], d.recap.enabled),
       ...timeOfDay(room[r.recapTime], d.recap),
@@ -234,17 +185,12 @@ export function parseSettings(raw: RawSettings): AppConfig {
     },
     squadBot: {
       enabled: bool(room[r.squadBot], d.squadBot.enabled),
-      personalities: personalities(room[r.squadPersonalities]),
       mentions: bool(room[r.squadMentions], d.squadBot.mentions),
     },
-    xp: {
-      enabled: bool(game[g.xpEnabled], d.xp.enabled),
-      dailyCap: limited(game[g.dailyXpCap], "dailyXpCap"),
-    },
+    xp: { enabled: bool(game[g.xpEnabled], d.xp.enabled) },
     comboEnabled: bool(game[g.comboEnabled], d.comboEnabled),
     boss: {
       enabled: bool(game[g.bossEnabled], d.boss.enabled),
-      name: text(game[g.bossName], "", 40),
       baseHpXp: limited(game[g.bossBaseHp], "bossBaseHpXp"),
     },
     streakFreezesEnabled: bool(game[g.streakFreezes], d.streakFreezesEnabled),

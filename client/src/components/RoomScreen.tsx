@@ -7,7 +7,6 @@ import { AppLogo, ChartIcon, PeopleIcon, SlidersIcon, SoundOffIcon, SoundOnIcon 
 import { MemberBoard } from "./MemberBoard";
 import { SessionPanel } from "./SessionPanel";
 import { TimerCard } from "./TimerCard";
-import { VoiceButton } from "./VoiceButton";
 
 export interface RoomScreenProps {
   room: RoomStateDto;
@@ -66,7 +65,6 @@ function Header({
           <PeopleIcon />
           {room.presentCount} in the room
         </div>
-        <VoiceButton voice={room.voice} compact={compact} />
         <button
           type="button"
           className="icon-btn"
@@ -117,7 +115,6 @@ export function RoomScreen(props: RoomScreenProps) {
   const board = (
     <MemberBoard
       members={room.members}
-      inVoice={room.voice.userIds}
       profiles={profiles}
       youId={me.userId}
       now={now}

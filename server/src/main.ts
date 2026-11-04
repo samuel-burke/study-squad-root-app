@@ -1,7 +1,5 @@
 import { randomUUID } from "node:crypto";
 import {
-  ChannelType,
-  ChannelWebRtcEvent,
   ClientEvent,
   GlobalSettingsEvent,
   JobInterval,
@@ -19,7 +17,6 @@ import { loadFeedbackDestination, RelayFeedbackInbox } from "./adapters/feedback
 import { createLogger } from "./adapters/logger";
 import { PushNotifier } from "./adapters/pushNotifier";
 import { TimeoutScheduler } from "./adapters/timeoutScheduler";
-import { VoiceRoster } from "./adapters/voiceRoster";
 import { StudyRoomHandlers } from "./handlers";
 import { RecapScheduler } from "./jobs/recapScheduler";
 import { openDatabase } from "./persistence/database";
@@ -36,28 +33,6 @@ function loadRootConfig(settings: GlobalSettings | undefined): Promise<AppConfig
     settings,
     {
       name: async (id) => (await rootServer.community.channels.get({ id: id as ChannelGuid })).name,
-      link: async (id) =>
-        (
-          await rootServer.community.communityLinks.communityChannelCreate({
-            channelId: id as ChannelGuid,
-          })
-        ).url,
-      channels: async () => {
-        const groups = await rootServer.community.channelGroups.list();
-        // One group Study Squad can't read shouldn't hide the rest.
-        const lists = await Promise.allSettled(
-          groups.map((g) => rootServer.community.channels.list({ channelGroupId: g.id })),
-        );
-        const failed = lists.filter((r) => r.status === "rejected").length;
-        if (failed > 0) logger.warn("could not list some channel groups", { failed });
-        return lists
-          .flatMap((r) => (r.status === "fulfilled" ? r.value : []))
-          .map((c) => ({
-            id: c.id,
-            name: c.name,
-            voice: Number(c.channelType) === ChannelType.Voice,
-          }));
-      },
     },
     logger,
   );
@@ -111,24 +86,6 @@ async function onStarting(state: RootAppStartState): Promise<void> {
     (client) => void presence.detached(client.userId),
   );
 
-  // Who is in the admin's voice channel, for the headphones on member cards.
-  const voice = new VoiceRoster(
-    async (channelId) =>
-      (await rootServer.community.channelWebRtcs.list({ channelId: channelId as ChannelGuid }))
-        .members,
-    (userIds) => engine.setVoiceMembers(userIds),
-    logger,
-  );
-  await voice.watch(engine.getConfig().voiceChannelId);
-  rootServer.community.channelWebRtcs.on(
-    ChannelWebRtcEvent.ChannelWebRtcUserAttach,
-    (event) => void voice.attached(event),
-  );
-  rootServer.community.channelWebRtcs.on(
-    ChannelWebRtcEvent.ChannelWebRtcUserDetach,
-    (event) => void voice.detached(event),
-  );
-
   const recap = new RecapScheduler(
     {
       scheduleOnce: async (tag, at) => {
@@ -157,7 +114,6 @@ async function onStarting(state: RootAppStartState): Promise<void> {
     void (async () => {
       const config = await loadRootConfig(event.current);
       await engine.setConfig(config);
-      await voice.watch(config.voiceChannelId);
       await recap.reschedule();
       logger.info("settings updated");
     })().catch((error: unknown) =>

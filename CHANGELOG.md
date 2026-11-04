@@ -10,6 +10,7 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ### Changed
 
+- The privacy policy now says feedback notes are also copied to the developer's private Slack, so they're noticed. The feedback relay posts each note there with a link to its issue.
 - The early countdown chirp now comes at 1 minute left instead of 10 seconds. The last-five-seconds chirps stay the same.
 
 ### Fixed

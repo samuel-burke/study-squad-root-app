@@ -245,6 +245,7 @@ function demoConfig(options: DemoOptions): AppConfig {
     voiceChannelId: "demo-voice",
     voiceChannelName: "Study voice",
     voiceChannelUrl: "https://rootapp.com",
+    voiceChannelStatus: "#Study voice",
   };
 }
 

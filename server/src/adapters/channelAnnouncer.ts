@@ -73,11 +73,12 @@ export class ChannelAnnouncer implements Announcer {
     text: string,
     userIds: string[],
     heading?: string,
+    mention = false,
   ): Promise<void> {
     // Only the people the post shows get looked up; the rest are counted.
     const mentions: string[] = [];
     for (const userId of userIds.slice(0, SQUAD_MAX_MENTIONS)) {
-      mentions.push(await this.mention(userId));
+      mentions.push(mention ? await this.mention(userId) : await this.displayName(userId));
     }
     await this.channel.postMessage(
       channelId,

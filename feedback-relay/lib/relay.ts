@@ -13,6 +13,8 @@ export interface RelayEnv {
   RELAY_KEY?: string;
   /** Most notes accepted per UTC day, from all communities together. Default 50. */
   DAILY_CAP?: string;
+  /** Optional Slack incoming webhook that gets a ping for each new note. */
+  SLACK_WEBHOOK_URL?: string;
 }
 
 type Fetch = (url: string, init: RequestInit) => Promise<Response>;
@@ -41,6 +43,40 @@ export function feedbackTitle(text: string): string {
   return `Feedback: ${first.length > 60 ? `${first.slice(0, 59)}…` : first}`;
 }
 
+/** Slack treats &, < and > as markup, so they're escaped. */
+function slackEscape(text: string): string {
+  return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+/**
+ * Pings Slack about a new note. Best effort: the issue is already open, so a
+ * Slack failure is logged and otherwise ignored.
+ */
+async function notifySlack(
+  webhook: string,
+  text: string,
+  issueUrl: string | undefined,
+  fetchFn: Fetch,
+): Promise<void> {
+  if (!webhook.startsWith("https://hooks.slack.com/")) return;
+  const quoted = slackEscape(text)
+    .split("\n")
+    .map((line) => `>${line}`)
+    .join("\n");
+  const link = issueUrl ? `\n<${issueUrl}|Open the issue>` : "";
+  try {
+    const res = await fetchFn(webhook, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text: `New Study Squad feedback\n${quoted}${link}` }),
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+    });
+    if (!res.ok) console.warn(`Slack answered ${res.status}`);
+  } catch (error) {
+    console.warn("Slack notification failed", error);
+  }
+}
+
 /** Midnight UTC at the start of `now`'s day. */
 function startOfUtcDay(now: number): string {
   const d = new Date(now);
@@ -48,8 +84,9 @@ function startOfUtcDay(now: number): string {
 }
 
 /**
- * Checks the key and the note, enforces the daily cap, and opens one issue.
- * The issue holds only the note's text and when it was sent.
+ * Checks the key and the note, enforces the daily cap, opens one issue and,
+ * if a Slack webhook is set, pings Slack. Only the note's text and when it was
+ * sent go anywhere.
  */
 export async function handleFeedback(
   request: Request,
@@ -110,5 +147,8 @@ export async function handleFeedback(
     }),
   });
   if (!created.ok) return json(502, { error: `GitHub answered ${created.status}` });
+  const issue = (await created.json().catch(() => ({}))) as { html_url?: string };
+  const webhook = env.SLACK_WEBHOOK_URL?.trim();
+  if (webhook) await notifySlack(webhook, text, issue.html_url, fetchFn);
   return json(201, { ok: true });
 }

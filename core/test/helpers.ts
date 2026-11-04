@@ -103,8 +103,13 @@ export class RecordingAnnouncer implements Announcer {
     text: string,
     userIds: string[],
     heading?: string,
+    mention?: boolean,
   ) {
-    this.posts.push({ kind: "squad", channelId, detail: { event, text, userIds, heading } });
+    this.posts.push({
+      kind: "squad",
+      channelId,
+      detail: { event, text, userIds, heading, mention },
+    });
   }
 }
 

@@ -27,6 +27,8 @@ Never put the token in code, chat or an issue. GitHub hides it in logs.
 4. In the Vercel project for the relay (`study-squad-feedback`, live at `https://study-squad-feedback.vercel.app/api/feedback`), add environment variables `GITHUB_TOKEN` (the token, marked Sensitive), `GITHUB_REPO` (`owner/name`) and `RELAY_KEY` (the key), then redeploy.
 5. In this repo's Actions secrets, add `FEEDBACK_RELAY_URL` (`https://study-squad-feedback.vercel.app/api/feedback`) and `FEEDBACK_RELAY_KEY` (the same key). For Docker builds, put the same two lines in `server/.env`.
 
+To get a Slack message for each note, create a Slack app with an incoming webhook for your channel and add its URL to the relay as `SLACK_WEBHOOK_URL` (Sensitive), then redeploy. The issue is still made if Slack is down.
+
 The relay accepts up to 50 notes a day from all communities together (`DAILY_CAP` changes it). Someone who pulled the key out of a package could only post notes up to that cap; they can't read anything. If that happens, change `RELAY_KEY` on Vercel and in the secrets, and ship a new version.
 
 When the GitHub token expires, the relay answers with an error and notes wait in each community. Put a fresh token in Vercel and they're sent with the next note or server restart. No app release is needed.

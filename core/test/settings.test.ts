@@ -14,6 +14,12 @@ describe("parseSettings", () => {
     expect(DEFAULT_CONFIG.squadBot.personalities).toHaveLength(6);
   });
 
+  it("leaves bot @mentions off unless an admin turns them on", () => {
+    expect(DEFAULT_CONFIG.squadBot.mentions).toBe(false);
+    const on = parseSettings({ [room.group]: { [room.squadMentions]: true } });
+    expect(on.squadBot.mentions).toBe(true);
+  });
+
   it("falls back to defaults when Root sends nothing", () => {
     expect(parseSettings(undefined)).toEqual(DEFAULT_CONFIG);
     expect(parseSettings({})).toEqual(DEFAULT_CONFIG);
@@ -56,7 +62,7 @@ describe("parseSettings", () => {
     expect(config.preset.breakMinutes).toBe(1);
   });
 
-  it("reads numbers from select keys, the way the manifest declares them", () => {
+  it("still reads values saved by the older select versions of these settings", () => {
     const config = parseSettings({
       [room.group]: { [room.busyThreshold]: ["8"] },
       [game.group]: { [game.dailyXpCap]: ["500"], [game.bossBaseHp]: ["2500"] },
@@ -64,6 +70,33 @@ describe("parseSettings", () => {
     expect(config.busyPosts.threshold).toBe(8);
     expect(config.xp.dailyCap).toBe(500);
     expect(config.boss.baseHpXp).toBe(2500);
+  });
+
+  it("reads the number fields Root sends, rounded to whole numbers and clamped", () => {
+    const config = parseSettings({
+      [room.group]: {
+        [room.preset]: ["custom"],
+        [room.customFocus]: 37,
+        [room.customBreak]: 7.6,
+        [room.busyThreshold]: 1,
+      },
+      [game.group]: { [game.dailyXpCap]: 455.5, [game.bossBaseHp]: 5_000_000 },
+    });
+    expect(config.preset.focusMinutes).toBe(37);
+    expect(config.preset.breakMinutes).toBe(8);
+    expect(config.busyPosts.threshold).toBe(2);
+    expect(config.xp.dailyCap).toBe(456);
+    expect(config.boss.baseHpXp).toBe(1_000_000);
+  });
+
+  it("falls back to defaults when a number field is left empty", () => {
+    const config = parseSettings({
+      [room.group]: { [room.preset]: ["custom"], [room.customFocus]: undefined },
+      [game.group]: { [game.dailyXpCap]: undefined, [game.bossBaseHp]: undefined },
+    });
+    expect(config.preset.focusMinutes).toBe(25);
+    expect(config.xp.dailyCap).toBe(DEFAULT_CONFIG.xp.dailyCap);
+    expect(config.boss.baseHpXp).toBe(DEFAULT_CONFIG.boss.baseHpXp);
   });
 
   it("rejects bad values instead of trusting them", () => {

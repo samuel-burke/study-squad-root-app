@@ -1,7 +1,13 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { DEFAULT_CONFIG, isValidTimeZone, parseSettings, SETTINGS } from "@studyroom/core";
+import {
+  DEFAULT_CONFIG,
+  isValidTimeZone,
+  NUMBER_LIMITS,
+  parseSettings,
+  SETTINGS,
+} from "@studyroom/core";
 
 interface ManifestItem {
   key: string;
@@ -60,6 +66,25 @@ describe("root-manifest.json", () => {
         if (item.key === SETTINGS.room.timeZone)
           for (const k of keys) expect(isValidTimeZone(k), k).toBe(true);
       }
+    }
+  });
+
+  it("uses number fields with the server's limits for every number setting", () => {
+    const numberItems = manifest.settings.groups
+      .flatMap((g) => g.items)
+      .filter((item) => "number" in item);
+    expect(numberItems.map((i) => i.key).sort()).toEqual(Object.keys(NUMBER_LIMITS).sort());
+    for (const item of numberItems) {
+      const limits = NUMBER_LIMITS[item.key as keyof typeof NUMBER_LIMITS];
+      expect(item.number, item.key).toEqual({
+        minValue: limits.min,
+        maxValue: limits.max,
+        step: limits.step,
+        defaultValue: limits.default,
+      });
+      for (const n of [limits.min, limits.max, limits.default, limits.step])
+        expect(Number.isInteger(n), item.key).toBe(true);
+      expect((limits.default - limits.min) % limits.step, item.key).toBe(0);
     }
   });
 

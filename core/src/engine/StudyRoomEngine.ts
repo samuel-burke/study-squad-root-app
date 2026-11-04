@@ -989,7 +989,10 @@ export class StudyRoomEngine {
     });
     const rounds = (await tx.room.getCycle())?.preset.rounds;
     const heading = squadHeading(event, round, rounds);
-    effects.posts.push((a) => a.squadMessage(channelId, event, line.text, userIds, heading));
+    const mention = this.config.squadBot.mentions;
+    effects.posts.push((a) =>
+      a.squadMessage(channelId, event, line.text, userIds, heading, mention),
+    );
   }
 
   /** The squad bot congratulates a member on badges they just earned, in one post. */
@@ -1711,6 +1714,7 @@ export class StudyRoomEngine {
         dailyXpCap: this.config.xp.dailyCap,
         postChannelName: this.config.postChannelId ? this.config.postChannelName : "",
         feedbackEnabled: this.deps.feedbackInbox !== undefined,
+        voiceChannelStatus: this.config.voiceChannelStatus,
       },
       voice: this.config.voiceChannelId
         ? {

@@ -125,6 +125,7 @@ const room: RoomStateDto = {
     goalsPublicByDefault: true,
     dailyXpCap: 300,
     postChannelName: "study-hall",
+    voiceChannelStatus: "#Study voice",
     feedbackEnabled: true,
   },
   voice: { channelName: "Study voice", joinUrl: "https://rootapp.com/x", userIds: ["u1", "u3"] },

@@ -425,7 +425,9 @@ describe("squad bot badge posts", () => {
   });
 
   it("stays quiet when the squad bot is off", async () => {
-    const config = configWith({ squadBot: { enabled: false, personalities: ["hype"] } });
+    const config = configWith({
+      squadBot: { enabled: false, personalities: ["hype"], mentions: false },
+    });
     const { engine, announcer, advance } = createHarness(config);
     await engine.startSolo("ana", 30);
     await advance(30 * MINUTE);

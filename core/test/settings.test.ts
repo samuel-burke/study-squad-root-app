@@ -14,6 +14,12 @@ describe("parseSettings", () => {
     expect(DEFAULT_CONFIG.squadBot.personalities).toHaveLength(6);
   });
 
+  it("leaves bot @mentions off unless an admin turns them on", () => {
+    expect(DEFAULT_CONFIG.squadBot.mentions).toBe(false);
+    const on = parseSettings({ [room.group]: { [room.squadMentions]: true } });
+    expect(on.squadBot.mentions).toBe(true);
+  });
+
   it("falls back to defaults when Root sends nothing", () => {
     expect(parseSettings(undefined)).toEqual(DEFAULT_CONFIG);
     expect(parseSettings({})).toEqual(DEFAULT_CONFIG);

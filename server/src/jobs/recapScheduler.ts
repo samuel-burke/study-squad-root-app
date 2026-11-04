@@ -8,7 +8,17 @@ const MISSED_GRACE_MS = 2 * 60 * 60 * 1000;
 export interface JobsPort {
   scheduleOnce(tag: string, at: Date): Promise<void>;
   cancelByTag(tag: string): Promise<void>;
-  onJob(handler: (job: { tag?: string | null; jobTime: Date; missed: boolean }) => void): void;
+  /**
+   * Root's SDK types jobTime as a Date, but on SQLite it arrives as epoch
+   * milliseconds (a number), so accept anything Date() can read.
+   */
+  onJob(
+    handler: (job: {
+      tag?: string | null;
+      jobTime: Date | number | string;
+      missed: boolean;
+    }) => void,
+  ): void;
 }
 
 export interface RecapTarget {
@@ -32,7 +42,11 @@ export class RecapScheduler {
   async start(): Promise<void> {
     this.jobs.onJob((job) => {
       if (job.tag !== RECAP_TAG) return;
-      const late = this.now() - job.jobTime.getTime();
+      // Never throw here: this runs inside the SDK's job loop, and a throw
+      // stops the job from being marked done, so it re-fires (and fails)
+      // every minute instead of ever posting.
+      const at = new Date(job.jobTime).getTime();
+      const late = Number.isFinite(at) ? this.now() - at : 0;
       void this.fire(job.missed && late > MISSED_GRACE_MS);
     });
     // The recap is a nice-to-have: if Root's job scheduler is unavailable,

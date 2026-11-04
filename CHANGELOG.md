@@ -4,6 +4,10 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ## [Unreleased]
 
+## [0.3.6] - 2026-11-04
+
+A Bot @mentions setting, countdown chirps that stay on the clock, easier voice channel setup, and number fields for numeric settings.
+
 ### Added
 
 - **Bot @mentions** setting for admins, next to Bot messages channel. It's off by default, so the Squad bot writes people's names as plain text instead of pinging them. Turn it on to bring the pings back.
@@ -12,6 +16,7 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 - Custom focus minutes, custom break minutes, busy room threshold, daily XP cap and boss base HP are now number fields in Root's App settings instead of pickers, so admins can type any whole number in range (focus 5 to 120, break 1 to 30, busy 2 to 100 people, XP cap 50 to 2,000, boss HP 100 to 1,000,000 in steps of 100). The server rounds and clamps whatever it gets, and still reads values saved from the old pickers.
 - The privacy policy now says feedback notes are also copied to the developer's private Slack, so they're noticed. The feedback relay posts each note there with a link to its issue.
+- The Voice channel name setting now matches more loosely: case, spaces, dashes, emoji and punctuation don't matter, and a unique partial name works too. Room settings in the app shows whether the channel was found and why not. Channel groups the app can't read are skipped instead of breaking the lookup, and the headphones icon keeps working when Root won't make a join link.
 - The early countdown chirp now comes at 1 minute left instead of 10 seconds. The last-five-seconds chirps stay the same.
 
 ### Fixed

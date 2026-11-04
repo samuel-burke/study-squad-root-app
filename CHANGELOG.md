@@ -4,6 +4,10 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ## [Unreleased]
 
+### Changed
+
+- The privacy policy now says feedback notes are also copied to the developer's private Slack, so they're noticed. The feedback relay posts each note there with a link to its issue.
+
 ## [0.3.5] - 2026-11-04
 
 Send feedback now reaches the developer, and the privacy policy has its own website.

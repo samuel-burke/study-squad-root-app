@@ -97,6 +97,54 @@ describe("feedback relay", () => {
     expect(res.status).toBe(502);
   });
 
+  it("pings Slack with the note and a link to the issue", async () => {
+    const fetchFn = vi.fn(async (url: string, init: RequestInit) => {
+      if (url.startsWith("https://hooks.slack.com/")) return new Response("ok");
+      if (init.method === "POST")
+        return new Response(
+          JSON.stringify({ html_url: "https://github.com/sam/feedback/issues/7" }),
+          {
+            status: 201,
+          },
+        );
+      return new Response("[]");
+    });
+    const env = { ...ENV, SLACK_WEBHOOK_URL: "https://hooks.slack.com/services/T/B/x" };
+    const res = await handleFeedback(
+      request({ text: "Love it <3\nMore & more" }),
+      env,
+      fetchFn,
+      NOW,
+    );
+    expect(res.status).toBe(201);
+    const [url, init] = fetchFn.mock.calls[2]!;
+    expect(url).toBe("https://hooks.slack.com/services/T/B/x");
+    expect(JSON.parse(String(init.body))).toEqual({
+      text: "New Study Squad feedback\n>Love it &lt;3\n>More &amp; more\n<https://github.com/sam/feedback/issues/7|Open the issue>",
+    });
+  });
+
+  it("still succeeds when Slack is down", async () => {
+    const fetchFn = vi.fn(async (url: string, init: RequestInit) => {
+      if (url.startsWith("https://hooks.slack.com/")) throw new Error("offline");
+      return new Response(init.method === "POST" ? "{}" : "[]", {
+        status: init.method === "POST" ? 201 : 200,
+      });
+    });
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const env = { ...ENV, SLACK_WEBHOOK_URL: "https://hooks.slack.com/services/T/B/x" };
+    expect((await handleFeedback(request({ text: "hi" }), env, fetchFn, NOW)).status).toBe(201);
+    expect(fetchFn).toHaveBeenCalledTimes(3);
+    warn.mockRestore();
+  });
+
+  it("only posts to Slack webhook addresses", async () => {
+    const fetchFn = fakeGitHub();
+    const env = { ...ENV, SLACK_WEBHOOK_URL: "https://evil.example/hook" };
+    expect((await handleFeedback(request({ text: "hi" }), env, fetchFn, NOW)).status).toBe(201);
+    expect(fetchFn).toHaveBeenCalledTimes(2);
+  });
+
   it("keeps titles short", () => {
     expect(feedbackTitle("x".repeat(100))).toBe(`Feedback: ${"x".repeat(59)}…`);
   });

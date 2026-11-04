@@ -132,15 +132,33 @@ describe("Study Squad app", () => {
     expect(opener).toHaveFocus();
   });
 
-  it("shows the feedback box as coming soon, with no way to send", async () => {
-    const { user } = await renderApp();
+  it("sends anonymous feedback to the developer from room settings", async () => {
+    const { user, gateway } = await renderApp();
     await user.click(screen.getByRole("button", { name: "Room settings" }));
     await user.click(screen.getByRole("button", { name: "Send feedback" }));
     const dialog = screen.getByRole("dialog", { name: "Send feedback" });
-    expect(within(dialog).getByRole("textbox")).toBeDisabled();
-    expect(within(dialog).getByRole("button", { name: "Coming soon" })).toBeDisabled();
-    await user.click(within(dialog).getByRole("button", { name: "Close" }));
+    const send = within(dialog).getByRole("button", { name: "Send" });
+    expect(send).toBeDisabled();
+    await user.type(within(dialog).getByRole("textbox"), "More boss names{Enter}please");
+    await user.click(send);
+    expect(await within(dialog).findByRole("status")).toHaveTextContent("Thanks!");
+    await waitFor(() => expect(gateway.posts.at(-1)).toBe("Feedback: More boss names\nplease"));
+    await user.click(within(dialog).getByRole("button", { name: "Done" }));
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("shows why feedback couldn't be sent and keeps the note", async () => {
+    const { user, gateway } = await renderApp();
+    vi.spyOn(gateway, "sendFeedback").mockRejectedValueOnce(
+      Object.assign(new Error("Try again in an hour."), { code: 1004 }),
+    );
+    await user.click(screen.getByRole("button", { name: "Room settings" }));
+    await user.click(screen.getByRole("button", { name: "Send feedback" }));
+    const dialog = screen.getByRole("dialog", { name: "Send feedback" });
+    await user.type(within(dialog).getByRole("textbox"), "hello");
+    await user.click(within(dialog).getByRole("button", { name: "Send" }));
+    expect(await within(dialog).findByRole("alert")).toHaveTextContent("Try again in an hour.");
+    expect(within(dialog).getByRole("textbox")).toHaveValue("hello");
   });
 
   it("mutes and unmutes sound effects from the header", async () => {

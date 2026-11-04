@@ -17,6 +17,18 @@ So to ship: bump the version (in `root-manifest.json`, every `package.json`, and
 
 Never put the token in code, chat or an issue. GitHub hides it in logs.
 
+## Feedback notes (optional)
+
+**Send feedback** turns each note into an issue in a private GitHub repo. Root has no secret storage, so the build bakes the destination into `server/dist/feedback.json` inside the package. Without it, the feedback box is hidden.
+
+1. Create a **private** repo for the notes, for example `study-squad-feedback`.
+2. Create a fine-grained token at GitHub → Settings → Developer settings → **Fine-grained tokens**. Under Repository access, pick **Only select repositories** and choose that repo. Under Permissions, give **Issues: Read and write** and nothing else. Set an expiry and put a reminder in your calendar to renew it.
+3. Add two repository secrets, the same way as `ROOT_AUTH_TOKEN`: `FEEDBACK_GITHUB_TOKEN` (the token) and `FEEDBACK_GITHUB_REPO` (`owner/name`, like `samuel-burke/study-squad-feedback`).
+
+The next deploy carries them. To build by hand instead, put the same two lines in `server/.env`. The token can only open issues in that one repo, so even if someone pulled it out of a package, the worst they could do is file issues there. If that happens, revoke the token, make a new one and ship a new version.
+
+When the token expires, notes queue up in each community and are sent once a version with a fresh token is deployed.
+
 ## Versions uploaded by hand
 
 If you upload a version yourself, tag it so the job won't try it again:

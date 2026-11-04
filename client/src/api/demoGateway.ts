@@ -304,6 +304,7 @@ export class DemoGateway implements StudyRoomGateway {
             ),
           ),
       },
+      feedbackInbox: { deliver: async (note) => this.post(`Feedback: ${note.text}`) },
       logger: console,
       config: this.config,
       newId: () => `demo-${this.nextId++}`,
@@ -553,6 +554,10 @@ export class DemoGateway implements StudyRoomGateway {
 
   deleteMyData() {
     return this.call(() => this.engine.deleteMyData(DEMO_USER_ID));
+  }
+
+  sendFeedback(text: string) {
+    return this.call(() => this.engine.sendFeedback(DEMO_USER_ID, text));
   }
 
   keepGoing() {

@@ -48,7 +48,7 @@ More URL settings for testing (boss nearly beaten, a long streak, replaying badg
 ## Run it inside Root
 
 1. Sign up at the [Root Developer Portal](https://dev.rootapp.com) and create an app. Its id is already in `root-manifest.json` (`"id"`). Use your own app id if you fork this.
-2. Copy `.env.example` to `server/.env` and paste your dev token. Never commit it.
+2. Copy `.env.example` to `server/.env` and paste your dev token. Never commit it. To get **Send feedback** notes, also fill in the `FEEDBACK_GITHUB_*` lines there before you build (notes become issues in a private GitHub repo, see `docs/DEPLOYING.md`). The build bakes them into `server/dist/feedback.json`; without them the feedback box is hidden.
 3. Start the server through Root's dev host, then the client:
 
 ```bash

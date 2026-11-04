@@ -9,12 +9,12 @@ Makes the Root App Store hero image and the six desktop screenshots from the dem
 
 To change a headline or layout, edit `frames.html` and rerun. Open `raw/frames.html#s1-room` (or any frame id) in a browser to preview after a run.
 
-| File                    | Headline                               |
-| ----------------------- | -------------------------------------- |
-| `00-hero.png`           | Focus together.                        |
-| `01-study-together.png` | Study together, live                   |
-| `02-team-win.png`       | Every round ends in a team win         |
-| `03-medals.png`         | Collect 49 medals                      |
-| `04-streaks-quests.png` | Build a streak that forgives a bad day |
-| `05-leaderboard.png`    | Race your squad to the top             |
-| `06-admin-settings.png` | Your community, your rules             |
+| File                    | Headline                         |
+| ----------------------- | -------------------------------- |
+| `00-hero.png`           | Focus together.                  |
+| `01-study-together.png` | Study together, live             |
+| `02-team-win.png`       | Every round ends in a team win   |
+| `03-medals.png`         | Collect 49 medals                |
+| `04-streaks-quests.png` | A streak that forgives a bad day |
+| `05-leaderboard.png`    | Race to the top                  |
+| `06-admin-settings.png` | Your community, your rules       |

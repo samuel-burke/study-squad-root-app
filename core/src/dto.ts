@@ -210,7 +210,7 @@ export interface MemberProfileDto {
 export type LeaderboardMetric = "minutes" | "xp";
 
 /**
- * The stretch of time the leaderboard covers, in US Eastern time:
+ * The stretch of time the leaderboard covers, in the community time zone:
  * this week (from Monday), this month, this year, or all time.
  */
 export type LeaderboardPeriod = "week" | "month" | "year" | "all";
@@ -230,7 +230,7 @@ export interface LeaderboardDto {
   /** What `entries` and `me.rank` are ranked by. */
   by: LeaderboardMetric;
   period: LeaderboardPeriod;
-  /** First day of the period in US Eastern time. "" for all time. */
+  /** First day of the period in the community time zone. "" for all time. */
   startDay: DayKey;
   /** When the period ends and the board starts over (server time). 0 for all time. */
   endsAt: number;

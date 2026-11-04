@@ -9,7 +9,6 @@ describe("parseSettings", () => {
     const config = parseSettings({
       [room.group]: {
         squadPersonalities: ["drill"],
-        timeZone: ["Europe/Berlin"],
         voiceChannelName: "Study voice",
       },
       [game.group]: { dailyXpCap: { value: 100 }, bossName: "Calc II" },
@@ -34,6 +33,7 @@ describe("parseSettings", () => {
         [room.preset]: ["50-10"],
         [room.postChannel]: ["channel-9"],
         [room.recapTime]: { hours: 20, minutes: 30, seconds: 0 },
+        [room.timeZone]: ["Europe/Berlin"],
         [room.busyPosts]: false,
       },
       [game.group]: {
@@ -44,6 +44,7 @@ describe("parseSettings", () => {
     expect(config.preset).toEqual(PRESETS["50-10"]);
     expect(config.postChannelId).toBe("channel-9");
     expect(config.recap).toEqual({ enabled: true, hours: 20, minutes: 30 });
+    expect(config.timeZone).toBe("Europe/Berlin");
     expect(config.busyPosts.enabled).toBe(false);
     expect(config.boss).toEqual({ enabled: true, baseHpXp: 4000 });
     expect(config.comboEnabled).toBe(false);
@@ -112,6 +113,7 @@ describe("parseSettings", () => {
     const config = parseSettings({
       [room.group]: {
         [room.preset]: ["9000-1"],
+        [room.timeZone]: ["Mars/Olympus"],
         [room.postChannel]: [],
         [room.recapTime]: "21:00",
         [room.busyThreshold]: Number.NaN,
@@ -122,6 +124,7 @@ describe("parseSettings", () => {
       },
     });
     expect(config.preset).toEqual(DEFAULT_CONFIG.preset);
+    expect(config.timeZone).toBe(DEFAULT_CONFIG.timeZone);
     expect(config.postChannelId).toBeNull();
     expect(config.recap).toEqual(DEFAULT_CONFIG.recap);
     expect(config.busyPosts.threshold).toBe(5);

@@ -60,7 +60,6 @@ import {
   weekdayName,
   weekKey,
   yearKey,
-  APP_TIME_ZONE,
 } from "../time/calendar";
 import {
   buildCycle,
@@ -299,7 +298,7 @@ export class StudyRoomEngine {
       const member = await tx.members.get(userId);
       const members = new Map(member ? [[userId, member]] : []);
       const progress = levelFromXp(member?.xpTotal ?? 0);
-      const today = dayKey(now, APP_TIME_ZONE);
+      const today = dayKey(now, this.config.timeZone);
       const look = (await this.cardLooks(tx, [userId], members)).get(userId)!;
       return {
         userId,
@@ -631,7 +630,7 @@ export class StudyRoomEngine {
         const updated: GoalRecord = { ...goal, done, completedAt: done ? now : null };
         if (done && !goal.xpAwarded) {
           updated.xpAwarded = true;
-          const day = dayKey(now, APP_TIME_ZONE);
+          const day = dayKey(now, this.config.timeZone);
           const xp = this.config.xp.enabled ? GAME.xpPerGoal : 0;
           const member = await this.loadMember(tx, userId);
           await tx.members.save({ ...member, xpTotal: member.xpTotal + xp });
@@ -703,7 +702,7 @@ export class StudyRoomEngine {
     return this.run(async (tx, now, effects) => {
       const channelId = this.config.postChannelId;
       if (!this.config.recap.enabled || !channelId) return false;
-      const day = dayKey(now, APP_TIME_ZONE);
+      const day = dayKey(now, this.config.timeZone);
       if ((await tx.kv.get<string>(LAST_RECAP_KEY)) === day) return false;
       const recap = await this.recapFor(tx, now, now);
       if (recap.activeMembers === 0) return false;
@@ -842,7 +841,7 @@ export class StudyRoomEngine {
     const newMinutes = whole - block.liveMinutes;
     if (newMinutes <= 0) return null;
     const { userId } = block;
-    const day = dayKey(now, APP_TIME_ZONE);
+    const day = dayKey(now, this.config.timeZone);
     const xp = this.config.xp.enabled ? baseFocusXp(whole) - baseFocusXp(block.liveMinutes) : 0;
     if (xp > 0) {
       const member = await this.loadMember(tx, userId);
@@ -1210,7 +1209,7 @@ export class StudyRoomEngine {
     }
     // Wake when the week rolls over so everyone sees the new boss.
     if (this.config.boss.enabled && candidates.length > 0) {
-      candidates.push(nextWeekStart(now, APP_TIME_ZONE));
+      candidates.push(nextWeekStart(now, this.config.timeZone));
     }
     // While anyone is focusing, wake every minute so stats and the boss update live.
     if (await this.anyoneFocusing(tx, now)) {
@@ -1249,7 +1248,7 @@ export class StudyRoomEngine {
   ) {
     const { userId, minutes, combo, finished, now } = input;
     const live = input.live ?? { liveMinutes: 0, liveXp: 0 };
-    const day = dayKey(now, APP_TIME_ZONE);
+    const day = dayKey(now, this.config.timeZone);
     const member = await this.loadMember(tx, userId);
     const rawXp = this.config.xp.enabled ? focusXp(minutes, combo) : 0;
     // Live ticks paid base XP for whole minutes; the end pays the rest,
@@ -1290,7 +1289,7 @@ export class StudyRoomEngine {
     });
     const quests = await this.rewardQuests(tx, effects, userId, now);
 
-    const tz = APP_TIME_ZONE;
+    const tz = this.config.timeZone;
     const session: SessionFacts = {
       kind: input.kind,
       finished,
@@ -1370,7 +1369,7 @@ export class StudyRoomEngine {
           defeats: await tx.bosses.countDefeatedWith(userId),
           contributors: boss.contributorIds.length,
           finalBlow: finalBlowIds.includes(userId),
-          at: localTime(defeatedAt, APP_TIME_ZONE),
+          at: localTime(defeatedAt, this.config.timeZone),
         },
       });
     }
@@ -1393,7 +1392,7 @@ export class StudyRoomEngine {
     userId: string,
     now: number,
   ): Promise<QuestFacts> {
-    const week = weekKey(dayKey(now, APP_TIME_ZONE));
+    const week = weekKey(dayKey(now, this.config.timeZone));
     const rewarded = new Set(await tx.quests.listRewarded(userId, week));
     let xp = 0;
     for (const { quest, done } of await this.weeklyQuests(tx, userId, now)) {
@@ -1423,7 +1422,7 @@ export class StudyRoomEngine {
 
   /** This week's quests and the member's progress, from daily_stats and session_log. */
   private async weeklyQuests(tx: Store, userId: string, now: number): Promise<QuestProgress[]> {
-    const tz = APP_TIME_ZONE;
+    const tz = this.config.timeZone;
     const week = weekKey(dayKey(now, tz));
     const days = await tx.stats.listForUser(userId, week, addDays(week, 6));
     const sessions = await tx.sessions.listForUser(
@@ -1542,7 +1541,7 @@ export class StudyRoomEngine {
   }
 
   private async loadBoss(tx: Store, now: number): Promise<BossState> {
-    const week = weekKey(dayKey(now, APP_TIME_ZONE));
+    const week = weekKey(dayKey(now, this.config.timeZone));
     return (
       (await tx.bosses.get(week)) ?? newBoss(week, bossNameFor(week), this.config.boss.baseHpXp)
     );
@@ -1629,7 +1628,7 @@ export class StudyRoomEngine {
     const ids = [...participants.map((p) => p.userId), ...solos.map((s) => s.userId)];
     const members = new Map((await tx.members.list(ids)).map((m) => [m.userId, m]));
     const goals = await tx.goals.firstOpen(ids);
-    const today = dayKey(now, APP_TIME_ZONE);
+    const today = dayKey(now, this.config.timeZone);
     const looks = await this.cardLooks(tx, ids, members);
     // Hidden members are already left out of the standings, so they get no rank.
     const ranks = new Map(
@@ -1693,7 +1692,7 @@ export class StudyRoomEngine {
   }
 
   private async bossDto(tx: Store, now: number): Promise<BossDto> {
-    const endsAt = nextWeekStart(now, APP_TIME_ZONE);
+    const endsAt = nextWeekStart(now, this.config.timeZone);
     if (!this.config.boss.enabled) {
       return {
         enabled: false,
@@ -1746,7 +1745,7 @@ export class StudyRoomEngine {
   }
 
   private async buildProgress(tx: Store, userId: string, now: number): Promise<ProgressDto> {
-    const today = dayKey(now, APP_TIME_ZONE);
+    const today = dayKey(now, this.config.timeZone);
     const from = addDays(today, -(LIMITS.progressWindowDays - 1));
     const rows = await tx.stats.listForUser(userId, from, today);
     const byDay = new Map(rows.map((r) => [r.day, r.focusMinutes]));
@@ -1770,7 +1769,7 @@ export class StudyRoomEngine {
   }
 
   private async buildMyStatus(tx: Store, userId: string, now: number): Promise<MyStatusDto> {
-    const tz = APP_TIME_ZONE;
+    const tz = this.config.timeZone;
     const today = dayKey(now, tz);
     const member = await tx.members.get(userId);
     const streakState = member?.streak ?? EMPTY_STREAK;
@@ -1821,7 +1820,7 @@ export class StudyRoomEngine {
     by: LeaderboardMetric,
     period: LeaderboardPeriod,
   ): Promise<LeaderboardDto> {
-    const tz = APP_TIME_ZONE;
+    const tz = this.config.timeZone;
     const today = dayKey(now, tz);
     const { startDay, endsAt } = periodBounds(period, today, now, tz);
     const range: StandingsRange = {
@@ -1875,7 +1874,7 @@ export class StudyRoomEngine {
   }
 
   private async recapFor(tx: Store, at: number, now: number): Promise<RecapDto> {
-    const tz = APP_TIME_ZONE;
+    const tz = this.config.timeZone;
     const day = dayKey(at, tz);
     const stats = await tx.stats.communityDay(day);
     const hidden = new Set(await tx.leaderboard.listHidden());

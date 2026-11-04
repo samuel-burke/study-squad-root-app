@@ -29,7 +29,7 @@ export const LIVE_BADGE_FEATURES: ReadonlySet<BadgeFeature> = new Set<BadgeFeatu
   "bossRoster",
 ]);
 
-/** One focus block, finished or cut short. Times are in US Eastern time. */
+/** One focus block, finished or cut short. Times are in the community time zone. */
 export interface SessionFacts {
   kind: "room" | "solo";
   finished: boolean;

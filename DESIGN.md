@@ -55,11 +55,11 @@ There was a daily XP cap (an admin setting) until 0.3.8. It was removed: the Kee
 
 ## Days start at 4am
 
-A new day starts at 4am US Eastern time, not midnight (`DAY_START_HOUR` and `APP_TIME_ZONE` in `core/src/time/calendar.ts`). Every community uses this one clock; there's no time zone setting. 4am Eastern (it follows daylight saving) is late night across the Americas and morning in Europe, so for most members the rollover happens while they're asleep. A session at 1am Eastern still counts toward the day before, so late-night studiers keep their streak day, finished goals and stats together. Weeks start at 4am on Monday, which also moves weekly quests, the weekly boss and the leaderboard. Clock-time features keep the real clock: the daily recap's post time, and badges such as Burning the Midnight Oil.
+A new day starts at 4am in the community's time zone, not midnight (`DAY_START_HOUR` in `core/src/time/calendar.ts`). A session at 1am still counts toward the day before, so late-night studiers keep their streak day, finished goals and stats together. Weeks start at 4am on Monday, which also moves weekly quests, the weekly boss and the leaderboard. Clock-time features keep the real clock: the daily recap's post time, and badges such as Burning the Midnight Oil.
 
 ## Streaks without guilt
 
-- A day counts after one finished session (a finished room round or a completed solo timer), in US Eastern time.
+- A day counts after one finished session (a finished room round or a completed solo timer), in the community's time zone.
 - Each week (Monday to Sunday) has one free freeze that covers one missed day. A gap of several days survives only if each missed day falls in a different week with an unused freeze.
 - The streak shown is "as of today": yesterday's streak is still alive, and a gap a freeze could still cover isn't shown as zero.
 - There are no public "you lost your streak" messages. Only milestones (7, 30, 50, 100, 200, 365 days) are posted.
@@ -72,7 +72,7 @@ Data is kept for as long as the app is installed, so streaks and history survive
 
 ## Weekly boss
 
-A boss spawns lazily each Monday at 4am US Eastern, taking the week's name from the built-in list (`BOSSES`), so every community fights the same boss the same week. Each boss has a strength from 0.5x to 2x that fits its name, so "The Final Final Exam" is tougher than "Professor Pop Quiz". The list averages exactly 1x, with weaker bosses below and stronger ones above. Its HP (the XP it takes to defeat) is the admin's base HP times its strength, and so is its loot. Admins could type their own boss name until 0.3.8; a boss saved under an old custom name counts as 1x and is replaced by the week's built-in boss on the next settings change or the next Monday.
+A boss spawns lazily each Monday (community time zone), taking the week's name from the built-in list (`BOSSES`), so every community fights the same boss the same week. Each boss has a strength from 0.5x to 2x that fits its name, so "The Final Final Exam" is tougher than "Professor Pop Quiz". The list averages exactly 1x, with weaker bosses below and stronger ones above. Its HP (the XP it takes to defeat) is the admin's base HP times its strength, and so is its loot. Admins could type their own boss name until 0.3.8; a boss saved under an old custom name counts as 1x and is replaced by the week's built-in boss on the next settings change or the next Monday.
 
 All XP counts as damage except boss loot:
 
@@ -86,9 +86,9 @@ Admins can resize the live boss; damage is never healed, and lowering HP below t
 
 - Ranked by focus **minutes** by default, so it can't be gamed with tiny tasks. It sums `daily_stats` for the current week; there's no separate counter to drift.
 - Members can switch the board to **XP**: `daily_stats` XP for the period (focus and goals) plus the `quest_rewards` paid in it (by `rewarded_at`, so a reward lands in the month or year it was earned). Boss loot isn't counted, because everyone who helped gets the same loot. Every entry carries both totals; only the ranking changes. Rank chips on cards, the recap's top 3 and the leaderboard badges stay minute-based, so the XP view is a second way to look, not a second competition.
-- The week is the boss's week: Monday to Sunday in US Eastern time. A new week starts empty.
+- The week is the boss's week: Monday to Sunday in the community time zone. A new week starts empty.
 - Minutes are rounded down to whole minutes before ranking, and equal minutes share a rank (1, 2, 2, 4), so two people shown with the same time never get different places.
-- Members can also switch the period to **this month**, **this year** or **all time** (calendar month and year in US Eastern time). Every period runs the same queries over a different day range, so there are no extra totals to keep in sync; all time is just a range starting at `0000-01-01`. Each period starts over at its own boundary (all time never does). Opt-outs apply to every period. The weekly view stays the default, and the card rank chips, badges and recap remain weekly, since a weekly race gives newcomers a fresh chance every Monday.
+- Members can also switch the period to **this month**, **this year** or **all time** (calendar month and year in the community time zone). Every period runs the same queries over a different day range, so there are no extra totals to keep in sync; all time is just a range starting at `0000-01-01`. Each period starts over at its own boundary (all time never does). Opt-outs apply to every period. The weekly view stays the default, and the card rank chips, badges and recap remain weekly, since a weekly race gives newcomers a fresh chance every Monday.
 - The board lists the top 10. You always see your own rank and minutes, even below the top 10.
 - Every card on the room's "Focusing now" board shows that member's rank (#1, #2…), including ranks below the top 10, so the room can see who's leading without opening the progress screen. Members with no minutes this week, or who hid themselves, show no rank. The rank is computed with the room state, so it updates whenever the board does.
 - Members can hide themselves. Hidden members are left out of the board, get no rank on their room card, and are left out of every ranking in posts (the recap's top focusers and top streaks). Their minutes still count for the boss and community totals. The opt-out lives in its own table so it's erased with the rest of a member's data.
@@ -97,7 +97,7 @@ Admins can resize the live boss; damage is never healed, and lowering HP below t
 
 ## Weekly quests
 
-Each week (Monday to Sunday, US Eastern time) shows three quests from a pool of seven (`core/src/game/quests.ts`), such as "Finish 5 goals", "Finish 3 room rounds" and "Focus on a weekend day". Week _n_ takes three neighbouring quests from the pool, so the set is the same for everyone, consecutive weeks never share a quest, and every quest comes around within three weeks.
+Each week (Monday to Sunday, community time zone) shows three quests from a pool of seven (`core/src/game/quests.ts`), such as "Finish 5 goals", "Finish 3 room rounds" and "Focus on a weekend day". Week _n_ takes three neighbouring quests from the pool, so the set is the same for everyone, consecutive weeks never share a quest, and every quest comes around within three weeks.
 
 - Quests are sized so a new member can finish them in an ordinary week.
 - Progress is read from `session_log` and `daily_stats`, so there are no extra counters to keep in sync. The only new table, `quest_rewards`, records which rewards were paid so each is paid once.
@@ -111,7 +111,7 @@ Badges are permanent and come in two kinds: visible ones that say how to earn th
 
 - **Nothing new is tracked for badges.** Progress comes from what's already stored (daily stats, the session log, boss contributors); only the earned badges and the card look are new tables. Lifetime badges (hours focused, goals, rounds) therefore also reach members who earned them before badges existed, the next time they finish something.
 - **Badges never repeat** and keep the time they were first earned. The member's devices get one push per operation listing what it earned, which shows the unlock banner. A member with the app closed misses the banner but still finds the badge on the progress screen.
-- **Times of day** (Early Bird before 8am, Night Owl after 10pm, the 3am Three O'Clock Club) use when the session started, in US Eastern time, and need a finished session so a timer left running doesn't count.
+- **Times of day** (Early Bird before 8am, Night Owl after 10pm, the 3am Three O'Clock Club) use when the session started, in the community time zone, and need a finished session so a timer left running doesn't count.
 - **Secret badges are only secret in the UI.** The catalog ships in the client bundle so cards can render badge names offline; anyone reading the code can find them, which is fine for Easter eggs.
 - **Badges that need another feature** declare it (`requires`): weekly quests, the weekly leaderboard, and the built-in boss roster with strengths. They stay out of the catalog until that feature adds itself to `LIVE_BADGE_FEATURES` and passes its facts to `awardBadges`. Weekly quests are live, so the three quest badges can be earned.
 

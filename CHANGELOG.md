@@ -4,14 +4,13 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ## [Unreleased]
 
-Fewer settings to think about: one daily reset for everyone, built-in boss names, no XP cap, and no voice channel.
+Fewer settings to think about: built-in boss names, no XP cap, a simpler squad bot, and no voice channel.
 
 ### Removed
 
 - **Daily XP cap.** Members now keep every XP they earn. The Keep going? check at the end of each cycle already stops a forgotten timer from farming XP all day.
 - **Boss name.** Every community gets the week's built-in boss, so strengths and the boss badges always line up. A boss saved under an old custom name is swapped for the week's built-in one on the next settings change, or on Monday.
 - **Squad bot personalities.** The Squad bot setting is now a plain on/off, and the bot mixes lines from every personality.
-- **Community time zone.** A new day (streaks, goals, recaps, quests, the weekly boss and the leaderboards) now starts at 4am US Eastern for every community. The recap time is in US Eastern too.
 - **Voice channel.** The Voice channel name setting, the Join voice button and the headphones on member cards are gone. They never worked in a live Root community. The privacy policy no longer mentions voice.
 
 ## [0.3.7] - 2026-11-04

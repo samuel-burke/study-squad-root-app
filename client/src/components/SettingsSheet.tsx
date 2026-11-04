@@ -30,7 +30,6 @@ export function SettingsSheet({
     ["Combo multiplier", f.comboEnabled ? "On · +0.1x per extra person, up to 2.0x" : "Off"],
     ["Weekly boss", f.bossEnabled ? `On · ${room.boss.name}` : "Off"],
     ["Streak freezes", f.streakFreezesEnabled ? "One free missed day per week" : "Off"],
-    ["New day starts", "4am US Eastern"],
     [
       "Bot messages channel",
       f.postChannelName ? `#${f.postChannelName}` : "None picked, so posts are off",

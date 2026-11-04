@@ -1178,7 +1178,7 @@ describe("weekly leaderboard", () => {
     await expectError(engine.setLeaderboardHidden("kai", false, 2), ErrorCode.Validation);
   });
 
-  it("covers this month, this year and all time too, in US Eastern time", async () => {
+  it("covers this month, this year and all time too, in the community time zone", async () => {
     const { engine, store } = createHarness();
     await store.stats.add("ana", "2026-10-26", { focusMinutes: 60, xp: 120 });
     await store.stats.add("kai", "2026-10-05", { focusMinutes: 90, xp: 180 });
@@ -1242,7 +1242,7 @@ describe("weekly leaderboard", () => {
     await expectError(engine.getLeaderboard("ana", "minutes", "decade"), ErrorCode.Validation);
   });
 
-  it("starts over at 4am Monday in US Eastern time", async () => {
+  it("starts over at 4am Monday in the community time zone", async () => {
     // Monday 2026-11-02 03:30 in New York still belongs to the old week.
     const { engine, store, clock } = createHarness(configWith(), Date.UTC(2026, 10, 2, 8, 30));
     await store.stats.add("ana", "2026-11-01", { focusMinutes: 60 });

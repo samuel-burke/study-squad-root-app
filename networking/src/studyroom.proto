@@ -201,7 +201,7 @@ enum LeaderboardMetric {
   LEADERBOARD_METRIC_XP = 2;
 }
 
-// The stretch of time the leaderboard covers, in US Eastern time (4am day start).
+// The stretch of time the leaderboard covers, in the community time zone.
 // Unspecified means this week.
 enum LeaderboardPeriod {
   LEADERBOARD_PERIOD_UNSPECIFIED = 0;
@@ -223,7 +223,7 @@ message LeaderboardEntry {
 
 // Standings for a period by focus minutes or XP. Members who opted out are never listed.
 message Leaderboard {
-  // First day of the period in US Eastern time, "YYYY-MM-DD". Empty for all time.
+  // First day of the period in the community time zone, "YYYY-MM-DD". Empty for all time.
   string start_day = 1;
   // When the period ends. 0 for all time.
   double ends_at_ms = 2;

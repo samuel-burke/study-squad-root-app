@@ -103,7 +103,7 @@
           {
             "key": "recapTime",
             "title": "Recap time",
-            "description": "US Eastern time. A new day starts at 4am US Eastern for every community.",
+            "description": "In the community time zone below.",
             "time": {
               "defaultValue": {
                 "hours": 21,
@@ -118,6 +118,101 @@
             "description": "Add the week's top 3 by focus minutes to the daily recap. Members who hid themselves are never listed.",
             "checkbox": {
               "defaultValue": true
+            }
+          },
+          {
+            "key": "timeZone",
+            "title": "Community time zone",
+            "description": "Decides when a day starts for streaks, recaps, the weekly boss and the leaderboard.",
+            "select": {
+              "multiSelect": false,
+              "values": ["America/New_York"],
+              "options": [
+                {
+                  "key": "America/New_York",
+                  "value": "America/New York"
+                },
+                {
+                  "key": "America/Chicago",
+                  "value": "America/Chicago"
+                },
+                {
+                  "key": "America/Denver",
+                  "value": "America/Denver"
+                },
+                {
+                  "key": "America/Los_Angeles",
+                  "value": "America/Los Angeles"
+                },
+                {
+                  "key": "America/Anchorage",
+                  "value": "America/Anchorage"
+                },
+                {
+                  "key": "Pacific/Honolulu",
+                  "value": "Pacific/Honolulu"
+                },
+                {
+                  "key": "America/Toronto",
+                  "value": "America/Toronto"
+                },
+                {
+                  "key": "America/Sao_Paulo",
+                  "value": "America/Sao Paulo"
+                },
+                {
+                  "key": "Europe/London",
+                  "value": "Europe/London"
+                },
+                {
+                  "key": "Europe/Berlin",
+                  "value": "Europe/Berlin"
+                },
+                {
+                  "key": "Europe/Paris",
+                  "value": "Europe/Paris"
+                },
+                {
+                  "key": "Europe/Madrid",
+                  "value": "Europe/Madrid"
+                },
+                {
+                  "key": "Africa/Lagos",
+                  "value": "Africa/Lagos"
+                },
+                {
+                  "key": "Africa/Johannesburg",
+                  "value": "Africa/Johannesburg"
+                },
+                {
+                  "key": "Asia/Kolkata",
+                  "value": "Asia/Kolkata"
+                },
+                {
+                  "key": "Asia/Singapore",
+                  "value": "Asia/Singapore"
+                },
+                {
+                  "key": "Asia/Tokyo",
+                  "value": "Asia/Tokyo"
+                },
+                {
+                  "key": "Asia/Seoul",
+                  "value": "Asia/Seoul"
+                },
+                {
+                  "key": "Australia/Sydney",
+                  "value": "Australia/Sydney"
+                },
+                {
+                  "key": "Pacific/Auckland",
+                  "value": "Pacific/Auckland"
+                },
+                {
+                  "key": "UTC",
+                  "value": "UTC"
+                }
+              ]
             }
           },
           {
@@ -180,7 +275,7 @@
           {
             "key": "bossEnabled",
             "title": "Weekly boss",
-            "description": "A community goal with an HP bar. Every XP members earn deals damage, live each minute they focus, and everyone who pitched in gets bonus XP when it falls. A new boss with a new name spawns every Monday at 4am US Eastern.",
+            "description": "A community goal with an HP bar. Every XP members earn deals damage, live each minute they focus, and everyone who pitched in gets bonus XP when it falls. A new boss spawns every Monday.",
             "checkbox": {
               "defaultValue": true
             }

@@ -1,3 +1,4 @@
+import { isValidTimeZone } from "./time/calendar";
 import {
   customPreset,
   DEFAULT_PRESET,
@@ -22,6 +23,7 @@ export const SETTINGS = {
     recapEnabled: "recapEnabled",
     recapTime: "recapTime",
     recapLeaderboard: "recapLeaderboard",
+    timeZone: "timeZone",
     goalsPublic: "goalsPublicByDefault",
     busyPosts: "busyPosts",
     busyThreshold: "busyThreshold",
@@ -54,11 +56,11 @@ export const NUMBER_LIMITS = {
 export interface AppConfig {
   presetKey: PresetKey;
   preset: TimerPreset;
+  timeZone: string;
   /** Channel for recaps, busy-room and milestone posts. null = don't post. */
   postChannelId: string | null;
   /** Display name of that channel, resolved by the server. Empty if unknown. */
   postChannelName: string;
-  /** hours and minutes are US Eastern time (APP_TIME_ZONE). */
   recap: { enabled: boolean; hours: number; minutes: number };
   /** List the week's top focusers in the daily recap. */
   recapLeaderboardEnabled: boolean;
@@ -84,6 +86,7 @@ export interface AppConfig {
 export const DEFAULT_CONFIG: AppConfig = {
   presetKey: "25-5",
   preset: DEFAULT_PRESET,
+  timeZone: "America/New_York",
   postChannelId: null,
   postChannelName: "",
   recap: { enabled: true, hours: 21, minutes: 0 },
@@ -163,6 +166,7 @@ export function parseSettings(raw: RawSettings): AppConfig {
   const g = SETTINGS.game;
   const d = DEFAULT_CONFIG;
 
+  const tz = firstString(room[r.timeZone]);
   const channel = firstString(room[r.postChannel]);
 
   return {
@@ -171,6 +175,7 @@ export function parseSettings(raw: RawSettings): AppConfig {
       limited(room[r.customFocus], "customFocusMinutes"),
       limited(room[r.customBreak], "customBreakMinutes"),
     ),
+    timeZone: tz && isValidTimeZone(tz) ? tz : d.timeZone,
     postChannelId: channel && channel.length > 0 ? channel : null,
     postChannelName: "",
     recap: {

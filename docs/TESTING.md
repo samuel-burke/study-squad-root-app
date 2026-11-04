@@ -34,7 +34,7 @@ Useful combinations:
 
 - **Boss base HP** goes down to 100 XP. This week's boss is 0.5x to 2x that, so a 25 minute solo timer or two defeats it. Set it back before the community uses the app for real.
 - Changing **Boss base HP** re-sizes this week's boss at once. Damage is never healed, and dropping HP below the damage dealt defeats the boss immediately.
-- Days start at 4am US Eastern for every community. To test streaks across days, use the demo's `streak` and `missed` knobs above.
+- **Time zone** decides which day a session counts for. Switching from Pacific/Honolulu to Pacific/Auckland moves "today" one day ahead, which tests streaks without waiting. Switching back is ignored, so nothing is lost.
 - The shortest room timer is Custom 15 / 3, a 78 minute cycle.
 
 ## What's automated

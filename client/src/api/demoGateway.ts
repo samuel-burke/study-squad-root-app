@@ -2,7 +2,6 @@ import {
   addDays,
   BADGES,
   BOSSES,
-  APP_TIME_ZONE,
   badgeById,
   bossNameFor,
   customPreset,
@@ -232,6 +231,7 @@ function demoConfig(options: DemoOptions): AppConfig {
     presetKey: custom ? "custom" : DEFAULT_CONFIG.presetKey,
     preset,
     boss: { ...DEFAULT_CONFIG.boss, baseHpXp: options.bossBaseHp ?? DEFAULT_CONFIG.boss.baseHpXp },
+    timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
     postChannelId: "demo-channel",
     postChannelName: "study-hall",
   };
@@ -323,7 +323,7 @@ export class DemoGateway implements StudyRoomGateway {
   }
 
   private async seedHistory() {
-    const tz = APP_TIME_ZONE;
+    const tz = this.config.timeZone;
     const today = dayKey(Date.now(), tz);
     const yesterday = addDays(today, -1);
     const member = (userId: string, xp: number, streak: number, lastActiveDay = yesterday) =>
@@ -407,7 +407,7 @@ export class DemoGateway implements StudyRoomGateway {
 
   /** This week's boss, part way down. Without bots it starts fresh unless `?bossLeft=` says otherwise. */
   private async seedBoss() {
-    const week = weekKey(dayKey(Date.now(), APP_TIME_ZONE));
+    const week = weekKey(dayKey(Date.now(), this.config.timeZone));
     const name = this.options.bossName ?? bossNameFor(week);
     const boss = newBoss(week, name, this.config.boss.baseHpXp);
     const left = this.options.bossHpLeft;

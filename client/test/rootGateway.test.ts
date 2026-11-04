@@ -40,6 +40,8 @@ const service = vi.hoisted(() => {
       addGoal: vi.fn(),
       setGoalDone: vi.fn(),
       deleteGoal: vi.fn(),
+      editGoal: vi.fn(),
+      clearDoneGoals: vi.fn(),
       setGoalsPrivate: vi.fn(),
       deleteMyData: vi.fn(),
       keepGoing: vi.fn(),
@@ -119,6 +121,8 @@ describe("RootGateway", () => {
       "addGoal",
       "setGoalDone",
       "deleteGoal",
+      "editGoal",
+      "clearDoneGoals",
       "setGoalsPrivate",
       "deleteMyData",
       "keepGoing",
@@ -128,6 +132,10 @@ describe("RootGateway", () => {
     await expect(gateway.addGoal("x")).resolves.toEqual(me);
     await expect(gateway.setGoalDone("g", true)).resolves.toEqual(me);
     await expect(gateway.deleteGoal("g")).resolves.toEqual(me);
+    await expect(gateway.editGoal("g", "y")).resolves.toEqual(me);
+    await expect(gateway.clearDoneGoals()).resolves.toEqual(me);
+    expect(service.client.editGoal).toHaveBeenCalledWith({ goalId: "g", text: "y" });
+    expect(service.client.clearDoneGoals).toHaveBeenCalledWith({});
     await expect(gateway.setGoalsPrivate(false)).resolves.toEqual(me);
     await expect(gateway.deleteMyData()).resolves.toEqual(me);
     await expect(gateway.keepGoing()).resolves.toEqual(me);

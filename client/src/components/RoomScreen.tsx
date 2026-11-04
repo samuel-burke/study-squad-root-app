@@ -3,6 +3,7 @@ import type { Profile } from "../api/gateway";
 import { phasePill } from "../lib/view";
 import { BossCard, MobileBoss } from "./BossCard";
 import { ComboCard, ComboPill } from "./ComboCard";
+import type { GoalActions } from "./GoalList";
 import { AppLogo, ChartIcon, PeopleIcon, SlidersIcon, SoundOffIcon, SoundOnIcon } from "./Icons";
 import { MemberBoard } from "./MemberBoard";
 import { SessionPanel } from "./SessionPanel";
@@ -21,9 +22,7 @@ export interface RoomScreenProps {
   onStart(mode: "room" | "solo"): void;
   onLeave(): void;
   onEndSolo(): void;
-  onToggleGoal(goalId: string, done: boolean): void;
-  onDeleteGoal(goalId: string): void;
-  onAddGoal(text: string): Promise<boolean>;
+  goalActions: GoalActions;
   onOpenGoals(): void;
   onOpenProgress(): void;
   onOpenSettings(): void;
@@ -184,9 +183,7 @@ export function RoomScreen(props: RoomScreenProps) {
             me={me}
             xpEnabled={room.features.xpEnabled}
             busy={busy}
-            onToggleGoal={props.onToggleGoal}
-            onDeleteGoal={props.onDeleteGoal}
-            onAddGoal={props.onAddGoal}
+            goalActions={props.goalActions}
           />
         </aside>
       </div>

@@ -13,6 +13,8 @@ export interface StudyRoomActions {
   addGoal(text: string): Promise<boolean>;
   setGoalDone(goalId: string, done: boolean): Promise<boolean>;
   deleteGoal(goalId: string): Promise<boolean>;
+  editGoal(goalId: string, text: string): Promise<boolean>;
+  clearDoneGoals(): Promise<boolean>;
   setGoalsPrivate(goalsPrivate: boolean): Promise<boolean>;
   deleteMyData(): Promise<boolean>;
   keepGoing(): Promise<boolean>;
@@ -76,6 +78,8 @@ export function useStudyRoom(gateway: StudyRoomGateway) {
       addGoal: (text) => run(() => gateway.addGoal(text)),
       setGoalDone: (goalId, done) => run(() => gateway.setGoalDone(goalId, done)),
       deleteGoal: (goalId) => run(() => gateway.deleteGoal(goalId)),
+      editGoal: (goalId, text) => run(() => gateway.editGoal(goalId, text)),
+      clearDoneGoals: () => run(() => gateway.clearDoneGoals()),
       setGoalsPrivate: (goalsPrivate) => run(() => gateway.setGoalsPrivate(goalsPrivate)),
       deleteMyData: async () => {
         const ok = await run(() => gateway.deleteMyData());

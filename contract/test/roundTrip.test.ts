@@ -144,8 +144,20 @@ const me: MyStatusDto = {
   streak: 6,
   freezeAvailable: true,
   goals: [
-    { id: "g1", text: "Read ch. 4", done: true },
-    { id: "g2", text: "Make 20 flashcards", done: false },
+    {
+      id: "g1",
+      text: "Read ch. 4",
+      done: true,
+      createdAt: 1_793_140_000_000,
+      completedAt: 1_793_142_700_000,
+    },
+    {
+      id: "g2",
+      text: "Make 20 flashcards",
+      done: false,
+      createdAt: 1_793_140_000_001,
+      completedAt: null,
+    },
   ],
   goalsPrivate: false,
   keepGoingEndsAt: 1_793_150_200_000,
@@ -213,7 +225,13 @@ describe("contract round trip", () => {
       streakExtended: true,
       finisherIds: ["u1"],
       roomDamageXp: 60,
-      goalPrompt: { id: "g2", text: "Make 20 flashcards", done: false },
+      goalPrompt: {
+        id: "g2",
+        text: "Make 20 flashcards",
+        done: false,
+        createdAt: 1_793_140_000_001,
+        completedAt: null,
+      },
       breakEndsAt: 123,
       me,
     };

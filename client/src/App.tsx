@@ -6,6 +6,7 @@ import { MemberProfileSheet } from "./components/MemberProfileSheet";
 import { BreakMoment } from "./components/BreakMoment";
 import { Celebration } from "./components/Celebration";
 import { FeedbackSheet } from "./components/FeedbackSheet";
+import type { GoalActions } from "./components/GoalList";
 import { GoalsSheet } from "./components/GoalsSheet";
 import { ProgressScreen } from "./components/ProgressScreen";
 import { RoomScreen } from "./components/RoomScreen";
@@ -72,6 +73,17 @@ export function App({ gateway }: { gateway: StudyRoomGateway }) {
   );
   const profiles = useProfiles(gateway, userIds);
 
+  const goalActions = useMemo<GoalActions>(
+    () => ({
+      toggle: (id, done) => void actions.setGoalDone(id, done),
+      remove: (id) => void actions.deleteGoal(id),
+      add: actions.addGoal,
+      edit: actions.editGoal,
+      clearDone: () => void actions.clearDoneGoals(),
+    }),
+    [actions],
+  );
+
   // While a sheet is open, the page behind it can't be focused or clicked.
   const background = useRef<HTMLDivElement>(null);
   const modalOpen = overlay !== null || state.breakMoment !== null;
@@ -133,9 +145,7 @@ export function App({ gateway }: { gateway: StudyRoomGateway }) {
             onStart={(mode) => setOverlay({ kind: "start", mode })}
             onLeave={() => void actions.leaveRoomTimer()}
             onEndSolo={() => void actions.endSolo()}
-            onToggleGoal={(id, done) => void actions.setGoalDone(id, done)}
-            onDeleteGoal={(id) => void actions.deleteGoal(id)}
-            onAddGoal={actions.addGoal}
+            goalActions={goalActions}
             onOpenGoals={() => setOverlay({ kind: "goals" })}
             onOpenProgress={() => setScreen("progress")}
             onOpenSettings={() => setOverlay({ kind: "settings" })}
@@ -161,9 +171,7 @@ export function App({ gateway }: { gateway: StudyRoomGateway }) {
           me={me}
           xpEnabled={room.features.xpEnabled}
           busy={busy}
-          onToggle={(id, done) => void actions.setGoalDone(id, done)}
-          onDelete={(id) => void actions.deleteGoal(id)}
-          onAdd={actions.addGoal}
+          actions={goalActions}
           onClose={() => setOverlay(null)}
         />
       )}

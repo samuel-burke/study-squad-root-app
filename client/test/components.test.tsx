@@ -5,6 +5,7 @@ import { createHarness } from "../../core/test/helpers";
 import { Avatar } from "../src/components/Avatar";
 import { strengthText } from "../src/components/BossCard";
 import { ErrorBoundary } from "../src/components/ErrorBoundary";
+import type { GoalActions } from "../src/components/GoalList";
 import { GoalsSheet } from "../src/components/GoalsSheet";
 import { MemberBoard } from "../src/components/MemberBoard";
 import { Sheet } from "../src/components/Sheet";
@@ -55,28 +56,65 @@ describe("Sheet", () => {
 });
 
 describe("GoalsSheet", () => {
+  const goalActions = (): GoalActions => ({
+    toggle: vi.fn(),
+    remove: vi.fn(),
+    add: vi.fn(async () => true),
+    edit: vi.fn(async () => true),
+    clearDone: vi.fn(),
+  });
+
   it("lists goals, shows XP when enabled, and closes with Done", async () => {
     const { engine } = createHarness();
     const me = await engine.addGoal("ana", "Read ch. 4");
     const user = userEvent.setup();
     const onClose = vi.fn();
-    const onToggle = vi.fn();
-    render(
-      <GoalsSheet
-        me={me}
-        xpEnabled
-        busy={false}
-        onToggle={onToggle}
-        onDelete={vi.fn()}
-        onAdd={vi.fn(async () => true)}
-        onClose={onClose}
-      />,
-    );
+    const actions = goalActions();
+    render(<GoalsSheet me={me} xpEnabled busy={false} actions={actions} onClose={onClose} />);
     expect(screen.getByRole("dialog", { name: "Your goals" })).toHaveTextContent("Read ch. 4");
+    expect(screen.queryByRole("button", { name: /Clear completed/ })).not.toBeInTheDocument();
     await user.click(screen.getByRole("checkbox", { name: /Read ch. 4/ }));
-    expect(onToggle).toHaveBeenCalledWith(me.goals[0]!.id, true);
+    expect(actions.toggle).toHaveBeenCalledWith(me.goals[0]!.id, true);
     await user.click(screen.getByRole("button", { name: "Done" }));
     expect(onClose).toHaveBeenCalled();
+  });
+
+  it("puts finished goals last with how long they took, and clears them in one go", async () => {
+    const { engine, advance } = createHarness();
+    await engine.addGoal("ana", "Read ch. 4");
+    let me = await engine.addGoal("ana", "Flashcards");
+    await advance(95 * 60_000);
+    me = await engine.setGoalDone("ana", me.goals[0]!.id, true);
+    const user = userEvent.setup();
+    const actions = goalActions();
+    render(
+      <GoalsSheet me={me} xpEnabled={false} busy={false} actions={actions} onClose={vi.fn()} />,
+    );
+    const items = screen.getAllByRole("listitem");
+    expect(items.map((li) => li.textContent)).toEqual(["Flashcards", "Read ch. 4Took 1h 35m"]);
+    await user.click(screen.getByRole("button", { name: "Clear completed (1)" }));
+    expect(actions.clearDone).toHaveBeenCalled();
+  });
+
+  it("edits a goal in place", async () => {
+    const { engine } = createHarness();
+    const me = await engine.addGoal("ana", "Read ch. 4");
+    const user = userEvent.setup();
+    const actions = goalActions();
+    render(
+      <GoalsSheet me={me} xpEnabled={false} busy={false} actions={actions} onClose={vi.fn()} />,
+    );
+    await user.click(screen.getByRole("button", { name: "Edit goal: Read ch. 4" }));
+    const input = screen.getByRole("textbox", { name: "Edit goal" });
+    await user.clear(input);
+    await user.type(input, "Read ch. 5{Enter}");
+    expect(actions.edit).toHaveBeenCalledWith(me.goals[0]!.id, "Read ch. 5");
+    expect(screen.queryByRole("textbox", { name: "Edit goal" })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Edit goal: Read ch. 4" }));
+    await user.keyboard("{Escape}");
+    expect(screen.queryByRole("textbox", { name: "Edit goal" })).not.toBeInTheDocument();
+    expect(actions.edit).toHaveBeenCalledTimes(1);
   });
 });
 

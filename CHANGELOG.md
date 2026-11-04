@@ -4,6 +4,12 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ## [Unreleased]
 
+### Added
+
+- Goals: a "Clear completed" button removes every finished goal at once. XP, stats and badges already earned stay.
+- Goals: edit a goal's text with the pencil button. Enter saves, Escape cancels.
+- Goals: finished goals move below open ones and show how long they took, from adding to ticking off.
+
 ## [0.3.7] - 2026-11-04
 
 The number settings from 0.3.6 now take effect.

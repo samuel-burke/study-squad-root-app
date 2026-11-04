@@ -93,6 +93,14 @@ export class RootGateway implements StudyRoomGateway {
     return myStatusFromProto(await call(() => client.deleteGoal({ goalId })));
   }
 
+  async editGoal(goalId: string, text: string) {
+    return myStatusFromProto(await call(() => client.editGoal({ goalId, text })));
+  }
+
+  async clearDoneGoals() {
+    return myStatusFromProto(await call(() => client.clearDoneGoals({})));
+  }
+
   async setGoalsPrivate(goalsPrivate: boolean) {
     return myStatusFromProto(await call(() => client.setGoalsPrivate({ goalsPrivate })));
   }

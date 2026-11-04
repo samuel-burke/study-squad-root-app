@@ -303,7 +303,7 @@ describe("goals", () => {
     const { engine, advance } = createHarness();
     const id = (await engine.addGoal("ana", "Essay intro draft")).goals[0]!.id;
     await engine.setGoalDone("ana", id, true);
-    expect((await engine.getSnapshot("ana")).me.goals).toEqual([
+    expect((await engine.getSnapshot("ana")).me.goals).toMatchObject([
       { id, text: "Essay intro draft", done: true },
     ]);
     await advance((17 * 60 + 59) * MINUTE); // 3:59am the next night
@@ -321,6 +321,46 @@ describe("goals", () => {
     expect((await engine.getSnapshot("ana")).me.goals).toHaveLength(1);
     await advance(60 * MINUTE); // 4am
     expect((await engine.getSnapshot("ana")).me.goals).toEqual([]);
+  });
+
+  it("records when each goal was added and finished", async () => {
+    const { engine, advance, clock } = createHarness();
+    const added = clock.now();
+    const id = (await engine.addGoal("ana", "Lab report")).goals[0]!.id;
+    expect((await engine.getSnapshot("ana")).me.goals[0]).toMatchObject({
+      createdAt: added,
+      completedAt: null,
+    });
+    await advance(40 * MINUTE);
+    const done = (await engine.setGoalDone("ana", id, true)).goals[0]!;
+    expect(done.completedAt! - done.createdAt).toBe(40 * MINUTE);
+    expect((await engine.setGoalDone("ana", id, false)).goals[0]!.completedAt).toBeNull();
+  });
+
+  it("edits a goal's text without touching its state or XP", async () => {
+    const { engine } = createHarness();
+    const id = (await engine.addGoal("ana", "Read ch 4")).goals[0]!.id;
+    const done = await engine.setGoalDone("ana", id, true);
+    const edited = await engine.editGoal("ana", id, "  Read ch. 4  ");
+    expect(edited.goals).toEqual([{ ...done.goals[0]!, text: "Read ch. 4" }]);
+    expect(edited.xpTotal).toBe(done.xpTotal);
+    await expectError(engine.editGoal("ana", id, ""), ErrorCode.Validation);
+    await expectError(engine.editGoal("mallory", id, "Mine now"), ErrorCode.NotFound);
+  });
+
+  it("clears finished goals and keeps open ones, XP and stats", async () => {
+    const { engine } = createHarness();
+    await engine.joinRoomTimer("ana", { goals: ["A", "B", "C"] });
+    let me = (await engine.getSnapshot("ana")).me;
+    await engine.setGoalDone("ana", me.goals[0]!.id, true);
+    me = await engine.setGoalDone("ana", me.goals[2]!.id, true);
+    await engine
+      .addGoal("bo", "Bo's finished goal")
+      .then((bo) => engine.setGoalDone("bo", bo.goals[0]!.id, true));
+    const cleared = await engine.clearDoneGoals("ana");
+    expect(cleared.goals.map((g) => g.text)).toEqual(["B"]);
+    expect(cleared.xpTotal).toBe(me.xpTotal);
+    expect((await engine.getSnapshot("bo")).me.goals).toHaveLength(1);
   });
 
   it("refuses to touch someone else's goal and doesn't reveal that it exists", async () => {

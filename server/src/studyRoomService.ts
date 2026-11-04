@@ -2,8 +2,10 @@ import { RootServerException, type Client } from "@rootsdk/server-app";
 import { StudyRoomServiceBase } from "@studyroom/gen-server";
 import type {
   AddGoalRequest,
+  ClearDoneGoalsRequest,
   DeleteGoalRequest,
   DeleteMyDataRequest,
+  EditGoalRequest,
   EndSoloRequest,
   FeedbackSent,
   GetLeaderboardRequest,
@@ -70,6 +72,14 @@ export class StudyRoomService extends StudyRoomServiceBase {
 
   deleteGoal(request: DeleteGoalRequest, client: Client): Promise<MyStatus> {
     return this.call((h) => h.deleteGoal(client.userId, request));
+  }
+
+  editGoal(request: EditGoalRequest, client: Client): Promise<MyStatus> {
+    return this.call((h) => h.editGoal(client.userId, request));
+  }
+
+  clearDoneGoals(_request: ClearDoneGoalsRequest, client: Client): Promise<MyStatus> {
+    return this.call((h) => h.clearDoneGoals(client.userId));
   }
 
   setGoalsPrivate(request: SetGoalsPrivateRequest, client: Client): Promise<MyStatus> {

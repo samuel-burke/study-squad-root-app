@@ -678,6 +678,31 @@ export class StudyRoomEngine {
     });
   }
 
+  /** Changes a goal's text. Done state, XP and timings stay as they are. */
+  async editGoal(userId: string, goalIdInput: unknown, textInput: unknown): Promise<MyStatusDto> {
+    const goalId = validateId(goalIdInput, "goal id");
+    const text = validateGoalText(textInput);
+    return this.run(async (tx, now, effects) => {
+      const goal = await this.ownGoal(tx, userId, goalId);
+      if (goal.text !== text) await tx.goals.update({ ...goal, text });
+      this.touch(effects, userId);
+      return this.buildMyStatus(tx, userId, now);
+    });
+  }
+
+  /**
+   * Removes every finished goal from the member's list. XP, stats, quests and
+   * badges were credited when each goal was ticked, so nothing is lost.
+   */
+  async clearDoneGoals(userId: string): Promise<MyStatusDto> {
+    return this.run(async (tx, now, effects) => {
+      const goals = await tx.goals.listForUser(userId, 0);
+      for (const goal of goals) if (goal.done) await tx.goals.delete(goal.id);
+      this.touch(effects, userId);
+      return this.buildMyStatus(tx, userId, now);
+    });
+  }
+
   async setGoalsPrivate(userId: string, goalsPrivate: unknown): Promise<MyStatusDto> {
     if (typeof goalsPrivate !== "boolean") throw validationError("Expected true or false.");
     return this.run(async (tx, now, effects) => {
@@ -1618,7 +1643,7 @@ export class StudyRoomEngine {
 
   private async goalPrompt(tx: Store, userId: string): Promise<GoalDto | null> {
     const goal = (await tx.goals.firstOpen([userId])).get(userId);
-    return goal ? { id: goal.id, text: goal.text, done: goal.done } : null;
+    return goal ? goalToDto(goal) : null;
   }
 
   private goalsArePrivate(member: MemberRecord | undefined): boolean {
@@ -1842,7 +1867,7 @@ export class StudyRoomEngine {
       xpToday: (await tx.stats.get(userId, today))?.xp ?? 0,
       streak: currentStreak(streakState, today, this.config.streakFreezesEnabled),
       freezeAvailable: freezeAvailable(streakState, today, this.config.streakFreezesEnabled),
-      goals: goals.map((g) => ({ id: g.id, text: g.text, done: g.done })),
+      goals: goals.map(goalToDto),
       goalsPrivate: this.goalsArePrivate(member),
       keepGoingEndsAt,
     };
@@ -2001,4 +2026,14 @@ function validatePeriod(period: unknown): LeaderboardPeriod {
 function validateMetric(by: unknown): LeaderboardMetric {
   if (by === "minutes" || by === "xp") return by;
   throw validationError("The leaderboard ranks by minutes or xp.");
+}
+
+function goalToDto(goal: GoalRecord): GoalDto {
+  return {
+    id: goal.id,
+    text: goal.text,
+    done: goal.done,
+    createdAt: goal.createdAt,
+    completedAt: goal.completedAt,
+  };
 }

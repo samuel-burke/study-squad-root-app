@@ -104,8 +104,15 @@ describe("StudyRoomHandlers", () => {
     const me = await handlers.setGoalsPrivate("priya", { goalsPrivate: false });
     expect(me.goalsPrivate).toBe(false);
     const goalId = me.goals[0]!.id;
-    expect((await handlers.setGoalDone("priya", { goalId, done: true })).goals[0]!.done).toBe(true);
-    expect((await handlers.deleteGoal("priya", { goalId })).goals).toEqual([]);
+    expect((await handlers.editGoal("priya", { goalId, text: "Set C" })).goals[0]!.text).toBe(
+      "Set C",
+    );
+    const finished = (await handlers.setGoalDone("priya", { goalId, done: true })).goals[0]!;
+    expect(finished.done).toBe(true);
+    expect(finished.completedAtMs).toBeGreaterThanOrEqual(finished.createdAtMs);
+    expect((await handlers.clearDoneGoals("priya")).goals).toEqual([]);
+    const added = (await handlers.addGoal("priya", { text: "One more" })).goals[0]!;
+    expect((await handlers.deleteGoal("priya", { goalId: added.id })).goals).toEqual([]);
     expect((await handlers.getProgress("priya")).days).toHaveLength(35);
     expect((await handlers.getLeaderboard("priya", { by: 0, period: 0 })).startDay).toBe(
       "2026-10-26",

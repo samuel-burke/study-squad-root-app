@@ -150,7 +150,13 @@ const presetToProto = (p: TimerPresetDto): TimerPreset => ({
   rounds: p.rounds,
 });
 
-const goalToProto = (g: GoalDto): Goal => ({ id: g.id, text: g.text, done: g.done });
+const goalToProto = (g: GoalDto): Goal => ({
+  id: g.id,
+  text: g.text,
+  done: g.done,
+  createdAtMs: g.createdAt,
+  completedAtMs: g.completedAt ?? 0,
+});
 
 const bossToProto = (b: BossDto): Boss => ({
   enabled: b.enabled,
@@ -347,7 +353,13 @@ const presetFromProto = (p: TimerPreset | undefined): TimerPresetDto =>
       }
     : EMPTY_PRESET;
 
-const goalFromProto = (g: Goal): GoalDto => ({ id: g.id, text: g.text, done: g.done });
+const goalFromProto = (g: Goal): GoalDto => ({
+  id: g.id,
+  text: g.text,
+  done: g.done,
+  createdAt: g.createdAtMs,
+  completedAt: g.completedAtMs > 0 ? g.completedAtMs : null,
+});
 
 const bossFromProto = (b: Boss | undefined): BossDto => ({
   enabled: b?.enabled ?? false,

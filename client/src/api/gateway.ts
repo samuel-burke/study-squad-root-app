@@ -59,6 +59,8 @@ export interface StudyRoomGateway {
   addGoal(text: string): Promise<MyStatusDto>;
   setGoalDone(goalId: string, done: boolean): Promise<MyStatusDto>;
   deleteGoal(goalId: string): Promise<MyStatusDto>;
+  editGoal(goalId: string, text: string): Promise<MyStatusDto>;
+  clearDoneGoals(): Promise<MyStatusDto>;
   setGoalsPrivate(goalsPrivate: boolean): Promise<MyStatusDto>;
   getProgress(): Promise<ProgressDto>;
   /** This week by focus minutes unless `by` and `period` say otherwise. */

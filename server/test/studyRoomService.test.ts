@@ -30,6 +30,8 @@ function bound(overrides: Partial<Record<keyof Handlers, () => Promise<unknown>>
     addGoal: ok("addGoal"),
     setGoalDone: ok("setGoalDone"),
     deleteGoal: ok("deleteGoal"),
+    editGoal: ok("editGoal"),
+    clearDoneGoals: ok("clearDoneGoals"),
     setGoalsPrivate: ok("setGoalsPrivate"),
     getProgress: ok("getProgress"),
     deleteMyData: ok("deleteMyData"),
@@ -62,6 +64,12 @@ describe("StudyRoomService", () => {
       ["addGoal", () => service.addGoal({ text: "x" } as never, client), { text: "x" }],
       ["setGoalDone", () => service.setGoalDone({ goalId: "g" } as never, client), { goalId: "g" }],
       ["deleteGoal", () => service.deleteGoal({ goalId: "g" } as never, client), { goalId: "g" }],
+      [
+        "editGoal",
+        () => service.editGoal({ goalId: "g", text: "y" } as never, client),
+        { goalId: "g", text: "y" },
+      ],
+      ["clearDoneGoals", () => service.clearDoneGoals({}, client)],
       [
         "setGoalsPrivate",
         () => service.setGoalsPrivate({ goalsPrivate: true } as never, client),

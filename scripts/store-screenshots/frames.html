@@ -227,6 +227,104 @@
           0 10px 34px rgba(0, 0, 0, 0.45),
           0 0 0 1px rgba(255, 255, 255, 0.06);
       }
+      /* gallery: centre safe area */
+      .g .safe {
+        position: absolute;
+        left: 390px;
+        top: 150px;
+        width: 840px;
+        height: 780px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+      }
+      .g h2 {
+        font-family: "Space Grotesk";
+        font-weight: 700;
+        font-size: 52px;
+        line-height: 1.05;
+        letter-spacing: -1px;
+      }
+      .g h2 em {
+        font-style: normal;
+        color: var(--amber);
+      }
+      .g h2 em.teal {
+        color: var(--teal);
+      }
+      .g h2 em.coral {
+        color: var(--coral);
+      }
+      .g .sub {
+        font-size: 23px;
+        margin-top: 12px;
+        max-width: 840px;
+      }
+      .g .shot.in {
+        position: relative;
+        width: 840px;
+        margin-top: 30px;
+      }
+      .g .crop-break {
+        height: 420px;
+      }
+      .g .crop-break img {
+        margin-top: -54px;
+      }
+      .g .row {
+        display: flex;
+        gap: 20px;
+        justify-content: center;
+        margin-top: 30px;
+      }
+      .g .card {
+        border-radius: 18px;
+        border: 1.5px solid #2c3854;
+        box-shadow: 0 24px 70px rgba(0, 0, 0, 0.55);
+      }
+      .g .ghost {
+        position: absolute;
+        left: -60px;
+        top: -40px;
+        width: 1740px;
+        filter: blur(14px) saturate(0.9);
+        opacity: 0.22;
+      }
+      .g .posts {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-top: 16px;
+        text-align: left;
+      }
+      .g .post {
+        width: 820px;
+        padding: 12px 18px;
+        gap: 14px;
+      }
+      .g .post .body {
+        font-size: 18px;
+      }
+      .g .glow {
+        position: absolute;
+        inset: 0;
+        background:
+          radial-gradient(420px 420px at 50% 55%, rgba(168, 216, 240, 0.28), transparent 70%),
+          repeating-conic-gradient(
+            from 0deg at 50% 55%,
+            rgba(168, 216, 240, 0.07) 0 6deg,
+            transparent 6deg 15deg
+          );
+        -webkit-mask-image: radial-gradient(circle at 50% 55%, #000 20%, transparent 65%);
+      }
+      .g .post .logo {
+        width: 40px !important;
+        height: 40px !important;
+      }
+      .safe-debug .g .safe {
+        outline: 3px dashed #ff3b6b;
+      }
     </style>
   </head>
   <body>
@@ -287,206 +385,133 @@
       </div>
     </section>
 
+    <!--
+      GALLERY (1620x1080, 3:2). The store crops these differently per device:
+      a narrow viewer keeps only the middle ~66% of the width, a wide one cuts
+      ~13% off the top and bottom, and the carousel arrows sit on the left and
+      right edges. Everything that matters stays inside .safe (960x780,
+      centred); outside it is only background. Add ?safe to the URL to see it.
+    -->
     <!-- 1 ROOM -->
-    <section class="frame top" id="s1-room">
-      <div class="copy">
-        <h1>Study <em>together</em>, live</h1>
-        <p class="sub">
-          See who's focusing and on what. Join one shared timer and keep each other going.
-        </p>
+    <section class="frame g" id="s1-room">
+      <img class="ghost" src="room.png" />
+      <div class="safe">
+        <h2>Study <em>together</em>, live</h2>
+        <p class="sub">See who's focusing and on what, on one shared timer.</p>
+        <div class="shot in"><img src="room.png" /></div>
       </div>
-      <div class="shot" style="top: 330px; width: 1460px"><img src="room.png" /></div>
     </section>
 
     <!-- 2 BREAK -->
-    <section class="frame top" id="s2-break">
-      <div class="copy">
-        <h1>Every round ends in a <em class="teal">team win</em></h1>
+    <section class="frame g" id="s2-break">
+      <img class="ghost" src="break.png" />
+      <div class="safe">
+        <h2>Every round ends in a <em class="teal">team win</em></h2>
         <p class="sub">
-          Breaks start for everyone at once. XP gets a combo boost and the boss takes the hit.
+          Breaks start together. Your XP gets a combo boost and the boss takes the hit.
         </p>
-      </div>
-      <div class="shot" style="top: 330px; width: 1460px">
-        <img src="break.png" style="margin-top: -100px" />
+        <div class="shot in crop-break"><img src="break.png" /></div>
       </div>
     </section>
 
-    <!-- 3 UNLOCK -->
-    <section class="frame" id="s3-badges">
-      <img
-        src="unlock.png"
-        style="position: absolute; left: -150px; top: 60px; width: 1920px; opacity: 0.95"
-      />
-      <div
-        style="
-          position: absolute;
-          inset: 0;
-          background: linear-gradient(
-            180deg,
-            #0b1020 0%,
-            rgba(11, 16, 32, 0.85) 22%,
-            transparent 42%,
-            transparent 80%,
-            rgba(11, 16, 32, 0.9) 100%
-          );
-        "
-      ></div>
-      <div
-        class="copy"
-        style="position: absolute; left: 0; right: 0; top: 72px; text-align: center"
-      >
-        <h1>Collect <em>49 medals</em></h1>
-        <p class="sub" style="margin: 20px auto 0; max-width: 1100px">
-          Twenty are secret. Every unlock gets a full-screen moment and sound.
-        </p>
+    <!-- 3 MEDALS -->
+    <section class="frame g" id="s3-badges">
+      <div class="glow"></div>
+      <div class="safe">
+        <h2>Collect <em>49 medals</em></h2>
+        <p class="sub">Twenty are secret. Every unlock gets a full-screen moment and sound.</p>
+        <div class="row" style="align-items: center; margin-top: 24px">
+          <img
+            class="card"
+            src="badges.png"
+            style="width: 300px; height: 460px; object-fit: cover; object-position: top"
+          />
+          <div style="width: 200px">
+            <img
+              src="medal.png"
+              style="
+                width: 230px;
+                margin: 0 -15px;
+                -webkit-mask-image: radial-gradient(circle, #000 40%, transparent 70%);
+              "
+            />
+            <div style="font-size: 15px; font-weight: 800; letter-spacing: 2px; color: #a8d8f0">
+              PLATINUM UNLOCKED
+            </div>
+            <div
+              style="
+                font-family: &quot;Space Grotesk&quot;;
+                font-weight: 700;
+                font-size: 30px;
+                margin-top: 4px;
+              "
+            >
+              Giant Slayer
+            </div>
+          </div>
+          <img class="card" src="profile-sheet.png" style="width: 300px" />
+        </div>
       </div>
-      <img
-        class="float"
-        src="badges.png"
-        style="
-          left: 50px;
-          top: 480px;
-          width: 380px;
-          height: 540px;
-          object-fit: cover;
-          object-position: top;
-          border-radius: 20px;
-          border: 1.5px solid #2c3854;
-          transform: rotate(-3deg);
-        "
-      />
-      <img
-        class="float"
-        src="profile-sheet.png"
-        style="
-          right: 50px;
-          top: 480px;
-          width: 380px;
-          border-radius: 20px;
-          border: 1.5px solid #2c3854;
-          transform: rotate(3deg);
-        "
-      />
     </section>
 
     <!-- 4 STREAK -->
-    <section class="frame split" id="s4-streaks">
-      <div class="copy">
-        <h1>Build a streak that <em class="coral">forgives</em> a bad day</h1>
-        <p class="sub">
-          Daily streaks with a free freeze each week, levels that grow with you, and new quests
-          every Monday.
-        </p>
+    <section class="frame g" id="s4-streaks">
+      <div class="safe">
+        <h2>A streak that <em class="coral">forgives</em> a bad day</h2>
+        <p class="sub">One session counts the day, with a free freeze every week.</p>
+        <div class="row" style="align-items: center">
+          <img class="card" src="streak.png" style="width: 480px" />
+          <img class="card" src="quests.png" style="width: 340px" />
+        </div>
       </div>
-      <img
-        class="float"
-        src="streak.png"
-        style="
-          left: 720px;
-          top: 70px;
-          width: 830px;
-          border-radius: 22px;
-          border: 1.5px solid #2c3854;
-        "
-      />
-      <img
-        class="float"
-        src="quests.png"
-        style="
-          left: 720px;
-          top: 820px;
-          width: 830px;
-          border-radius: 22px;
-          border: 1.5px solid #2c3854;
-        "
-      />
     </section>
 
     <!-- 5 LEADERBOARD -->
-    <section class="frame split" id="s5-leaderboard">
-      <div class="copy">
-        <h1>Race your squad to the <em>top</em></h1>
+    <section class="frame g" id="s5-leaderboard">
+      <div class="safe">
+        <h2>Race your squad to the <em>top</em></h2>
         <p class="sub">
-          Weekly, monthly and all-time boards by minutes or XP. Tap anyone to see their level,
-          streak and medals.
+          Weekly to all-time boards. Tap anyone to see their level, streak and medals.
         </p>
+        <div class="row" style="align-items: flex-start">
+          <img class="card" src="leaderboard.png" style="width: 390px" />
+          <img class="card" src="profile-sheet.png" style="width: 410px" />
+        </div>
       </div>
-      <img
-        class="float"
-        src="leaderboard.png"
-        style="
-          left: 690px;
-          top: 150px;
-          width: 500px;
-          border-radius: 22px;
-          border: 1.5px solid #2c3854;
-        "
-      />
-      <img
-        class="float"
-        src="profile-sheet.png"
-        style="
-          left: 1220px;
-          top: 260px;
-          width: 370px;
-          border-radius: 22px;
-          border: 1.5px solid #2c3854;
-        "
-      />
     </section>
 
     <!-- 6 ADMINS -->
-    <section class="frame split" id="s6-admins">
-      <div class="copy">
-        <h1>Your community, <em class="teal">your rules</em></h1>
-        <p class="sub">
-          Admins pick the timer, daily XP cap, boss and a channel for squad bot posts. Members can
-          keep goals private or delete their data any time.
-        </p>
-      </div>
-      <img
-        class="float"
-        src="settings-sheet.png"
-        style="
-          left: 700px;
-          top: 80px;
-          width: 840px;
-          border-radius: 22px;
-          border: 1.5px solid #2c3854;
-        "
-      />
-      <div
-        style="
-          position: absolute;
-          left: 780px;
-          top: 690px;
-          display: flex;
-          flex-direction: column;
-          gap: 18px;
-        "
-      >
-        <div class="post">
-          <span data-mark></span>
-          <div>
-            <div class="who">
-              Study Squad<span class="tag">APP</span><span>in #study-hall</span>
-            </div>
-            <div class="head">📚 Focus · Round 1 of 4</div>
-            <div class="body">
-              <span class="at">@Ana R.</span> <span class="at">@Marcus</span>
-              <span class="at">@Kai</span> and 3 others Alright squad, lock in. The grind starts
-              now. 📚
+    <section class="frame g" id="s6-admins">
+      <div class="safe">
+        <h2>Your community, <em class="teal">your rules</em></h2>
+        <p class="sub">Admins set the timer, XP cap, boss and bot channel.</p>
+        <img
+          class="card"
+          src="settings-sheet.png"
+          style="width: 560px; margin: 6px auto 0; display: block"
+        />
+        <div class="posts">
+          <div class="post">
+            <span data-mark></span>
+            <div>
+              <div class="who">
+                Study Squad<span class="tag">APP</span><span>in #study-hall</span>
+              </div>
+              <div class="body">
+                <span class="at">@Ana R.</span> <span class="at">@Marcus</span> and 4 others:
+                Alright squad, lock in. The grind starts now. 📚
+              </div>
             </div>
           </div>
-        </div>
-        <div class="post">
-          <span data-mark></span>
-          <div>
-            <div class="who">
-              Study Squad<span class="tag">APP</span><span>in #study-hall</span>
-            </div>
-            <div class="body">
-              <span class="at">@Priya</span> just unlocked Half Century! Absolute legend. 🏅
+          <div class="post">
+            <span data-mark></span>
+            <div>
+              <div class="who">
+                Study Squad<span class="tag">APP</span><span>in #study-hall</span>
+              </div>
+              <div class="body">
+                <span class="at">@Priya</span> just unlocked Half Century! Absolute legend. 🏅
+              </div>
             </div>
           </div>
         </div>
@@ -504,6 +529,7 @@
       });
       const id = location.hash.slice(1) || "hero";
       const frame = document.getElementById(id);
+      if (location.search.includes("safe")) document.body.classList.add("safe-debug");
       frame.classList.add("on");
       // capture.mjs sizes the viewport to the frame.
       window.frameSize = { width: frame.offsetWidth, height: frame.offsetHeight };

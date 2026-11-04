@@ -101,6 +101,10 @@ export class RootGateway implements StudyRoomGateway {
     return myStatusFromProto(await call(() => client.deleteMyData({})));
   }
 
+  async sendFeedback(text: string) {
+    await call(() => client.sendFeedback({ text }));
+  }
+
   async keepGoing() {
     return myStatusFromProto(await call(() => client.keepGoing({})));
   }

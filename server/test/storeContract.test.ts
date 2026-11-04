@@ -378,6 +378,13 @@ describe.each(implementations)("%s", (_name, open) => {
       });
       await store.badges.award({ userId: id, badgeId: "first-session", earnedAt: 5 });
       await store.cards.save({ userId: id, style: "gold", showcase: ["first-session"] });
+      await store.feedback.insert({
+        id: `f-${id}`,
+        userId: id,
+        text: "hi",
+        createdAt: 4,
+        deliveredAt: null,
+      });
     }
     await store.bosses.save({
       ...newBoss("2026-10-26", "Midterms", 100),
@@ -394,6 +401,7 @@ describe.each(implementations)("%s", (_name, open) => {
     expect(await store.leaderboard.listHidden()).toEqual(["kai"]);
     expect(await store.badges.list(["ana"])).toEqual([]);
     expect(await store.cards.list(["ana"])).toEqual([]);
+    expect(await store.feedback.countSince("ana", 0)).toBe(0);
     expect(await store.sessions.countFinished("ana", "solo")).toBe(0);
     expect((await store.bosses.get("2026-10-26"))?.contributorIds).toEqual(["kai", "anabelle"]);
     expect(await store.stats.communityDay("2026-10-28")).toEqual({
@@ -407,6 +415,34 @@ describe.each(implementations)("%s", (_name, open) => {
     expect(await store.solos.get("kai")).toBeDefined();
     expect(await store.badges.list(["kai"])).toHaveLength(1);
     expect(await store.cards.list(["kai"])).toHaveLength(1);
+    expect(await store.feedback.countSince("kai", 0)).toBe(1);
+  });
+
+  it("stores feedback notes, counts recent ones, and forgets text once delivered", async () => {
+    const note = (id: string, userId: string, text: string, createdAt: number) => ({
+      id,
+      userId,
+      text,
+      createdAt,
+      deliveredAt: null,
+    });
+    const text = "Line one\n'; DROP TABLE feedback; --\n<b>ok</b>";
+    await store.feedback.insert(note("f2", "ana", "later", 200));
+    await store.feedback.insert(note("f1", "ana", text, 100));
+    await store.feedback.insert(note("f3", "kai", "kai", 200));
+    expect(await store.feedback.countSince("ana", 0)).toBe(2);
+    expect(await store.feedback.countSince("ana", 200)).toBe(1);
+    expect(await store.feedback.countSince("ana", 201)).toBe(0);
+    expect(await store.feedback.countSince("nobody", 0)).toBe(0);
+    expect(await store.feedback.listUndelivered(10)).toEqual([
+      note("f1", "ana", text, 100),
+      note("f2", "ana", "later", 200),
+      note("f3", "kai", "kai", 200),
+    ]);
+    expect((await store.feedback.listUndelivered(1)).map((n) => n.id)).toEqual(["f1"]);
+    await store.feedback.markDelivered("f1", 300);
+    expect((await store.feedback.listUndelivered(10)).map((n) => n.id)).toEqual(["f2", "f3"]);
+    expect(await store.feedback.countSince("ana", 0)).toBe(2);
   });
 
   it("records badges once, oldest first, for any set of members", async () => {

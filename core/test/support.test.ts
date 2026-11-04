@@ -9,6 +9,7 @@ import {
   RateLimiter,
   safeDisplayName,
   SerialQueue,
+  validateFeedbackText,
   validateGoalText,
   validateId,
   validateSoloMinutes,
@@ -27,6 +28,16 @@ const expectCode = (fn: () => unknown, code: ErrorCode) => {
 };
 
 describe("validation", () => {
+  it("cleans feedback text but keeps its line breaks", () => {
+    expect(validateFeedbackText("  Love it!\r\n\r\n\r\n\r\nCan we   get\u202e dark mode?  ")).toBe(
+      "Love it!\n\nCan we get dark mode?",
+    );
+    expectCode(() => validateFeedbackText(" \n\t "), ErrorCode.Validation);
+    expectCode(() => validateFeedbackText(42), ErrorCode.Validation);
+    expectCode(() => validateFeedbackText("x".repeat(1001)), ErrorCode.Validation);
+    expect(validateFeedbackText("x".repeat(1000))).toHaveLength(1000);
+  });
+
   it("cleans goal text", () => {
     expect(validateGoalText("  Read   ch. 4\n\tnotes ")).toBe("Read ch. 4 notes");
     expect(validateGoalText("a\u202eb\u0000c")).toBe("a b c");

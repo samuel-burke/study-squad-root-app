@@ -121,6 +121,12 @@ describe("StudyRoomHandlers", () => {
     expect((await handlers.getMemberProfile("ana", { userId: "priya" })).userId).toBe("priya");
   });
 
+  it("says why feedback can't be sent when it isn't set up", async () => {
+    const { handlers } = setup();
+    const off = await failure(handlers.sendFeedback("priya", { text: "hi" }));
+    expect(off.code).toBe(CoreErrorCode.Conflict);
+  });
+
   it("deletes only the caller's data", async () => {
     const { handlers } = setup();
     await handlers.addGoal("ana", { text: "Mine" });

@@ -6,11 +6,13 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ### Added
 
+- **Send feedback** now works. Under Room settings, members write a note (up to 1,000 characters) and it goes straight to the Study Squad developer, anonymously: only the text and when it was sent, with no name, user or community attached. It arrives as an issue in the developer's private GitHub repo, through a small relay on Vercel (`feedback-relay/`) that keeps the GitHub token out of the app. A note that fails to send waits in the community's app storage and is retried; once sent, its text is deleted. Each member can send 3 an hour. Builds without a feedback destination keep the "Coming soon" box.
 - A Study Squad website with a styled copy of the privacy policy, published to GitHub Pages from `PRIVACY.md`. See `docs/WEBSITE.md`.
 
 ### Changed
 
 - The privacy policy now lists an email contact, hello@samuelburke.dev, for questions and deletion requests.
+- The privacy policy now covers feedback notes.
 
 ## [0.3.4] - 2026-11-01
 

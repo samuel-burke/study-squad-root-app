@@ -11,6 +11,26 @@ export function cleanText(input: string): string {
   return input.replace(UNSAFE_CHARS, " ").replace(/\s+/g, " ").trim();
 }
 
+/**
+ * Feedback keeps its line breaks (up to one blank line in a row) but gets the
+ * same stripping as other text, line by line.
+ */
+export function validateFeedbackText(input: unknown): string {
+  if (typeof input !== "string") throw validationError("Feedback must be text.");
+  const text = input
+    .replace(/\r\n?/g, "\n")
+    .split("\n")
+    .map(cleanText)
+    .join("\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+  if (text.length === 0) throw validationError("Write something first.");
+  if (text.length > LIMITS.feedbackMaxLength) {
+    throw validationError(`Keep feedback under ${LIMITS.feedbackMaxLength} characters.`);
+  }
+  return text;
+}
+
 export function validateGoalText(input: unknown): string {
   if (typeof input !== "string") throw validationError("Goal must be text.");
   const text = cleanText(input);

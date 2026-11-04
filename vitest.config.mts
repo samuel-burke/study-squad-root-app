@@ -2,7 +2,7 @@ import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   test: {
-    projects: ["core", "contract", "server", "client"],
+    projects: ["core", "contract", "server", "client", "feedback-relay"],
     coverage: {
       provider: "v8",
       include: [

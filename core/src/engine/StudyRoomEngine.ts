@@ -1714,6 +1714,7 @@ export class StudyRoomEngine {
         dailyXpCap: this.config.xp.dailyCap,
         postChannelName: this.config.postChannelId ? this.config.postChannelName : "",
         feedbackEnabled: this.deps.feedbackInbox !== undefined,
+        voiceChannelStatus: this.config.voiceChannelStatus,
       },
       voice: this.config.voiceChannelId
         ? {

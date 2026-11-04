@@ -163,7 +163,7 @@
           {
             "key": "voiceChannelName",
             "title": "Voice channel name",
-            "description": "Type the name of a voice channel to show a Join voice button and a headphones icon on members in it. Leave blank to hide them.",
+            "description": "Type the name of a voice channel to show a Join voice button and a headphones icon on members in it. Case, spaces, dashes and emoji don't matter. Room settings in the app shows whether it was found. Leave blank to hide them.",
             "text": {
               "defaultValue": "",
               "regex": "^.{0,100}$"

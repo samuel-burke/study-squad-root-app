@@ -8,9 +8,10 @@ describe("loadConfig", () => {
   const lookup = (name = async (_id: string) => "study-hall") => ({
     name: vi.fn(name),
     link: vi.fn(async (id: string) => `https://rootapp.com/${id}`),
-    voiceChannels: vi.fn(async () => [
-      { id: "voice-1", name: "Study Voice" },
-      { id: "voice-2", name: "Gaming" },
+    channels: vi.fn(async () => [
+      { id: "text-1", name: "study-hall", voice: false },
+      { id: "voice-1", name: "🔊 Study-Voice", voice: true },
+      { id: "voice-2", name: "Gaming", voice: true },
     ]),
   });
 
@@ -21,25 +22,74 @@ describe("loadConfig", () => {
     expect(config).toMatchObject({ postChannelId: "channel-1", postChannelName: "study-hall" });
   });
 
-  it("finds the voice channel by the name the admin typed, loosely", async () => {
-    const config = await loadConfig(
-      { room: { voiceChannelName: " #study  voice " } },
-      lookup(),
-      logger(),
+  it.each([" #study  voice ", "Study Voice", "study-voice", "STUDYVOICE", "study"])(
+    "finds the voice channel from %j, ignoring case, spaces, dashes and emoji",
+    async (typed) => {
+      const config = await loadConfig({ room: { voiceChannelName: typed } }, lookup(), logger());
+      expect(config).toMatchObject({
+        voiceChannelId: "voice-1",
+        voiceChannelName: "🔊 Study-Voice",
+        voiceChannelUrl: "https://rootapp.com/voice-1",
+        voiceChannelStatus: "#🔊 Study-Voice",
+      });
+    },
+  );
+
+  it("lists the voice channels it can see when none has that name", async () => {
+    const log = logger();
+    const config = await loadConfig({ room: { voiceChannelName: "lounge" } }, lookup(), log);
+    expect(config.voiceChannelId).toBeNull();
+    expect(config.voiceChannelStatus).toBe(
+      'No voice channel called "lounge". Voice channels it can see: #🔊 Study-Voice, #Gaming',
     );
-    expect(config).toMatchObject({
-      voiceChannelId: "voice-1",
-      voiceChannelName: "Study Voice",
-      voiceChannelUrl: "https://rootapp.com/voice-1",
+    expect(log.warn).toHaveBeenCalledWith("no voice channel has that name", {
+      name: "lounge",
+      voiceChannels: ["🔊 Study-Voice", "Gaming"],
+      channelCount: 3,
     });
   });
 
-  it("hides the button and logs when no voice channel has that name", async () => {
-    const log = logger();
-    const config = await loadConfig({ room: { voiceChannelName: "study-hall" } }, lookup(), log);
+  it("says so when the name is a text channel", async () => {
+    const config = await loadConfig(
+      { room: { voiceChannelName: "study-hall" } },
+      lookup(),
+      logger(),
+    );
     expect(config.voiceChannelId).toBeNull();
-    expect(log.warn).toHaveBeenCalledWith("no voice channel has that name", {
-      name: "study-hall",
+    expect(config.voiceChannelStatus).toBe("#study-hall isn't a voice channel");
+  });
+
+  it("says when it can't see any voice channels", async () => {
+    const channels = { ...lookup(), channels: vi.fn(async () => []) };
+    const config = await loadConfig({ room: { voiceChannelName: "lounge" } }, channels, logger());
+    expect(config.voiceChannelStatus).toMatch(/can't see any voice channels/);
+  });
+
+  it("falls back to any channel with that name when Root reports no voice channels", async () => {
+    const channels = {
+      ...lookup(),
+      channels: vi.fn(async () => [{ id: "c-9", name: "Study Voice", voice: false }]),
+    };
+    const config = await loadConfig(
+      { room: { voiceChannelName: "study voice" } },
+      channels,
+      logger(),
+    );
+    expect(config.voiceChannelId).toBe("c-9");
+  });
+
+  it("keeps the channel for headphones when the join link can't be made", async () => {
+    const channels = {
+      ...lookup(),
+      link: vi.fn(async () => {
+        throw new Error("403");
+      }),
+    };
+    const config = await loadConfig({ room: { voiceChannelName: "gaming" } }, channels, logger());
+    expect(config).toMatchObject({
+      voiceChannelId: "voice-2",
+      voiceChannelUrl: "",
+      voiceChannelStatus: "#Gaming, but Root wouldn't make a Join voice link",
     });
   });
 
@@ -47,9 +97,10 @@ describe("loadConfig", () => {
     const channels = lookup();
     const config = await loadConfig(undefined, channels, logger());
     expect(channels.name).not.toHaveBeenCalled();
-    expect(channels.voiceChannels).not.toHaveBeenCalled();
+    expect(channels.channels).not.toHaveBeenCalled();
     expect(config.postChannelId).toBeNull();
     expect(config.voiceChannelId).toBeNull();
+    expect(config.voiceChannelStatus).toBe("");
   });
 
   it("keeps the settings and logs when a channel can't be read", async () => {
@@ -59,10 +110,11 @@ describe("loadConfig", () => {
     };
     const config = await loadConfig(
       { room: { postChannel: "channel-1", voiceChannelName: "Study voice" } },
-      { name: failing, link: failing, voiceChannels: failing },
+      { name: failing, link: failing, channels: failing },
       log,
     );
     expect(config).toMatchObject({ postChannelId: "channel-1", voiceChannelId: null });
+    expect(config.voiceChannelStatus).toMatch(/Couldn't read the channel list/);
     expect(log.warn).toHaveBeenCalledWith("could not read post channel", { error: "Error: 403" });
     expect(log.warn).toHaveBeenCalledWith("could not read voice channel", { error: "Error: 403" });
   });

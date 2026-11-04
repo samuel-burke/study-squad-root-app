@@ -101,6 +101,8 @@ message RoomFeatures {
   string post_channel_name = 8;
   // The server can deliver feedback to the developer, so the box is shown.
   bool feedback_enabled = 9;
+  // How the voice channel setting resolved, in words for admins. Empty when not set.
+  string voice_channel_status = 10;
 }
 
 // The community voice channel admins picked for studying together.

@@ -34,6 +34,7 @@ export function SettingsSheet({
       "Bot messages channel",
       f.postChannelName ? `#${f.postChannelName}` : "None picked, so posts are off",
     ],
+    ["Voice channel", f.voiceChannelStatus || "None set, so the Join voice button is hidden"],
   ];
   return (
     <Sheet labelledBy="settings-title" onClose={onClose}>

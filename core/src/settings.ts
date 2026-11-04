@@ -62,6 +62,11 @@ export interface AppConfig {
   voiceChannelName: string;
   /** A link that opens the channel in Root, resolved by the server. */
   voiceChannelUrl: string;
+  /**
+   * What the server made of the voice channel setting, in words for admins
+   * (shown in the in-app Room settings). "" = no name typed.
+   */
+  voiceChannelStatus: string;
   recap: { enabled: boolean; hours: number; minutes: number };
   /** List the week's top focusers in the daily recap. */
   recapLeaderboardEnabled: boolean;
@@ -97,6 +102,7 @@ export const DEFAULT_CONFIG: AppConfig = {
   voiceChannelId: null,
   voiceChannelName: "",
   voiceChannelUrl: "",
+  voiceChannelStatus: "",
   recap: { enabled: true, hours: 21, minutes: 0 },
   recapLeaderboardEnabled: true,
   goalsPublicByDefault: true,
@@ -181,6 +187,7 @@ export function parseSettings(raw: RawSettings): AppConfig {
     voiceChannelId: null,
     voiceChannelName: text(room[r.voiceChannel], "", 100).replace(/^#\s*/, ""),
     voiceChannelUrl: "",
+    voiceChannelStatus: "",
     recap: {
       enabled: bool(room[r.recapEnabled], d.recap.enabled),
       ...timeOfDay(room[r.recapTime], d.recap),

@@ -42,12 +42,21 @@ function loadRootConfig(settings: GlobalSettings | undefined): Promise<AppConfig
             channelId: id as ChannelGuid,
           })
         ).url,
-      voiceChannels: async () => {
+      channels: async () => {
         const groups = await rootServer.community.channelGroups.list();
-        const channels = await Promise.all(
+        // One group Study Squad can't read shouldn't hide the rest.
+        const lists = await Promise.allSettled(
           groups.map((g) => rootServer.community.channels.list({ channelGroupId: g.id })),
         );
-        return channels.flat().filter((c) => c.channelType === ChannelType.Voice);
+        const failed = lists.filter((r) => r.status === "rejected").length;
+        if (failed > 0) logger.warn("could not list some channel groups", { failed });
+        return lists
+          .flatMap((r) => (r.status === "fulfilled" ? r.value : []))
+          .map((c) => ({
+            id: c.id,
+            name: c.name,
+            voice: Number(c.channelType) === ChannelType.Voice,
+          }));
       },
     },
     logger,

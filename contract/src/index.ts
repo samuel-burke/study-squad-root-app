@@ -201,6 +201,7 @@ export function roomToProto(room: RoomStateDto): RoomState {
       goalsPublicByDefault: room.features.goalsPublicByDefault,
       dailyXpCap: room.features.dailyXpCap,
       postChannelName: room.features.postChannelName,
+      voiceChannelStatus: room.features.voiceChannelStatus,
       feedbackEnabled: room.features.feedbackEnabled,
     },
     voice: {
@@ -399,6 +400,7 @@ export function roomFromProto(room: RoomState | undefined): RoomStateDto {
       goalsPublicByDefault: features?.goalsPublicByDefault ?? true,
       dailyXpCap: features?.dailyXpCap ?? 0,
       postChannelName: features?.postChannelName ?? "",
+      voiceChannelStatus: features?.voiceChannelStatus ?? "",
       feedbackEnabled: features?.feedbackEnabled ?? false,
     },
     voice: {

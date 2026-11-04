@@ -64,6 +64,8 @@ export interface RoomFeaturesDto {
   goalsPublicByDefault: boolean;
   dailyXpCap: number;
   postChannelName: string;
+  /** How the voice channel setting resolved, in words for admins. "" = not set. */
+  voiceChannelStatus: string;
   /** The server can deliver feedback to the developer, so the box is shown. */
   feedbackEnabled: boolean;
 }

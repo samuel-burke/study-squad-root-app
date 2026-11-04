@@ -45,6 +45,20 @@ export const SETTINGS = {
   },
 } as const;
 
+/**
+ * Limits for the number settings. root-manifest.json declares the same
+ * minValue, maxValue, step and defaultValue (a unit test checks they match),
+ * and parseSettings clamps to them, since Root's limits are only a hint in
+ * its settings form. All values are whole numbers.
+ */
+export const NUMBER_LIMITS = {
+  customFocusMinutes: { min: 5, max: 120, step: 1, default: 25 },
+  customBreakMinutes: { min: 1, max: 30, step: 1, default: 5 },
+  busyThreshold: { min: 2, max: 100, step: 1, default: 5 },
+  dailyXpCap: { min: 50, max: 2000, step: 10, default: 300 },
+  bossBaseHpXp: { min: 100, max: 1_000_000, step: 100, default: 10_000 },
+} as const;
+
 export interface AppConfig {
   presetKey: PresetKey;
   preset: TimerPreset;
@@ -100,11 +114,11 @@ export const DEFAULT_CONFIG: AppConfig = {
   recap: { enabled: true, hours: 21, minutes: 0 },
   recapLeaderboardEnabled: true,
   goalsPublicByDefault: true,
-  busyPosts: { enabled: true, threshold: 5 },
+  busyPosts: { enabled: true, threshold: NUMBER_LIMITS.busyThreshold.default },
   squadBot: { enabled: true, personalities: [...ALL_PERSONALITIES], mentions: false },
-  xp: { enabled: true, dailyCap: 300 },
+  xp: { enabled: true, dailyCap: NUMBER_LIMITS.dailyXpCap.default },
   comboEnabled: true,
-  boss: { enabled: true, name: "", baseHpXp: 10_000 },
+  boss: { enabled: true, name: "", baseHpXp: NUMBER_LIMITS.bossBaseHpXp.default },
   streakFreezesEnabled: true,
   milestonePostsEnabled: true,
 };
@@ -122,7 +136,11 @@ function firstString(value: unknown): string | undefined {
   return undefined;
 }
 
-/** Accepts a number, or a select's numeric key ("300" or ["300"]). Clamped to [min, max]. */
+/**
+ * Accepts a number (a number setting), or a numeric key ("300" or ["300"]),
+ * which is how the older select versions of these settings were saved.
+ * Rounded to a whole number and clamped to [min, max].
+ */
 function int(value: unknown, fallback: number, min: number, max: number): number {
   const raw = typeof value === "number" ? value : Number(firstString(value) ?? Number.NaN);
   if (!Number.isFinite(raw)) return fallback;
@@ -152,6 +170,11 @@ function timeOfDay(value: unknown, fallback: { hours: number; minutes: number })
   return fallback;
 }
 
+function limited(value: unknown, key: keyof typeof NUMBER_LIMITS): number {
+  const l = NUMBER_LIMITS[key];
+  return int(value, l.default, l.min, l.max);
+}
+
 function presetFrom(key: string | undefined, focus: number, rest: number) {
   if (key === "50-10" || key === "25-5") return { presetKey: key, preset: PRESETS[key] } as const;
   if (key === "custom") return { presetKey: key, preset: customPreset(focus, rest) } as const;
@@ -172,8 +195,8 @@ export function parseSettings(raw: RawSettings): AppConfig {
   return {
     ...presetFrom(
       firstString(room[r.preset]),
-      int(room[r.customFocus], 25, 5, 120),
-      int(room[r.customBreak], 5, 1, 30),
+      limited(room[r.customFocus], "customFocusMinutes"),
+      limited(room[r.customBreak], "customBreakMinutes"),
     ),
     timeZone: tz && isValidTimeZone(tz) ? tz : d.timeZone,
     postChannelId: channel && channel.length > 0 ? channel : null,
@@ -189,7 +212,7 @@ export function parseSettings(raw: RawSettings): AppConfig {
     goalsPublicByDefault: bool(room[r.goalsPublic], d.goalsPublicByDefault),
     busyPosts: {
       enabled: bool(room[r.busyPosts], d.busyPosts.enabled),
-      threshold: int(room[r.busyThreshold], d.busyPosts.threshold, 2, 100),
+      threshold: limited(room[r.busyThreshold], "busyThreshold"),
     },
     squadBot: {
       enabled: bool(room[r.squadBot], d.squadBot.enabled),
@@ -198,13 +221,13 @@ export function parseSettings(raw: RawSettings): AppConfig {
     },
     xp: {
       enabled: bool(game[g.xpEnabled], d.xp.enabled),
-      dailyCap: int(game[g.dailyXpCap], d.xp.dailyCap, 50, 2000),
+      dailyCap: limited(game[g.dailyXpCap], "dailyXpCap"),
     },
     comboEnabled: bool(game[g.comboEnabled], d.comboEnabled),
     boss: {
       enabled: bool(game[g.bossEnabled], d.boss.enabled),
       name: text(game[g.bossName], "", 40),
-      baseHpXp: int(game[g.bossBaseHp], d.boss.baseHpXp, 100, 1_000_000),
+      baseHpXp: limited(game[g.bossBaseHp], "bossBaseHpXp"),
     },
     streakFreezesEnabled: bool(game[g.streakFreezes], d.streakFreezesEnabled),
     milestonePostsEnabled: bool(game[g.milestonePosts], d.milestonePostsEnabled),

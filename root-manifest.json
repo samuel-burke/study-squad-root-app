@@ -73,91 +73,23 @@
           {
             "key": "customFocusMinutes",
             "title": "Custom focus minutes",
-            "description": "Used when the room timer is set to Custom.",
-            "select": {
-              "multiSelect": false,
-              "values": ["25"],
-              "options": [
-                {
-                  "key": "15",
-                  "value": "15 min"
-                },
-                {
-                  "key": "20",
-                  "value": "20 min"
-                },
-                {
-                  "key": "25",
-                  "value": "25 min"
-                },
-                {
-                  "key": "30",
-                  "value": "30 min"
-                },
-                {
-                  "key": "40",
-                  "value": "40 min"
-                },
-                {
-                  "key": "45",
-                  "value": "45 min"
-                },
-                {
-                  "key": "50",
-                  "value": "50 min"
-                },
-                {
-                  "key": "60",
-                  "value": "60 min"
-                },
-                {
-                  "key": "75",
-                  "value": "75 min"
-                },
-                {
-                  "key": "90",
-                  "value": "90 min"
-                },
-                {
-                  "key": "120",
-                  "value": "120 min"
-                }
-              ]
+            "description": "Minutes per focus round, 5 to 120. Used when the room timer is set to Custom.",
+            "number": {
+              "minValue": 5,
+              "maxValue": 120,
+              "step": 1,
+              "defaultValue": 25
             }
           },
           {
             "key": "customBreakMinutes",
             "title": "Custom break minutes",
-            "description": "Used when the room timer is set to Custom.",
-            "select": {
-              "multiSelect": false,
-              "values": ["5"],
-              "options": [
-                {
-                  "key": "3",
-                  "value": "3 min"
-                },
-                {
-                  "key": "5",
-                  "value": "5 min"
-                },
-                {
-                  "key": "10",
-                  "value": "10 min"
-                },
-                {
-                  "key": "15",
-                  "value": "15 min"
-                },
-                {
-                  "key": "20",
-                  "value": "20 min"
-                },
-                {
-                  "key": "30",
-                  "value": "30 min"
-                }
-              ]
+            "description": "Minutes per short break, 1 to 30. The long break is 3 times this, up to 30. Used when the room timer is set to Custom.",
+            "number": {
+              "minValue": 1,
+              "maxValue": 30,
+              "step": 1,
+              "defaultValue": 5
             }
           },
           {
@@ -311,44 +243,12 @@
           {
             "key": "busyThreshold",
             "title": "Busy room threshold",
-            "description": "How many people focusing counts as busy.",
-            "select": {
-              "multiSelect": false,
-              "values": ["5"],
-              "options": [
-                {
-                  "key": "3",
-                  "value": "3 people"
-                },
-                {
-                  "key": "4",
-                  "value": "4 people"
-                },
-                {
-                  "key": "5",
-                  "value": "5 people"
-                },
-                {
-                  "key": "6",
-                  "value": "6 people"
-                },
-                {
-                  "key": "8",
-                  "value": "8 people"
-                },
-                {
-                  "key": "10",
-                  "value": "10 people"
-                },
-                {
-                  "key": "15",
-                  "value": "15 people"
-                },
-                {
-                  "key": "20",
-                  "value": "20 people"
-                }
-              ]
+            "description": "How many people focusing counts as busy, 2 to 100.",
+            "number": {
+              "minValue": 2,
+              "maxValue": 100,
+              "step": 1,
+              "defaultValue": 5
             }
           },
           {
@@ -367,12 +267,30 @@
               "multiSelect": true,
               "values": ["hype", "drill", "chill", "meme", "gamer", "chaos"],
               "options": [
-                { "key": "hype", "value": "Hype Squad: energetic and encouraging" },
-                { "key": "drill", "value": "Drill Sergeant: commanding and competitive" },
-                { "key": "chill", "value": "Chill Friend: relaxed and supportive" },
-                { "key": "meme", "value": "Meme Lord: sarcastic internet humor" },
-                { "key": "gamer", "value": "Gamer Mode: XP, quests and achievements" },
-                { "key": "chaos", "value": "Chaos Mode: random and unexpected" }
+                {
+                  "key": "hype",
+                  "value": "Hype Squad: energetic and encouraging"
+                },
+                {
+                  "key": "drill",
+                  "value": "Drill Sergeant: commanding and competitive"
+                },
+                {
+                  "key": "chill",
+                  "value": "Chill Friend: relaxed and supportive"
+                },
+                {
+                  "key": "meme",
+                  "value": "Meme Lord: sarcastic internet humor"
+                },
+                {
+                  "key": "gamer",
+                  "value": "Gamer Mode: XP, quests and achievements"
+                },
+                {
+                  "key": "chaos",
+                  "value": "Chaos Mode: random and unexpected"
+                }
               ]
             }
           }
@@ -393,36 +311,12 @@
           {
             "key": "dailyXpCap",
             "title": "Daily XP cap",
-            "description": "So nobody burns out chasing XP.",
-            "select": {
-              "multiSelect": false,
-              "values": ["300"],
-              "options": [
-                {
-                  "key": "150",
-                  "value": "150 XP"
-                },
-                {
-                  "key": "200",
-                  "value": "200 XP"
-                },
-                {
-                  "key": "300",
-                  "value": "300 XP"
-                },
-                {
-                  "key": "400",
-                  "value": "400 XP"
-                },
-                {
-                  "key": "500",
-                  "value": "500 XP"
-                },
-                {
-                  "key": "1000",
-                  "value": "1000 XP"
-                }
-              ]
+            "description": "Most XP one person can earn a day, 50 to 2,000. So nobody burns out chasing XP.",
+            "number": {
+              "minValue": 50,
+              "maxValue": 2000,
+              "step": 10,
+              "defaultValue": 300
             }
           },
           {
@@ -453,52 +347,12 @@
           {
             "key": "bossBaseHpXp",
             "title": "Boss base HP (XP)",
-            "description": "HP of a 1x boss. Each boss multiplies it by its strength (0.5x to 2x, averaging 1x) and drops more XP the stronger it is. An hour of focus is 120 XP. Suggested: 2,000 XP per active member.",
-            "select": {
-              "multiSelect": false,
-              "values": ["10000"],
-              "options": [
-                {
-                  "key": "100",
-                  "value": "100 XP (for testing)"
-                },
-                {
-                  "key": "1000",
-                  "value": "1,000 XP"
-                },
-                {
-                  "key": "2500",
-                  "value": "2,500 XP"
-                },
-                {
-                  "key": "5000",
-                  "value": "5,000 XP"
-                },
-                {
-                  "key": "10000",
-                  "value": "10,000 XP"
-                },
-                {
-                  "key": "15000",
-                  "value": "15,000 XP"
-                },
-                {
-                  "key": "20000",
-                  "value": "20,000 XP"
-                },
-                {
-                  "key": "30000",
-                  "value": "30,000 XP"
-                },
-                {
-                  "key": "50000",
-                  "value": "50,000 XP"
-                },
-                {
-                  "key": "100000",
-                  "value": "100,000 XP"
-                }
-              ]
+            "description": "HP of a 1x boss. Each boss multiplies it by its strength (0.5x to 2x, averaging 1x) and drops more XP the stronger it is. An hour of focus is 120 XP. Suggested: 2,000 XP per active member. 100 to 1,000,000, in steps of 100.",
+            "number": {
+              "minValue": 100,
+              "maxValue": 1000000,
+              "step": 100,
+              "defaultValue": 10000
             }
           },
           {

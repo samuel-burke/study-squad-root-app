@@ -23,6 +23,7 @@ function mockViewport(compact: boolean) {
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  vi.useRealTimers();
 });
 
 describe("Study Squad app", () => {
@@ -106,6 +107,10 @@ describe("Study Squad app", () => {
   });
 
   it("adds and completes goals, earning XP once", async () => {
+    // A Monday noon: the demo's seeded history is all last week, so no weekly
+    // quest is already done and finishing a goal gives just the goal's XP.
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-11-02T12:00:00Z"));
     const { user } = await renderApp();
     const panel = screen.getByRole("region", { name: "Your session" });
     expect(within(panel).getByText("365 / 500 XP")).toBeInTheDocument();

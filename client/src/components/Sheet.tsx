@@ -8,7 +8,7 @@ interface SheetProps {
 }
 
 const FOCUSABLE =
-  'button:not([disabled]), input:not([disabled]), select, [href], [tabindex]:not([tabindex="-1"])';
+  'button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select, [href], [tabindex]:not([tabindex="-1"])';
 
 /**
  * Modal dialog: a bottom sheet on phones, a centered card on desktop.

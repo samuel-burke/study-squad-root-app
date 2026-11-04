@@ -99,6 +99,8 @@ message RoomFeatures {
   int32 daily_xp_cap = 7;
   // Where recaps and break chat happen. Empty when admins haven't picked one.
   string post_channel_name = 8;
+  // The server can deliver feedback to the developer, so the box is shown.
+  bool feedback_enabled = 9;
 }
 
 // The community voice channel admins picked for studying together.
@@ -324,6 +326,13 @@ message SetBadgeShowcaseRequest {
   repeated string badge_ids = 1;
 }
 
+// An anonymous note for the app's developer. Only the text and time are sent.
+message SendFeedbackRequest {
+  string text = 1;
+}
+
+message FeedbackSent {}
+
 // Erases everything the app stores about the caller. Cannot be undone.
 message DeleteMyDataRequest {}
 
@@ -393,6 +402,7 @@ service StudyRoomService {
   rpc SetCardStyle(SetCardStyleRequest) returns (Progress);
   rpc SetBadgeShowcase(SetBadgeShowcaseRequest) returns (Progress);
   rpc GetMemberProfile(GetMemberProfileRequest) returns (MemberProfile);
+  rpc SendFeedback(SendFeedbackRequest) returns (FeedbackSent);
 
   // Server-to-client pushes.
   rpc BroadcastRoomUpdated(RoomUpdatedEvent) returns (rootsdk.Void);

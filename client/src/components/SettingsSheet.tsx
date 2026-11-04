@@ -51,9 +51,11 @@ export function SettingsSheet({
       <div className="tiny dim">
         Community admins can change these in App settings for Study Squad.
       </div>
-      <button type="button" className="btn btn-quiet" onClick={onSendFeedback}>
-        Send feedback
-      </button>
+      {f.feedbackEnabled && (
+        <button type="button" className="btn btn-quiet" onClick={onSendFeedback}>
+          Send feedback
+        </button>
+      )}
       <button type="button" className="btn" onClick={onClose} data-autofocus>
         Close
       </button>

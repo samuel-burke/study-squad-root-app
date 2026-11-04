@@ -4,6 +4,7 @@ import {
   StudyRoomEngine,
   type Announcer,
   type AppConfig,
+  type EngineDeps,
   type MyStatusDto,
   type Notifier,
   type PersonalResultDto,
@@ -129,6 +130,7 @@ export function createHarness(
   config: AppConfig = configWith(),
   start = T0,
   random: () => number = seededRandom(),
+  extra: Partial<EngineDeps> = {},
 ) {
   const clock = new FakeClock(start);
   const scheduler = new ManualScheduler();
@@ -146,6 +148,7 @@ export function createHarness(
     config,
     newId: () => `id-${nextId++}`,
     random,
+    ...extra,
   });
 
   /** Moves time forward, firing scheduled wake-ups along the way like a real timer would. */

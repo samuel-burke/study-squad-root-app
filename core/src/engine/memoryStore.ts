@@ -6,6 +6,7 @@ import type {
   DailyStatDelta,
   DailyStatRecord,
   EarnedBadgeRecord,
+  FeedbackRecord,
   GoalRecord,
   MemberRecord,
   ParticipantRecord,
@@ -39,6 +40,7 @@ interface Data {
   kv: Map<string, unknown>;
   badges: EarnedBadgeRecord[];
   cards: Map<string, CardRecord>;
+  feedback: FeedbackRecord[];
 }
 
 const emptyData = (): Data => ({
@@ -55,6 +57,7 @@ const emptyData = (): Data => ({
   kv: new Map(),
   badges: [],
   cards: new Map(),
+  feedback: [],
 });
 
 const statKey = (userId: string, day: DayKey) => `${userId}|${day}`;
@@ -84,6 +87,7 @@ export class MemoryStore implements Store {
     d.questRewards = d.questRewards.filter((r) => r.userId !== userId);
     d.badges = d.badges.filter((b) => b.userId !== userId);
     d.cards.delete(userId);
+    d.feedback = d.feedback.filter((f) => f.userId !== userId);
     for (const boss of d.bosses.values()) {
       boss.contributorIds = boss.contributorIds.filter((id) => id !== userId);
     }
@@ -330,6 +334,24 @@ export class MemoryStore implements Store {
       }),
     save: async (card: CardRecord) => {
       this.data.cards.set(card.userId, copy(card));
+    },
+  };
+
+  feedback = {
+    insert: async (record: FeedbackRecord) => {
+      this.data.feedback.push(copy(record));
+    },
+    countSince: async (userId: string, sinceMs: number) =>
+      this.data.feedback.filter((f) => f.userId === userId && f.createdAt >= sinceMs).length,
+    listUndelivered: async (limit: number) =>
+      this.data.feedback
+        .filter((f) => f.deliveredAt === null)
+        .sort((a, b) => a.createdAt - b.createdAt)
+        .slice(0, limit)
+        .map(copy),
+    markDelivered: async (id: string, at: number) => {
+      const note = this.data.feedback.find((f) => f.id === id);
+      if (note) Object.assign(note, { deliveredAt: at, text: "" });
     },
   };
 

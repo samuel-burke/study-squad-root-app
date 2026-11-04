@@ -108,6 +108,10 @@ jobs:
         run: npm ci
       - name: Build
         if: steps.check.outputs.upload == 'true'
+        # Optional: bakes the feedback destination into the package (see docs/DEPLOYING.md).
+        env:
+          FEEDBACK_RELAY_URL: ${{ secrets.FEEDBACK_RELAY_URL }}
+          FEEDBACK_RELAY_KEY: ${{ secrets.FEEDBACK_RELAY_KEY }}
         # A clean generate: stale networking/gen output once crashed the app on Root.
         run: |
           rm -rf networking/gen

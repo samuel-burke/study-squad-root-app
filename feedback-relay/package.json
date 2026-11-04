@@ -1,0 +1,8 @@
+{
+  "name": "study-squad-feedback-relay",
+  "private": true,
+  "description": "Turns Study Squad feedback notes into issues in a private GitHub repo, so the GitHub token never ships in the app.",
+  "engines": {
+    "node": "22.x"
+  }
+}

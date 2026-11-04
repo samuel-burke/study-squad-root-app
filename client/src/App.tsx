@@ -184,7 +184,9 @@ export function App({ gateway }: { gateway: StudyRoomGateway }) {
           onSendFeedback={() => setOverlay({ kind: "feedback" })}
         />
       )}
-      {overlay?.kind === "feedback" && <FeedbackSheet onClose={() => setOverlay(null)} />}
+      {overlay?.kind === "feedback" && (
+        <FeedbackSheet gateway={gateway} onClose={() => setOverlay(null)} />
+      )}
 
       {state.celebration && (
         <Celebration celebration={state.celebration} quiet={state.breakMoment !== null} />

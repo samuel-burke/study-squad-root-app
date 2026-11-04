@@ -233,6 +233,24 @@ const migrations: Migration[] = [
       }
     },
   },
+  {
+    // Feedback notes wait here until they're delivered, then keep only the
+    // time so the hourly limit still works.
+    name: "009_feedback",
+    async up(db) {
+      await db.schema.createTable("feedback", (t) => {
+        t.string("id").primary();
+        t.string("user_id").notNullable();
+        t.text("text").notNullable();
+        t.bigInteger("created_at").notNullable();
+        t.bigInteger("delivered_at").nullable().index();
+        t.index(["user_id", "created_at"]);
+      });
+    },
+    async down(db) {
+      await db.schema.dropTableIfExists("feedback");
+    },
+  },
 ];
 
 class CodeMigrationSource implements Knex.MigrationSource<Migration> {

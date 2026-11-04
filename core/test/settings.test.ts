@@ -89,6 +89,23 @@ describe("parseSettings", () => {
     expect(config.boss.baseHpXp).toBe(1_000_000);
   });
 
+  it("unwraps the { value } object the Root SDK actually sends for number fields", () => {
+    const config = parseSettings({
+      [room.group]: {
+        [room.preset]: ["custom"],
+        [room.customFocus]: { value: 45 },
+        [room.customBreak]: { value: 10 },
+        [room.busyThreshold]: { value: 7 },
+      },
+      [game.group]: { [game.dailyXpCap]: { value: 750 }, [game.bossBaseHp]: { value: 3200 } },
+    });
+    expect(config.preset.focusMinutes).toBe(45);
+    expect(config.preset.breakMinutes).toBe(10);
+    expect(config.busyPosts.threshold).toBe(7);
+    expect(config.xp.dailyCap).toBe(750);
+    expect(config.boss.baseHpXp).toBe(3200);
+  });
+
   it("falls back to defaults when a number field is left empty", () => {
     const config = parseSettings({
       [room.group]: { [room.preset]: ["custom"], [room.customFocus]: undefined },

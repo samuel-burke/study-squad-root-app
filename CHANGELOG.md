@@ -4,6 +4,14 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ## [Unreleased]
 
+## [0.3.7] - 2026-11-04
+
+The number settings from 0.3.6 now take effect.
+
+### Fixed
+
+- Custom focus minutes, custom break minutes, busy room threshold, daily XP cap and boss base HP now take effect. Root sends number settings as `{ value: n }`, and 0.3.6 ignored that shape, so it fell back to the defaults.
+
 ## [0.3.6] - 2026-11-04
 
 A Bot @mentions setting, countdown chirps that stay on the clock, easier voice channel setup, and number fields for numeric settings.

@@ -10,6 +10,7 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ### Changed
 
+- Custom focus minutes, custom break minutes, busy room threshold, daily XP cap and boss base HP are now number fields in Root's App settings instead of pickers, so admins can type any whole number in range (focus 5 to 120, break 1 to 30, busy 2 to 100 people, XP cap 50 to 2,000, boss HP 100 to 1,000,000 in steps of 100). The server rounds and clamps whatever it gets, and still reads values saved from the old pickers.
 - The privacy policy now says feedback notes are also copied to the developer's private Slack, so they're noticed. The feedback relay posts each note there with a link to its issue.
 - The early countdown chirp now comes at 1 minute left instead of 10 seconds. The last-five-seconds chirps stay the same.
 

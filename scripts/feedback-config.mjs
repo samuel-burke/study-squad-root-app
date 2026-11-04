@@ -1,7 +1,7 @@
-// Bakes the feedback destination into server/dist, because Root has no secret
-// storage. Reads FEEDBACK_GITHUB_TOKEN + FEEDBACK_GITHUB_REPO (issues in a
-// private repo) from the environment, else from server/.env. Without both,
-// any old file is removed and the feedback box stays hidden.
+// Bakes the feedback relay's address and key into server/dist, because Root has
+// no secret storage. The GitHub token stays on the relay (feedback-relay/).
+// Reads FEEDBACK_RELAY_URL + FEEDBACK_RELAY_KEY from the environment, else from
+// server/.env. Without both, any old file is removed and the box stays hidden.
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -26,14 +26,14 @@ function readEnvFile(file) {
 
 const file = readEnvFile(path.join(root, "server", ".env"));
 const get = (key) => (process.env[key] || file[key] || "").trim();
-const githubToken = get("FEEDBACK_GITHUB_TOKEN");
-const githubRepo = get("FEEDBACK_GITHUB_REPO");
+const relayUrl = get("FEEDBACK_RELAY_URL");
+const relayKey = get("FEEDBACK_RELAY_KEY");
 
-if (githubToken && githubRepo) {
+if (relayUrl && relayKey) {
   fs.mkdirSync(path.dirname(out), { recursive: true });
-  fs.writeFileSync(out, JSON.stringify({ githubToken, githubRepo }), { mode: 0o600 });
-  console.log(`feedback: notes go to issues in ${githubRepo}`);
+  fs.writeFileSync(out, JSON.stringify({ relayUrl, relayKey }), { mode: 0o600 });
+  console.log(`feedback: notes go to ${relayUrl}`);
 } else {
   fs.rmSync(out, { force: true });
-  console.log("feedback: no FEEDBACK_GITHUB_TOKEN/REPO set, feedback box hidden");
+  console.log("feedback: no FEEDBACK_RELAY_URL/KEY set, feedback box hidden");
 }

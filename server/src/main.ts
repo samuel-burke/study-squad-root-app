@@ -15,7 +15,7 @@ import {
 } from "@rootsdk/server-app";
 import { StudyRoomEngine, type AppConfig } from "@studyroom/core";
 import { ChannelAnnouncer } from "./adapters/channelAnnouncer";
-import { GitHubFeedbackInbox, loadFeedbackDestination } from "./adapters/feedbackInbox";
+import { loadFeedbackDestination, RelayFeedbackInbox } from "./adapters/feedbackInbox";
 import { createLogger } from "./adapters/logger";
 import { PushNotifier } from "./adapters/pushNotifier";
 import { TimeoutScheduler } from "./adapters/timeoutScheduler";
@@ -61,7 +61,7 @@ async function onStarting(state: RootAppStartState): Promise<void> {
   await migrateToLatest(db);
 
   const feedback = loadFeedbackDestination(process.env, __dirname);
-  logger.info(feedback ? "feedback goes to GitHub issues" : "feedback not configured, box hidden");
+  logger.info(feedback ? "feedback goes to the relay" : "feedback not configured, box hidden");
 
   const engine = new StudyRoomEngine({
     store: new KnexStore(db),
@@ -80,7 +80,7 @@ async function onStarting(state: RootAppStartState): Promise<void> {
       nickname: async (userId) =>
         (await rootServer.community.communityMembers.get({ userId: userId as UserGuid })).nickname,
     }),
-    feedbackInbox: feedback ? new GitHubFeedbackInbox(feedback) : undefined,
+    feedbackInbox: feedback ? new RelayFeedbackInbox(feedback) : undefined,
     logger,
     config: await loadRootConfig(state.globalSettings ?? rootServer.globalSettings),
     newId: randomUUID,

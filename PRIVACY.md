@@ -51,7 +51,7 @@ Each community's Study Squad data lives in that community's own app storage, hos
 
 - We never sell or share your data.
 - No ads, no analytics and no tracking.
-- No outside services, with one exception you choose: feedback you send. Study Squad's fonts and sounds are built into the app, so it doesn't contact Google or anyone else. A feedback note is delivered to us through GitHub, as an issue in a private repository only we can see, and it carries no information about who sent it.
+- No outside services, with one exception you choose: feedback you send. Study Squad's fonts and sounds are built into the app, so it doesn't contact Google or anyone else. A feedback note passes through a small service of ours hosted on Vercel and lands as an issue in a private GitHub repository only we can see. It carries no information about who sent it, and it's sent from the app's server, not your device.
 
 ## How long we keep it
 

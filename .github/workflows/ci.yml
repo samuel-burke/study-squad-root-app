@@ -110,8 +110,8 @@ jobs:
         if: steps.check.outputs.upload == 'true'
         # Optional: bakes the feedback destination into the package (see docs/DEPLOYING.md).
         env:
-          FEEDBACK_GITHUB_TOKEN: ${{ secrets.FEEDBACK_GITHUB_TOKEN }}
-          FEEDBACK_GITHUB_REPO: ${{ secrets.FEEDBACK_GITHUB_REPO }}
+          FEEDBACK_RELAY_URL: ${{ secrets.FEEDBACK_RELAY_URL }}
+          FEEDBACK_RELAY_KEY: ${{ secrets.FEEDBACK_RELAY_KEY }}
         # A clean generate: stale networking/gen output once crashed the app on Root.
         run: |
           rm -rf networking/gen

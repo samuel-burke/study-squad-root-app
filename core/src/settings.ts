@@ -153,6 +153,17 @@ function int(value: unknown, fallback: number, min: number, max: number): number
   return Math.min(max, Math.max(min, Math.round(raw)));
 }
 
+/**
+ * A number setting. The Root SDK types these as number | undefined, but at
+ * runtime it hands over the protobuf DoubleValue wrapper ({ value: 300 }),
+ * so unwrap that first. Bare numbers and old select keys still work.
+ */
+function numberSetting(value: unknown, fallback: number, min: number, max: number): number {
+  if (value && typeof value === "object" && !Array.isArray(value) && "value" in value)
+    return int((value as { value: unknown }).value, fallback, min, max);
+  return int(value, fallback, min, max);
+}
+
 function text(value: unknown, fallback: string, maxLength: number): string {
   const trimmed = typeof value === "string" ? value.trim().slice(0, maxLength) : "";
   return trimmed.length > 0 ? trimmed : fallback;
@@ -178,7 +189,7 @@ function timeOfDay(value: unknown, fallback: { hours: number; minutes: number })
 
 function limited(value: unknown, key: keyof typeof NUMBER_LIMITS): number {
   const l = NUMBER_LIMITS[key];
-  return int(value, l.default, l.min, l.max);
+  return numberSetting(value, l.default, l.min, l.max);
 }
 
 function presetFrom(key: string | undefined, focus: number, rest: number) {

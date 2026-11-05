@@ -4,6 +4,10 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ## [Unreleased]
 
+## [0.3.9] - 2026-11-05
+
+This week's top 3 on the room screen, fairer goal XP, a confirm step before joining voice, and phone layout fixes.
+
 ### Added
 
 - "Race to the top" on the room screen: this week's top 3 by focus time, as a card above the boss on desktop and a one-line strip under the timer on phones. Tap it to open the full leaderboard.
@@ -21,6 +25,7 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 ### Fixed
 
 - On phones the header shows only the logo, so the round pill no longer covers the "Study Squad" title. On phones up to 420px wide (most iPhones) the round pill moves below the buttons, so the settings button is no longer pushed off the right edge.
+- Avatars no longer get stuck on "?". Profile lookups that fail are retried, pictures Root can't load fall back to initials, and a member who hasn't loaded yet shows a blank bubble.
 
 ## [0.3.8] - 2026-11-05
 

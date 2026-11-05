@@ -4,8 +4,13 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ## [Unreleased]
 
+### Added
+
+- "Race to the top" on the room screen: this week's top 3 by focus time, as a card above the boss on desktop and a one-line strip under the timer on phones. Tap it to open the full leaderboard.
+
 ### Changed
 
+- The leaderboard is now at the top of the progress page instead of under the badges.
 - Join voice now asks first, so a stray tap doesn't drop someone into the call.
 - Goal XP: only the first 5 goals finished each day pay +25 XP. Later goals still tick and count for stats, quests and badges, but pay nothing, so goals can't be farmed for XP now that there's no daily cap. The hint under your goals and the break's Done button show this.
 

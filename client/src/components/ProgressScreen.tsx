@@ -7,7 +7,7 @@ import { BackIcon, FlameIcon } from "./Icons";
 import { XpBar } from "./SessionPanel";
 import { WeeklyLeaderboard } from "./WeeklyLeaderboard";
 
-/** Level, streak with freeze status, a five-week heatmap, weekly quests, the weekly leaderboard, badges and card style. */
+/** The leaderboard first, then level, streak with freeze status, a five-week heatmap, weekly quests, badges and card style. */
 export function ProgressScreen({
   gateway,
   xpEnabled,
@@ -36,7 +36,7 @@ export function ProgressScreen({
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   // The leaderboard loads on its own. Both wait for each other so the stats don't
-  // appear above an already-drawn board and push it down the screen.
+  // pop in under an already-drawn board while the member is reading it.
   const [boardSettled, setBoardSettled] = useState(false);
   const ready = (progress !== null || error !== null) && boardSettled;
 
@@ -86,6 +86,17 @@ export function ProgressScreen({
       </header>
 
       {!ready && <div className="muted">Loading…</div>}
+
+      {/* The race comes first. Mounted from the start so it loads alongside the stats,
+          but kept out of sight until both are in. */}
+      <div className="progress-stack" hidden={!ready}>
+        <WeeklyLeaderboard
+          gateway={gateway}
+          onOpenMember={onOpenMember}
+          refreshKey={refreshKey}
+          onSettled={() => setBoardSettled(true)}
+        />
+      </div>
 
       {ready && error && (
         <div className="toast" role="alert" style={{ position: "static", transform: "none" }}>
@@ -158,17 +169,7 @@ export function ProgressScreen({
         </>
       )}
 
-      {/* Mounted from the start so it loads alongside the stats, but kept out of sight until both are in. */}
-      <div className="progress-stack" hidden={!ready}>
-        <WeeklyLeaderboard
-          gateway={gateway}
-          onOpenMember={onOpenMember}
-          refreshKey={refreshKey}
-          onSettled={() => setBoardSettled(true)}
-        />
-
-        <DeleteMyData onDelete={onDeleteData} onDone={onBack} />
-      </div>
+      {ready && <DeleteMyData onDelete={onDeleteData} onDone={onBack} />}
     </main>
   );
 }

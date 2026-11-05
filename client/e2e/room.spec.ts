@@ -10,7 +10,9 @@ test.describe("focus room", () => {
     const first = await timer.textContent();
     await expect(timer).not.toHaveText(first ?? "", { timeout: 3_000 });
     await expect(page.getByRole("heading", { name: /Focusing now · 7/ })).toBeVisible();
-    await expect(page.getByText("Ana R.")).toBeVisible();
+    await expect(
+      page.getByRole("region", { name: "Who is in the room" }).getByText("Ana R."),
+    ).toBeVisible();
     if (!isPhone(page)) {
       await expect(page.getByRole("region", { name: "Weekly boss" })).toContainText(
         /[\d,]+ of [\d,]+ HP left/,
@@ -132,6 +134,22 @@ test.describe("progress", () => {
     ).toHaveCount(3);
     await page.getByRole("button", { name: "Back to the room" }).click();
     await expect(page.getByRole("timer")).toBeVisible();
+  });
+
+  test("shows this week's top three on the room screen, which opens the full board", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    if (isPhone(page)) {
+      await page.getByRole("button", { name: /^Leaderboard\. This week's top 3:/ }).click();
+    } else {
+      const podium = page.getByRole("region", { name: "Top of the leaderboard" });
+      await expect(podium.getByRole("listitem")).toHaveCount(3);
+      await podium.getByRole("button", { name: "See the full leaderboard" }).click();
+    }
+    const board = page.getByRole("region", { name: "Leaderboard", exact: true });
+    await expect(board.getByText("Resets Monday")).toBeVisible();
+    await expect(board).toBeInViewport();
   });
 
   test("shows the weekly leaderboard and lets you hide yourself", async ({ page }) => {

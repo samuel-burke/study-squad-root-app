@@ -4,6 +4,14 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ## [Unreleased]
 
+### Changed
+
+- Join voice now asks first, so a stray tap doesn't drop someone into the call.
+
+### Removed
+
+- The "Voice channel name" App setting. Pick the voice channel in the app's Room settings instead (admins only).
+
 ## [0.3.8] - 2026-11-05
 
 Fewer settings to think about: built-in boss names, no XP cap and a simpler squad bot. Voice stays, with a new channel dropdown.

@@ -26,32 +26,6 @@ export interface ChannelLookup {
   channels(): Promise<ChannelInfo[]>;
 }
 
-/**
- * Matches the admin's typed name loosely: case, spaces, dashes, emoji and a
- * leading # don't matter, so "study voice" finds "🔊 Study-Voice".
- */
-export const channelKey = (name: string) =>
-  name
-    .normalize("NFKC")
-    .toLowerCase()
-    .replace(/[^\p{L}\p{N}]+/gu, "");
-
-/** The channel whose name matches, or else the only one whose name contains it. */
-function findByName(channels: ChannelInfo[], typed: string): ChannelInfo | undefined {
-  const wanted = channelKey(typed);
-  if (!wanted) return undefined;
-  const exact = channels.find((c) => channelKey(c.name) === wanted);
-  if (exact) return exact;
-  const partial = channels.filter((c) => channelKey(c.name).includes(wanted));
-  return partial.length === 1 ? partial[0] : undefined;
-}
-
-const listNames = (channels: ChannelInfo[]) =>
-  channels
-    .slice(0, 8)
-    .map((c) => `#${c.name}`)
-    .join(", ");
-
 /** Reads every channel, or says in words why it couldn't. */
 async function readChannels(lookup: ChannelLookup, logger: Logger): Promise<ChannelInfo[] | null> {
   try {
@@ -87,47 +61,11 @@ async function useVoiceChannel(
   }
 }
 
-/** Finds the voice channel the admin typed, and says in words how that went. */
-async function resolveVoice(
-  config: AppConfig,
-  all: ChannelInfo[] | null,
-  lookup: ChannelLookup,
-  logger: Logger,
-): Promise<AppConfig> {
-  const typed = config.voiceChannelName;
-  if (!all) {
-    return {
-      ...config,
-      voiceChannelStatus: `Couldn't read the channel list, so "${typed}" wasn't found`,
-    };
-  }
-  const voices = all.filter((c) => c.voice);
-  // Prefer voice channels. If Root reports none at all, fall back to any
-  // channel with that name rather than giving up on a type mismatch.
-  const found =
-    findByName(voices, typed) ?? (voices.length === 0 ? findByName(all, typed) : undefined);
-  if (!found) {
-    const textMatch = findByName(all, typed);
-    logger.warn("no voice channel has that name", {
-      name: typed,
-      voiceChannels: voices.map((c) => c.name),
-      channelCount: all.length,
-    });
-    const status = textMatch
-      ? `#${textMatch.name} isn't a voice channel`
-      : voices.length > 0
-        ? `No voice channel called "${typed}". Voice channels it can see: ${listNames(voices)}`
-        : `No voice channel called "${typed}". Study Squad can't see any voice channels, so give it access to one`;
-    return { ...config, voiceChannelStatus: status };
-  }
-  return useVoiceChannel(config, found, lookup, logger);
-}
-
 /**
- * Reads Root's settings and resolves the post and voice channels' names and
- * link. `pickedVoiceId` is the voice channel an admin picked in the app's own
- * Room settings; it wins over the "Voice channel name" App setting, which
- * stays as the fallback.
+ * Reads Root's settings and resolves the post channel's name and the voice
+ * channel an admin picked in the app's own Room settings (`pickedVoiceId`).
+ * Root's channel picker setting only lists text channels, so the voice
+ * channel isn't a Root setting at all.
  */
 export async function loadConfig(
   settings: unknown,
@@ -143,20 +81,23 @@ export async function loadConfig(
       logger.warn("could not read post channel", { error: String(error) });
     }
   }
-  if (!pickedVoiceId && !config.voiceChannelName) return config;
+  if (!pickedVoiceId) return config;
 
   const all = await readChannels(channels, logger);
-  if (pickedVoiceId && all) {
-    const picked = all.find((c) => c.voice && c.id === pickedVoiceId);
-    if (picked) return useVoiceChannel(config, picked, channels, logger);
-    logger.warn("picked voice channel is gone", { channelId: pickedVoiceId });
+  if (!all) {
+    return {
+      ...config,
+      voiceChannelStatus:
+        "Couldn't read the channel list, so the picked voice channel wasn't found",
+    };
   }
-  if (config.voiceChannelName) return resolveVoice(config, all, channels, logger);
+  const picked = all.find((c) => c.voice && c.id === pickedVoiceId);
+  if (picked) return useVoiceChannel(config, picked, channels, logger);
+  logger.warn("picked voice channel is gone", { channelId: pickedVoiceId });
   return {
     ...config,
-    voiceChannelStatus: all
-      ? "The picked voice channel is gone or Study Squad can't see it. Pick another one"
-      : "Couldn't read the channel list, so the picked voice channel wasn't found",
+    voiceChannelStatus:
+      "The picked voice channel is gone or Study Squad can't see it. Pick another one",
   };
 }
 

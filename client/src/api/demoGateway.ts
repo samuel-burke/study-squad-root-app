@@ -549,6 +549,18 @@ export class DemoGateway implements StudyRoomGateway {
     return this.call(() => this.engine.deleteGoal(DEMO_USER_ID, goalId));
   }
 
+  editGoal(goalId: string, text: string) {
+    return this.call(() => this.engine.editGoal(DEMO_USER_ID, goalId, text));
+  }
+
+  clearDoneGoals() {
+    return this.call(() => this.engine.clearDoneGoals(DEMO_USER_ID));
+  }
+
+  reorderGoals(goalIds: string[]) {
+    return this.call(() => this.engine.reorderGoals(DEMO_USER_ID, goalIds));
+  }
+
   setGoalsPrivate(goalsPrivate: boolean) {
     return this.call(() => this.engine.setGoalsPrivate(DEMO_USER_ID, goalsPrivate));
   }

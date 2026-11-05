@@ -98,6 +98,10 @@ export interface GoalDto {
   id: string;
   text: string;
   done: boolean;
+  /** When the goal was added (server time). */
+  createdAt: number;
+  /** When it was ticked off (server time), or null while open. */
+  completedAt: number | null;
 }
 
 export interface MyStatusDto {

@@ -17,6 +17,7 @@ import {
 import type {
   AddGoalRequest,
   DeleteGoalRequest,
+  EditGoalRequest,
   FeedbackSent,
   GetMemberProfileRequest,
   JoinRoomTimerRequest,
@@ -25,6 +26,7 @@ import type {
   MemberProfile,
   MyStatus,
   Progress,
+  ReorderGoalsRequest,
   RoomSnapshot,
   SetGoalDoneRequest,
   SetBadgeShowcaseRequest,
@@ -174,6 +176,24 @@ export class StudyRoomHandlers {
   deleteGoal(userId: string, request: DeleteGoalRequest): Promise<MyStatus> {
     return this.handle("deleteGoal", userId, "write", async () =>
       myStatusToProto(await this.engine.deleteGoal(userId, request.goalId)),
+    );
+  }
+
+  editGoal(userId: string, request: EditGoalRequest): Promise<MyStatus> {
+    return this.handle("editGoal", userId, "write", async () =>
+      myStatusToProto(await this.engine.editGoal(userId, request.goalId, request.text)),
+    );
+  }
+
+  clearDoneGoals(userId: string): Promise<MyStatus> {
+    return this.handle("clearDoneGoals", userId, "write", async () =>
+      myStatusToProto(await this.engine.clearDoneGoals(userId)),
+    );
+  }
+
+  reorderGoals(userId: string, request: ReorderGoalsRequest): Promise<MyStatus> {
+    return this.handle("reorderGoals", userId, "write", async () =>
+      myStatusToProto(await this.engine.reorderGoals(userId, request.goalIds)),
     );
   }
 

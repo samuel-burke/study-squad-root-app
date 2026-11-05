@@ -116,12 +116,15 @@ describe("Study Squad app", () => {
     expect(within(panel).getByText("365 / 500 XP")).toBeInTheDocument();
     await user.click(within(panel).getByRole("button", { name: "Add a goal" }));
     await user.type(within(panel).getByLabelText("New goal"), "Stats HW 5{Enter}");
-    const checkbox = await within(panel).findByRole("checkbox", { name: "Stats HW 5" });
-    await user.click(checkbox);
+    const checkbox = () => within(panel).findByRole("checkbox", { name: "Stats HW 5" });
+    await user.click(await checkbox());
     await waitFor(() => expect(within(panel).getByText("390 / 500 XP")).toBeInTheDocument());
-    await user.click(checkbox);
-    await user.click(checkbox);
-    await waitFor(() => expect(checkbox).toBeChecked());
+    // Finished goals fold away.
+    await user.click(within(panel).getByRole("button", { name: "Finished (1)" }));
+    await user.click(await checkbox());
+    await waitFor(async () => expect(await checkbox()).not.toBeChecked());
+    await user.click(await checkbox());
+    await waitFor(async () => expect(await checkbox()).toBeChecked());
     expect(within(panel).getByText("390 / 500 XP")).toBeInTheDocument();
     await user.click(within(panel).getByRole("button", { name: "Remove goal: Stats HW 5" }));
     await waitFor(() => expect(within(panel).queryByText("Stats HW 5")).not.toBeInTheDocument());
@@ -398,8 +401,10 @@ describe("Study Squad app", () => {
       await user.click(nice);
     }
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    const session = screen.getByRole("region", { name: "Your session" });
+    await user.click(within(session).getByRole("button", { name: "Finished (1)" }));
     expect(
-      within(screen.getByRole("region", { name: "Your session" })).getByRole("checkbox", {
+      within(session).getByRole("checkbox", {
         name: "Read ch. 4",
       }),
     ).toBeChecked();

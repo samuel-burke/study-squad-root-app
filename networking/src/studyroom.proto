@@ -139,6 +139,9 @@ message Goal {
   string id = 1;
   string text = 2;
   bool done = 3;
+  double created_at_ms = 4;
+  // 0 while the goal is open.
+  double completed_at_ms = 5;
 }
 
 message MyStatus {
@@ -303,6 +306,18 @@ message DeleteGoalRequest {
   string goal_id = 1;
 }
 
+message EditGoalRequest {
+  string goal_id = 1;
+  string text = 2;
+}
+
+message ClearDoneGoalsRequest {}
+
+// The member's open goals, top first.
+message ReorderGoalsRequest {
+  repeated string goal_ids = 1;
+}
+
 message SetGoalsPrivateRequest {
   bool goals_private = 1;
 }
@@ -404,6 +419,9 @@ service StudyRoomService {
   rpc AddGoal(AddGoalRequest) returns (MyStatus);
   rpc SetGoalDone(SetGoalDoneRequest) returns (MyStatus);
   rpc DeleteGoal(DeleteGoalRequest) returns (MyStatus);
+  rpc EditGoal(EditGoalRequest) returns (MyStatus);
+  rpc ClearDoneGoals(ClearDoneGoalsRequest) returns (MyStatus);
+  rpc ReorderGoals(ReorderGoalsRequest) returns (MyStatus);
   rpc SetGoalsPrivate(SetGoalsPrivateRequest) returns (MyStatus);
   rpc GetProgress(GetProgressRequest) returns (Progress);
   rpc DeleteMyData(DeleteMyDataRequest) returns (MyStatus);

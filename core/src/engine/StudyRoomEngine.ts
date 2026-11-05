@@ -679,6 +679,58 @@ export class StudyRoomEngine {
     });
   }
 
+  /** Changes a goal's text. Done state, XP and timings stay as they are. */
+  async editGoal(userId: string, goalIdInput: unknown, textInput: unknown): Promise<MyStatusDto> {
+    const goalId = validateId(goalIdInput, "goal id");
+    const text = validateGoalText(textInput);
+    return this.run(async (tx, now, effects) => {
+      const goal = await this.ownGoal(tx, userId, goalId);
+      if (goal.text !== text) await tx.goals.update({ ...goal, text });
+      this.touch(effects, userId);
+      return this.buildMyStatus(tx, userId, now);
+    });
+  }
+
+  /**
+   * Puts the member's open goals in the given order. The top one is the goal
+   * shown on their card. Ids that aren't their open goals are ignored, and open
+   * goals the list leaves out keep their place after the ones it names, so a
+   * reorder racing an add or a tick can't lose a goal.
+   */
+  async reorderGoals(userId: string, goalIdsInput: unknown): Promise<MyStatusDto> {
+    if (!Array.isArray(goalIdsInput) || goalIdsInput.length > LIMITS.maxOpenGoals * 2) {
+      throw validationError("Expected a list of goal ids.");
+    }
+    const goalIds = goalIdsInput.map((id) => validateId(id, "goal id"));
+    return this.run(async (tx, now, effects) => {
+      const open = (await tx.goals.listForUser(userId, now + 1)).filter((g) => !g.done);
+      const byId = new Map(open.map((g) => [g.id, g]));
+      const named = [...new Set(goalIds)].flatMap((id) => byId.get(id) ?? []);
+      const rest = open.filter((g) => !named.includes(g));
+      let keys = open.map((g) => g.sortKey).sort((a, b) => a - b);
+      // Keys must be distinct for the order to hold.
+      if (new Set(keys).size !== keys.length) keys = keys.map((_, i) => keys[0]! + i);
+      for (const [i, goal] of [...named, ...rest].entries()) {
+        if (goal.sortKey !== keys[i]) await tx.goals.update({ ...goal, sortKey: keys[i]! });
+      }
+      this.touch(effects, userId);
+      return this.buildMyStatus(tx, userId, now);
+    });
+  }
+
+  /**
+   * Removes every finished goal from the member's list. XP, stats, quests and
+   * badges were credited when each goal was ticked, so nothing is lost.
+   */
+  async clearDoneGoals(userId: string): Promise<MyStatusDto> {
+    return this.run(async (tx, now, effects) => {
+      const goals = await tx.goals.listForUser(userId, 0);
+      for (const goal of goals) if (goal.done) await tx.goals.delete(goal.id);
+      this.touch(effects, userId);
+      return this.buildMyStatus(tx, userId, now);
+    });
+  }
+
   async setGoalsPrivate(userId: string, goalsPrivate: unknown): Promise<MyStatusDto> {
     if (typeof goalsPrivate !== "boolean") throw validationError("Expected true or false.");
     return this.run(async (tx, now, effects) => {
@@ -1605,6 +1657,13 @@ export class StudyRoomEngine {
         `You can have up to ${LIMITS.maxOpenGoals} open goals. Finish or remove one first.`,
       );
     }
+    // New goals go to the bottom of the list, even below goals moved there
+    // in the same millisecond.
+    const lastKey = Math.max(
+      -Infinity,
+      ...(await tx.goals.listForUser(userId, now + 1)).map((g) => g.sortKey),
+    );
+    const firstKey = Math.max(now, lastKey + 1);
     // Offset timestamps so goals typed together keep their order.
     for (const [i, text] of texts.entries()) {
       await tx.goals.insert({
@@ -1615,6 +1674,7 @@ export class StudyRoomEngine {
         xpAwarded: false,
         createdAt: now + i,
         completedAt: null,
+        sortKey: firstKey + i,
       });
     }
   }
@@ -1635,7 +1695,7 @@ export class StudyRoomEngine {
 
   private async goalPrompt(tx: Store, userId: string): Promise<GoalDto | null> {
     const goal = (await tx.goals.firstOpen([userId])).get(userId);
-    return goal ? { id: goal.id, text: goal.text, done: goal.done } : null;
+    return goal ? goalToDto(goal) : null;
   }
 
   private goalsArePrivate(member: MemberRecord | undefined): boolean {
@@ -1859,7 +1919,7 @@ export class StudyRoomEngine {
       xpToday: (await tx.stats.get(userId, today))?.xp ?? 0,
       streak: currentStreak(streakState, today, this.config.streakFreezesEnabled),
       freezeAvailable: freezeAvailable(streakState, today, this.config.streakFreezesEnabled),
-      goals: goals.map((g) => ({ id: g.id, text: g.text, done: g.done })),
+      goals: goals.map(goalToDto),
       goalsPrivate: this.goalsArePrivate(member),
       keepGoingEndsAt,
     };
@@ -2018,4 +2078,14 @@ function validatePeriod(period: unknown): LeaderboardPeriod {
 function validateMetric(by: unknown): LeaderboardMetric {
   if (by === "minutes" || by === "xp") return by;
   throw validationError("The leaderboard ranks by minutes or xp.");
+}
+
+function goalToDto(goal: GoalRecord): GoalDto {
+  return {
+    id: goal.id,
+    text: goal.text,
+    done: goal.done,
+    createdAt: goal.createdAt,
+    completedAt: goal.completedAt,
+  };
 }

@@ -8,6 +8,10 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 - Support contacts: Room settings and the feedback box now show how to reach the developer (hello@samuelburke.dev, or @5amuel on Root), and the website has a new support page.
 - Light mode. Study Squad now matches the light or dark theme picked in Root, and switches live when it changes. Outside Root (the demo) it follows the device setting. The full-screen badge unlock keeps its dark spotlight in both themes.
+- Goals: a "Clear completed" button removes every finished goal at once. XP, stats and badges already earned stay.
+- Goals: edit a goal's text with the pencil button. Enter saves, Escape cancels.
+- Goals: finished goals fold into a "Finished (n)" row and show how long they took, from adding to ticking off.
+- Goals: drag a goal by its handle to reorder (or use the arrow keys on the handle). The top goal is the one on your card.
 
 ## [0.3.7] - 2026-11-04
 

@@ -121,9 +121,9 @@
 }
 
 /*
- * Light theme. Bright accents stay as fills (buttons, bars, the timer
- * ring); text and thin strokes use the deeper --*-text and --*-strong
- * shades so they keep at least 4.5:1 (text) and 3:1 (graphics) on white.
+ * Light theme. Bright accents stay as fills and strokes (buttons, bars,
+ * the timer ring, focus outlines); text uses the deeper --*-text shades so
+ * it keeps at least 4.5:1 on white.
  */
 :root[data-theme="light"] {
   --bg: #f4f6fb;
@@ -142,7 +142,7 @@
 
   --amber: #f5b83d;
   --amber-hover: #f7c255;
-  --amber-strong: #c98400;
+  --amber-strong: #f5b83d;
   --amber-text: #8f5b00;
   --amber-ink: #1a1300;
   --amber-bg: #fdf3dc;

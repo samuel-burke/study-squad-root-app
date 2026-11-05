@@ -384,6 +384,33 @@ message BadgesEarnedEvent {
   repeated string badge_ids = 1;
 }
 
+// ---------------------------------------------------------------- voice channel picker
+
+message GetVoiceChannelsRequest {}
+
+message SetVoiceChannelRequest {
+  // Empty clears the pick, so the App settings name (if any) is used again.
+  string channel_id = 1;
+}
+
+// A community voice channel Study Squad can see.
+message VoiceChannelOption {
+  string id = 1;
+  string name = 2;
+}
+
+// The voice channels admins can pick from, and the current pick.
+message VoiceChannelChoice {
+  // The caller may change the pick (they can manage apps in this community).
+  bool can_edit = 1;
+  // The picked channel, or empty when none is picked in the app.
+  string selected_id = 2;
+  // Voice channels only (ChannelType.Voice), in sidebar order.
+  repeated VoiceChannelOption channels = 3;
+  // How the voice channel resolved, in words for admins. Empty when not set.
+  string status = 4;
+}
+
 // ---------------------------------------------------------------- service
 
 service StudyRoomService {
@@ -405,6 +432,8 @@ service StudyRoomService {
   rpc SetBadgeShowcase(SetBadgeShowcaseRequest) returns (Progress);
   rpc GetMemberProfile(GetMemberProfileRequest) returns (MemberProfile);
   rpc SendFeedback(SendFeedbackRequest) returns (FeedbackSent);
+  rpc GetVoiceChannels(GetVoiceChannelsRequest) returns (VoiceChannelChoice);
+  rpc SetVoiceChannel(SetVoiceChannelRequest) returns (VoiceChannelChoice);
 
   // Server-to-client pushes.
   rpc BroadcastRoomUpdated(RoomUpdatedEvent) returns (rootsdk.Void);

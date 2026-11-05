@@ -10,6 +10,7 @@ import {
   progressFromProto,
   roomFromProto,
   snapshotFromProto,
+  voiceChannelChoiceFromProto,
 } from "@studyroom/contract";
 import {
   ClockSync,
@@ -150,6 +151,14 @@ export class RootGateway implements StudyRoomGateway {
 
   async getMemberProfile(userId: string) {
     return memberProfileFromProto(await call(() => client.getMemberProfile({ userId })));
+  }
+
+  async getVoiceChannels() {
+    return voiceChannelChoiceFromProto(await call(() => client.getVoiceChannels({})));
+  }
+
+  async setVoiceChannel(channelId: string) {
+    return voiceChannelChoiceFromProto(await call(() => client.setVoiceChannel({ channelId })));
   }
 
   async getProfiles(userIds: string[]): Promise<Profile[]> {

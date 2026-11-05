@@ -6,6 +6,7 @@ import {
   customPreset,
   dayKey,
   DEFAULT_CONFIG,
+  ErrorCode,
   newBoss,
   squadPost,
   weekKey,
@@ -19,10 +20,11 @@ import {
   type PhaseCompletedDto,
   type RecapDto,
   type RoomStateDto,
+  type VoiceChannelChoiceDto,
   type WakeScheduler,
 } from "@studyroom/core";
 import type { GatewayHandlers, Profile, StartRequest, StudyRoomGateway } from "./gateway";
-import { toGatewayError } from "./gateway";
+import { GatewayError, toGatewayError } from "./gateway";
 
 const MINUTE = 60_000;
 export const DEMO_USER_ID = "demo-you";
@@ -248,6 +250,13 @@ function demoConfig(options: DemoOptions): AppConfig {
     voiceChannelStatus: "#Study voice",
   };
 }
+
+/** Voice channels the demo community "has", for the Room settings dropdown. */
+const DEMO_VOICE_CHANNELS = [
+  { id: "demo-voice", name: "Study voice" },
+  { id: "demo-voice-2", name: "Quiet library" },
+];
+const VOICE_PICK_KEY = "voiceChannelPick";
 
 /**
  * Runs the real StudyRoomEngine in the browser on an in-memory store, with a
@@ -587,6 +596,34 @@ export class DemoGateway implements StudyRoomGateway {
 
   getMemberProfile(userId: string) {
     return this.call(() => this.engine.getMemberProfile(userId));
+  }
+
+  async getVoiceChannels(): Promise<VoiceChannelChoiceDto> {
+    return {
+      canEdit: true,
+      selectedId: (await this.store.kv.get<string>(VOICE_PICK_KEY)) ?? "",
+      channels: DEMO_VOICE_CHANNELS,
+      status: this.engine.getConfig().voiceChannelStatus,
+    };
+  }
+
+  async setVoiceChannel(channelId: string): Promise<VoiceChannelChoiceDto> {
+    const picked = DEMO_VOICE_CHANNELS.find((c) => c.id === channelId);
+    if (channelId && !picked) {
+      throw new GatewayError(
+        ErrorCode.Validation,
+        "That isn't a voice channel. Pick one from the list.",
+      );
+    }
+    await this.store.kv.set(VOICE_PICK_KEY, channelId);
+    await this.engine.setConfig({
+      ...this.engine.getConfig(),
+      voiceChannelId: picked?.id ?? null,
+      voiceChannelName: picked?.name ?? "",
+      voiceChannelUrl: picked ? "https://rootapp.com" : "",
+      voiceChannelStatus: picked ? `#${picked.name}` : "",
+    });
+    return this.getVoiceChannels();
   }
 
   async getProfiles(userIds: string[]): Promise<Profile[]> {

@@ -8,6 +8,7 @@ import type {
   ProgressDto,
   RoomStateDto,
   SnapshotDto,
+  VoiceChannelChoiceDto,
 } from "@studyroom/core";
 import {
   Leaderboard,
@@ -20,6 +21,7 @@ import {
   PhaseCompletedEvent,
   Progress,
   RoomSnapshot,
+  VoiceChannelChoice,
 } from "@studyroom/gen-shared";
 import {
   leaderboardFromProto,
@@ -41,6 +43,8 @@ import {
   roomFromProto,
   snapshotFromProto,
   snapshotToProto,
+  voiceChannelChoiceFromProto,
+  voiceChannelChoiceToProto,
 } from "../src";
 
 const room: RoomStateDto = {
@@ -318,6 +322,26 @@ describe("contract round trip", () => {
     };
     const bytes = MemberProfile.toBinary(memberProfileToProto(profile));
     expect(memberProfileFromProto(MemberProfile.fromBinary(bytes))).toEqual(profile);
+  });
+
+  it("preserves the voice channel choices", () => {
+    const choice: VoiceChannelChoiceDto = {
+      canEdit: true,
+      selectedId: "voice-2",
+      channels: [
+        { id: "voice-1", name: "🔊 Study voice" },
+        { id: "voice-2", name: "Quiet library" },
+      ],
+      status: "#Quiet library",
+    };
+    const bytes = VoiceChannelChoice.toBinary(voiceChannelChoiceToProto(choice));
+    expect(voiceChannelChoiceFromProto(VoiceChannelChoice.fromBinary(bytes))).toEqual(choice);
+    expect(voiceChannelChoiceFromProto(VoiceChannelChoice.fromBinary(new Uint8Array()))).toEqual({
+      canEdit: false,
+      selectedId: "",
+      channels: [],
+      status: "",
+    });
   });
 });
 

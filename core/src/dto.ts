@@ -80,6 +80,24 @@ export interface VoiceDto {
   userIds: string[];
 }
 
+/** A community voice channel admins can pick in the app. */
+export interface VoiceChannelOptionDto {
+  id: string;
+  name: string;
+}
+
+/** The voice channels admins can pick from, and the current pick. */
+export interface VoiceChannelChoiceDto {
+  /** The caller may change the pick (they can manage apps in this community). */
+  canEdit: boolean;
+  /** The picked channel id, or "" when none is picked in the app. */
+  selectedId: string;
+  /** Voice channels only, in sidebar order. */
+  channels: VoiceChannelOptionDto[];
+  /** How the voice channel resolved, in words for admins. "" = not set. */
+  status: string;
+}
+
 export interface RoomStateDto {
   serverNow: number;
   timer: RoomTimerDto;

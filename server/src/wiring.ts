@@ -52,18 +52,50 @@ const listNames = (channels: ChannelInfo[]) =>
     .map((c) => `#${c.name}`)
     .join(", ");
 
+/** Reads every channel, or says in words why it couldn't. */
+async function readChannels(lookup: ChannelLookup, logger: Logger): Promise<ChannelInfo[] | null> {
+  try {
+    return await lookup.channels();
+  } catch (error) {
+    logger.warn("could not read voice channel", { error: String(error) });
+    return null;
+  }
+}
+
+/** Fills in the found voice channel and its Join voice link. */
+async function useVoiceChannel(
+  config: AppConfig,
+  found: ChannelInfo,
+  lookup: ChannelLookup,
+  logger: Logger,
+): Promise<AppConfig> {
+  const resolved = {
+    ...config,
+    voiceChannelId: found.id,
+    voiceChannelName: found.name,
+    voiceChannelStatus: `#${found.name}`,
+  };
+  try {
+    return { ...resolved, voiceChannelUrl: await lookup.link(found.id) };
+  } catch (error) {
+    // Still mark who is in voice, even without a button to join.
+    logger.warn("could not make voice channel link", { error: String(error) });
+    return {
+      ...resolved,
+      voiceChannelStatus: `#${found.name}, but Root wouldn't make a Join voice link`,
+    };
+  }
+}
+
 /** Finds the voice channel the admin typed, and says in words how that went. */
 async function resolveVoice(
   config: AppConfig,
+  all: ChannelInfo[] | null,
   lookup: ChannelLookup,
   logger: Logger,
 ): Promise<AppConfig> {
   const typed = config.voiceChannelName;
-  let all: ChannelInfo[];
-  try {
-    all = await lookup.channels();
-  } catch (error) {
-    logger.warn("could not read voice channel", { error: String(error) });
+  if (!all) {
     return {
       ...config,
       voiceChannelStatus: `Couldn't read the channel list, so "${typed}" wasn't found`,
@@ -88,30 +120,20 @@ async function resolveVoice(
         : `No voice channel called "${typed}". Study Squad can't see any voice channels, so give it access to one`;
     return { ...config, voiceChannelStatus: status };
   }
-
-  const resolved = {
-    ...config,
-    voiceChannelId: found.id,
-    voiceChannelName: found.name,
-    voiceChannelStatus: `#${found.name}`,
-  };
-  try {
-    return { ...resolved, voiceChannelUrl: await lookup.link(found.id) };
-  } catch (error) {
-    // Still mark who is in voice, even without a button to join.
-    logger.warn("could not make voice channel link", { error: String(error) });
-    return {
-      ...resolved,
-      voiceChannelStatus: `#${found.name}, but Root wouldn't make a Join voice link`,
-    };
-  }
+  return useVoiceChannel(config, found, lookup, logger);
 }
 
-/** Reads Root's settings and resolves the post and voice channels' names and link. */
+/**
+ * Reads Root's settings and resolves the post and voice channels' names and
+ * link. `pickedVoiceId` is the voice channel an admin picked in the app's own
+ * Room settings; it wins over the "Voice channel name" App setting, which
+ * stays as the fallback.
+ */
 export async function loadConfig(
   settings: unknown,
   channels: ChannelLookup,
   logger: Logger,
+  pickedVoiceId = "",
 ): Promise<AppConfig> {
   let config = parseSettings(settings as RawSettings);
   if (config.postChannelId) {
@@ -121,8 +143,57 @@ export async function loadConfig(
       logger.warn("could not read post channel", { error: String(error) });
     }
   }
-  if (config.voiceChannelName) config = await resolveVoice(config, channels, logger);
-  return config;
+  if (!pickedVoiceId && !config.voiceChannelName) return config;
+
+  const all = await readChannels(channels, logger);
+  if (pickedVoiceId && all) {
+    const picked = all.find((c) => c.voice && c.id === pickedVoiceId);
+    if (picked) return useVoiceChannel(config, picked, channels, logger);
+    logger.warn("picked voice channel is gone", { channelId: pickedVoiceId });
+  }
+  if (config.voiceChannelName) return resolveVoice(config, all, channels, logger);
+  return {
+    ...config,
+    voiceChannelStatus: all
+      ? "The picked voice channel is gone or Study Squad can't see it. Pick another one"
+      : "Couldn't read the channel list, so the picked voice channel wasn't found",
+  };
+}
+
+/** A role's community-wide permissions, as far as app admin goes. */
+export interface RolePermissions {
+  id: string;
+  communityPermission: {
+    communityManageApps: boolean;
+    communityFullControl: boolean;
+    communityManageCommunity: boolean;
+  };
+}
+
+export interface AdminLookup {
+  ownerUserId(): Promise<string>;
+  /** The member's roles, not counting the everyone role. */
+  memberRoleIds(userId: string): Promise<string[]>;
+  roles(): Promise<RolePermissions[]>;
+  everyoneRoleId: string;
+}
+
+/**
+ * Whether a member counts as an admin for in-app settings: the community
+ * owner, or anyone with a role (the everyone role included) that can manage
+ * apps, manage the community, or has full control. Root itself gates its
+ * App settings on managing apps, so this matches who can edit those.
+ */
+export async function canManageApps(userId: string, lookup: AdminLookup): Promise<boolean> {
+  if ((await lookup.ownerUserId()) === userId) return true;
+  const mine = new Set([...(await lookup.memberRoleIds(userId)), lookup.everyoneRoleId]);
+  return (await lookup.roles()).some(
+    (role) =>
+      mine.has(role.id) &&
+      (role.communityPermission.communityManageApps ||
+        role.communityPermission.communityFullControl ||
+        role.communityPermission.communityManageCommunity),
+  );
 }
 
 type PresenceEngine = Pick<StudyRoomEngine, "userAttached" | "userDetached">;

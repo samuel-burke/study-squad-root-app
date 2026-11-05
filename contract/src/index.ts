@@ -21,6 +21,7 @@ import type {
   RoomStateDto,
   SnapshotDto,
   TimerPreset as TimerPresetDto,
+  VoiceChannelChoiceDto,
 } from "@studyroom/core";
 import {
   LeaderboardMetric,
@@ -44,6 +45,7 @@ import {
   type RoomSnapshot,
   type RoomState,
   type TimerPreset,
+  type VoiceChannelChoice,
 } from "@studyroom/gen-shared";
 
 /**
@@ -526,5 +528,25 @@ export function personalResultFromProto(event: PersonalResultEvent): PersonalRes
     goalPrompt: event.goalPrompt ? goalFromProto(event.goalPrompt) : null,
     breakEndsAt: event.breakEndsAtMs,
     me: myStatusFromProto(event.me),
+  };
+}
+
+// ---------------------------------------------------------------- voice channel picker
+
+export function voiceChannelChoiceToProto(choice: VoiceChannelChoiceDto): VoiceChannelChoice {
+  return {
+    canEdit: choice.canEdit,
+    selectedId: choice.selectedId,
+    channels: choice.channels.map((c) => ({ id: c.id, name: c.name })),
+    status: choice.status,
+  };
+}
+
+export function voiceChannelChoiceFromProto(choice: VoiceChannelChoice): VoiceChannelChoiceDto {
+  return {
+    canEdit: choice.canEdit ?? false,
+    selectedId: choice.selectedId ?? "",
+    channels: (choice.channels ?? []).map((c) => ({ id: c.id, name: c.name })),
+    status: choice.status ?? "",
   };
 }

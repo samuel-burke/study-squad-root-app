@@ -4,6 +4,10 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ## [Unreleased]
 
+### Added
+
+- Admins can pick the voice channel from a dropdown in the app's Room settings. It lists the community's voice channels only (Root's own channel picker shows text channels), saves the pick in the app's database so it survives reloads, and applies it straight away. The "Voice channel name" App setting still works as a fallback when nothing is picked.
+
 ## [0.3.7] - 2026-11-04
 
 The number settings from 0.3.6 now take effect.

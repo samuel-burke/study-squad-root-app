@@ -24,7 +24,10 @@ import type {
   SetGoalsPrivateRequest,
   SendFeedbackRequest,
   SetLeaderboardHiddenRequest,
+  SetVoiceChannelRequest,
   StartSoloRequest,
+  GetVoiceChannelsRequest,
+  VoiceChannelChoice,
 } from "@studyroom/gen-shared";
 import { RequestFailure, type StudyRoomHandlers } from "./handlers";
 
@@ -102,6 +105,14 @@ export class StudyRoomService extends StudyRoomServiceBase {
 
   setBadgeShowcase(request: SetBadgeShowcaseRequest, client: Client): Promise<Progress> {
     return this.call((h) => h.setBadgeShowcase(client.userId, request));
+  }
+
+  getVoiceChannels(_request: GetVoiceChannelsRequest, client: Client): Promise<VoiceChannelChoice> {
+    return this.call((h) => h.getVoiceChannels(client.userId));
+  }
+
+  setVoiceChannel(request: SetVoiceChannelRequest, client: Client): Promise<VoiceChannelChoice> {
+    return this.call((h) => h.setVoiceChannel(client.userId, request));
   }
 
   deleteMyData(_request: DeleteMyDataRequest, client: Client): Promise<MyStatus> {

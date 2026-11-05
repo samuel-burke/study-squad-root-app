@@ -1,4 +1,5 @@
 import {
+  voiceChannelChoiceToProto,
   leaderboardMetricFromProto,
   leaderboardPeriodFromProto,
   leaderboardToProto,
@@ -32,8 +33,11 @@ import type {
   SetGoalsPrivateRequest,
   SendFeedbackRequest,
   SetLeaderboardHiddenRequest,
+  SetVoiceChannelRequest,
   StartSoloRequest,
+  VoiceChannelChoice,
 } from "@studyroom/gen-shared";
+import type { VoiceChannelPicker } from "./adapters/voiceChannelPicker";
 
 /** An error that is safe to show the caller. */
 export class RequestFailure extends Error {
@@ -51,6 +55,8 @@ export interface HandlerOptions {
   writeLimit?: { capacity: number; perSecond: number };
   readLimit?: { capacity: number; perSecond: number };
   now?: () => number;
+  /** The in-app voice channel dropdown. Absent in tests that don't need it. */
+  voicePicker?: Pick<VoiceChannelPicker, "choice" | "pick">;
 }
 
 /**
@@ -62,6 +68,7 @@ export interface HandlerOptions {
 export class StudyRoomHandlers {
   private readonly writes: RateLimiter;
   private readonly reads: RateLimiter;
+  private readonly voicePicker: HandlerOptions["voicePicker"];
 
   constructor(
     private readonly engine: StudyRoomEngine,
@@ -73,6 +80,26 @@ export class StudyRoomHandlers {
     const read = options.readLimit ?? { capacity: 30, perSecond: 5 };
     this.writes = new RateLimiter(write.capacity, write.perSecond, now);
     this.reads = new RateLimiter(read.capacity, read.perSecond, now);
+    this.voicePicker = options.voicePicker;
+  }
+
+  getVoiceChannels(userId: string): Promise<VoiceChannelChoice> {
+    return this.handle("getVoiceChannels", userId, "read", async () =>
+      voiceChannelChoiceToProto(await this.picker().choice(userId)),
+    );
+  }
+
+  setVoiceChannel(userId: string, request: SetVoiceChannelRequest): Promise<VoiceChannelChoice> {
+    return this.handle("setVoiceChannel", userId, "write", async () =>
+      voiceChannelChoiceToProto(await this.picker().pick(userId, request.channelId)),
+    );
+  }
+
+  private picker() {
+    if (!this.voicePicker) {
+      throw new DomainError(ErrorCode.NotFound, "Voice channel settings aren't available.");
+    }
+    return this.voicePicker;
   }
 
   getRoom(userId: string): Promise<RoomSnapshot> {

@@ -1,14 +1,12 @@
 import { GAME, type MyStatusDto } from "@studyroom/core";
 import { percent } from "../lib/view";
-import { GoalList } from "./GoalList";
+import { GoalList, type GoalActions } from "./GoalList";
 
 interface SessionPanelProps {
   me: MyStatusDto;
   xpEnabled: boolean;
   busy: boolean;
-  onToggleGoal(goalId: string, done: boolean): void;
-  onDeleteGoal(goalId: string): void;
-  onAddGoal(text: string): Promise<boolean>;
+  goalActions: GoalActions;
 }
 
 export function XpBar({
@@ -39,25 +37,12 @@ export function XpBar({
   );
 }
 
-export function SessionPanel({
-  me,
-  xpEnabled,
-  busy,
-  onToggleGoal,
-  onDeleteGoal,
-  onAddGoal,
-}: SessionPanelProps) {
+export function SessionPanel({ me, xpEnabled, busy, goalActions }: SessionPanelProps) {
   return (
     <section aria-label="Your session" className="card" style={{ gap: 14 }}>
       {xpEnabled && <XpBar me={me} />}
       <h2 style={{ fontSize: 17 }}>Your goals this session</h2>
-      <GoalList
-        goals={me.goals}
-        busy={busy}
-        onToggle={onToggleGoal}
-        onDelete={onDeleteGoal}
-        onAdd={onAddGoal}
-      />
+      <GoalList goals={me.goals} busy={busy} actions={goalActions} />
       {xpEnabled && <div className="tiny dim">+{GAME.xpPerGoal} XP for each goal you finish</div>}
     </section>
   );

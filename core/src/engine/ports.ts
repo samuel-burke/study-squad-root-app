@@ -30,6 +30,8 @@ export interface GoalRecord {
   xpAwarded: boolean;
   createdAt: number;
   completedAt: number | null;
+  /** Where the goal sits in its owner's list, lowest first. Starts as createdAt. */
+  sortKey: number;
 }
 
 export interface SoloRecord {
@@ -169,9 +171,9 @@ export interface Store {
   };
   goals: {
     get(id: string): Promise<GoalRecord | undefined>;
-    /** Open goals plus goals finished at or after `doneSince`, oldest first. */
+    /** Open goals plus goals finished at or after `doneSince`, in list order. */
     listForUser(userId: string, doneSince: number): Promise<GoalRecord[]>;
-    /** Oldest open goal per user. */
+    /** Each user's top open goal, by list order. */
     firstOpen(userIds: readonly string[]): Promise<Map<string, GoalRecord>>;
     countOpen(userId: string): Promise<number>;
     insert(goal: GoalRecord): Promise<void>;

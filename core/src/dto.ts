@@ -62,7 +62,6 @@ export interface RoomFeaturesDto {
   bossEnabled: boolean;
   streakFreezesEnabled: boolean;
   goalsPublicByDefault: boolean;
-  dailyXpCap: number;
   postChannelName: string;
   /** How the voice channel setting resolved, in words for admins. "" = not set. */
   voiceChannelStatus: string;
@@ -78,6 +77,24 @@ export interface VoiceDto {
   joinUrl: string;
   /** Members in that channel right now. */
   userIds: string[];
+}
+
+/** A community voice channel admins can pick in the app. */
+export interface VoiceChannelOptionDto {
+  id: string;
+  name: string;
+}
+
+/** The voice channels admins can pick from, and the current pick. */
+export interface VoiceChannelChoiceDto {
+  /** The caller may change the pick (they can manage apps in this community). */
+  canEdit: boolean;
+  /** The picked channel id, or "" when none is picked in the app. */
+  selectedId: string;
+  /** Voice channels only, in sidebar order. */
+  channels: VoiceChannelOptionDto[];
+  /** How the voice channel resolved, in words for admins. "" = not set. */
+  status: string;
 }
 
 export interface RoomStateDto {
@@ -98,6 +115,10 @@ export interface GoalDto {
   id: string;
   text: string;
   done: boolean;
+  /** When the goal was added (server time). */
+  createdAt: number;
+  /** When it was ticked off (server time), or null while open. */
+  completedAt: number | null;
 }
 
 export interface MyStatusDto {
@@ -140,6 +161,12 @@ export interface PhaseCompletedDto {
   room: RoomStateDto;
 }
 
+/**
+ * What a session did to the weekly boss: dealt damage, landed the final blow,
+ * or found it already defeated (so no damage counted).
+ */
+export type BossOutcome = "hit" | "finalBlow" | "alreadyDefeated";
+
 /** Sent only to the member it is about, after a focus block they took part in. */
 export interface PersonalResultDto {
   source: "room" | "solo";
@@ -149,13 +176,12 @@ export interface PersonalResultDto {
   baseXp: number;
   combo: number;
   xpEarned: number;
-  /** True when the daily cap trimmed this award. */
-  capped: boolean;
   streak: number;
   streakExtended: boolean;
   finisherIds: string[];
-  /** Boss damage, in XP. */
+  /** Boss damage, in XP. 0 when the boss was already defeated. */
   roomDamageXp: number;
+  bossOutcome: BossOutcome;
   goalPrompt: GoalDto | null;
   breakEndsAt: number;
   me: MyStatusDto;

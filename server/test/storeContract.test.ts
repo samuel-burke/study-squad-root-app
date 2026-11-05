@@ -28,6 +28,7 @@ const goal = (overrides: Partial<GoalRecord>): GoalRecord => ({
   xpAwarded: false,
   createdAt: 100,
   completedAt: null,
+  sortKey: overrides.createdAt ?? 100,
   ...overrides,
 });
 
@@ -104,6 +105,14 @@ describe.each(implementations)("%s", (_name, open) => {
     expect(first.get("ana")?.id).toBe("g1");
     expect(first.get("kai")?.id).toBe("other");
     expect(first.has("nobody")).toBe(false);
+  });
+
+  it("lists goals by sort key, so members can reorder them", async () => {
+    await store.goals.insert(goal({ id: "a", createdAt: 100, sortKey: 300 }));
+    await store.goals.insert(goal({ id: "b", createdAt: 200, sortKey: 100 }));
+    await store.goals.insert(goal({ id: "c", createdAt: 300, sortKey: 200 }));
+    expect((await store.goals.listForUser("ana", 0)).map((g) => g.id)).toEqual(["b", "c", "a"]);
+    expect((await store.goals.firstOpen(["ana"])).get("ana")?.id).toBe("b");
   });
 
   it("updates and deletes goals", async () => {

@@ -60,6 +60,7 @@ const toGoal = (r: Row): GoalRecord => ({
   xpAwarded: bool(r.xp_awarded),
   createdAt: num(r.created_at),
   completedAt: numOrNull(r.completed_at),
+  sortKey: num(r.sort_key),
 });
 
 const toSolo = (r: Row): SoloRecord => ({
@@ -208,17 +209,20 @@ export class KnexStore implements Store {
         await this.db("goals")
           .where({ user_id: userId })
           .andWhere((q) => q.where({ done: false }).orWhere("completed_at", ">=", doneSince))
-          .orderBy("created_at", "asc")
+          .orderBy([
+            { column: "sort_key", order: "asc" },
+            { column: "created_at", order: "asc" },
+          ])
       ).map(toGoal),
     firstOpen: async (userIds: readonly string[]) => {
       const rows = await inChunks(userIds, (chunk) =>
-        this.db("goals")
-          .whereIn("user_id", chunk)
-          .andWhere({ done: false })
-          .orderBy("created_at", "asc"),
+        this.db("goals").whereIn("user_id", chunk).andWhere({ done: false }),
       );
       const result = new Map<string, GoalRecord>();
-      for (const goal of rows.map(toGoal).sort((a, b) => a.createdAt - b.createdAt)) {
+      const ordered = rows
+        .map(toGoal)
+        .sort((a, b) => a.sortKey - b.sortKey || a.createdAt - b.createdAt);
+      for (const goal of ordered) {
         if (!result.has(goal.userId)) result.set(goal.userId, goal);
       }
       return result;
@@ -249,6 +253,7 @@ export class KnexStore implements Store {
       done: g.done,
       xp_awarded: g.xpAwarded,
       created_at: g.createdAt,
+      sort_key: g.sortKey,
       completed_at: g.completedAt,
     };
   }

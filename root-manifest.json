@@ -1,6 +1,6 @@
 {
   "id": "ADIjs4fHiQmWa4Qi7Kaa4w",
-  "version": "0.3.7",
+  "version": "0.3.8",
   "package": {
     "client": {
       "deploy": "client/dist"
@@ -95,7 +95,7 @@
           {
             "key": "voiceChannelName",
             "title": "Voice channel name",
-            "description": "Type the name of a voice channel to show a Join voice button and a headphones icon on members in it. Case, spaces, dashes and emoji don't matter. Room settings in the app shows whether it was found. Leave blank to hide them.",
+            "description": "Easier: pick the voice channel in the app's own Room settings. Or type its name here to show a Join voice button and a headphones icon on members in it. Case, spaces, dashes and emoji don't matter. A channel picked in the app wins over this name.",
             "text": {
               "defaultValue": "",
               "regex": "^.{0,100}$"
@@ -254,44 +254,9 @@
           {
             "key": "squadBot",
             "title": "Squad bot",
-            "description": "Post a fun message in the updates channel when the room timer starts, switches between study and break, or finishes, when someone joins, and when someone unlocks a badge. Names the people in the room.",
+            "description": "Post a fun message in the bot messages channel when the room timer starts, switches between study and break, or finishes, when someone joins, and when someone unlocks a badge. Names the people in the room.",
             "checkbox": {
               "defaultValue": true
-            }
-          },
-          {
-            "key": "squadPersonalities",
-            "title": "Squad bot personalities",
-            "description": "Which voices the squad bot uses. It picks a random line from the ones you choose. Choose none to use them all.",
-            "select": {
-              "multiSelect": true,
-              "values": ["hype", "drill", "chill", "meme", "gamer", "chaos"],
-              "options": [
-                {
-                  "key": "hype",
-                  "value": "Hype Squad: energetic and encouraging"
-                },
-                {
-                  "key": "drill",
-                  "value": "Drill Sergeant: commanding and competitive"
-                },
-                {
-                  "key": "chill",
-                  "value": "Chill Friend: relaxed and supportive"
-                },
-                {
-                  "key": "meme",
-                  "value": "Meme Lord: sarcastic internet humor"
-                },
-                {
-                  "key": "gamer",
-                  "value": "Gamer Mode: XP, quests and achievements"
-                },
-                {
-                  "key": "chaos",
-                  "value": "Chaos Mode: random and unexpected"
-                }
-              ]
             }
           }
         ]
@@ -309,17 +274,6 @@
             }
           },
           {
-            "key": "dailyXpCap",
-            "title": "Daily XP cap",
-            "description": "Most XP one person can earn a day, 50 to 2,000. So nobody burns out chasing XP.",
-            "number": {
-              "minValue": 50,
-              "maxValue": 2000,
-              "step": 10,
-              "defaultValue": 300
-            }
-          },
-          {
             "key": "comboEnabled",
             "title": "Combo multiplier",
             "description": "More people on the room timer means more XP for all.",
@@ -333,15 +287,6 @@
             "description": "A community goal with an HP bar. Every XP members earn deals damage, live each minute they focus, and everyone who pitched in gets bonus XP when it falls. A new boss spawns every Monday.",
             "checkbox": {
               "defaultValue": true
-            }
-          },
-          {
-            "key": "bossName",
-            "title": "Boss name",
-            "description": "Shown on the boss card and in posts. Leave blank to get a new random funny name each week.",
-            "text": {
-              "defaultValue": "",
-              "regex": "^.{0,40}$"
             }
           },
           {

@@ -1,5 +1,6 @@
 import type {
   BossDto,
+  BossOutcome as BossOutcomeDto,
   CardLookDto,
   GoalDto,
   LeaderboardDto,
@@ -21,8 +22,10 @@ import type {
   RoomStateDto,
   SnapshotDto,
   TimerPreset as TimerPresetDto,
+  VoiceChannelChoiceDto,
 } from "@studyroom/core";
 import {
+  BossOutcome,
   LeaderboardMetric,
   LeaderboardPeriod,
   MemberStatus,
@@ -44,6 +47,7 @@ import {
   type RoomSnapshot,
   type RoomState,
   type TimerPreset,
+  type VoiceChannelChoice,
 } from "@studyroom/gen-shared";
 
 /**
@@ -60,6 +64,19 @@ const PHASE_TO_PROTO: Record<RoomPhase, Phase> = {
   break: Phase.BREAK,
   longBreak: Phase.LONG_BREAK,
 };
+
+const BOSS_OUTCOME_TO_PROTO: Record<BossOutcomeDto, BossOutcome> = {
+  hit: BossOutcome.HIT,
+  finalBlow: BossOutcome.FINAL_BLOW,
+  alreadyDefeated: BossOutcome.ALREADY_DEFEATED,
+};
+
+/** Unspecified (an older server) reads as a hit, which is how it behaved before. */
+function bossOutcomeFromProto(outcome: BossOutcome): BossOutcomeDto {
+  if (outcome === BossOutcome.FINAL_BLOW) return "finalBlow";
+  if (outcome === BossOutcome.ALREADY_DEFEATED) return "alreadyDefeated";
+  return "hit";
+}
 
 const STATUS_TO_PROTO: Record<MyStatusKind, MemberStatus> = {
   idle: MemberStatus.IDLE,
@@ -150,7 +167,13 @@ const presetToProto = (p: TimerPresetDto): TimerPreset => ({
   rounds: p.rounds,
 });
 
-const goalToProto = (g: GoalDto): Goal => ({ id: g.id, text: g.text, done: g.done });
+const goalToProto = (g: GoalDto): Goal => ({
+  id: g.id,
+  text: g.text,
+  done: g.done,
+  createdAtMs: g.createdAt,
+  completedAtMs: g.completedAt ?? 0,
+});
 
 const bossToProto = (b: BossDto): Boss => ({
   enabled: b.enabled,
@@ -199,7 +222,6 @@ export function roomToProto(room: RoomStateDto): RoomState {
       bossEnabled: room.features.bossEnabled,
       streakFreezesEnabled: room.features.streakFreezesEnabled,
       goalsPublicByDefault: room.features.goalsPublicByDefault,
-      dailyXpCap: room.features.dailyXpCap,
       postChannelName: room.features.postChannelName,
       voiceChannelStatus: room.features.voiceChannelStatus,
       feedbackEnabled: room.features.feedbackEnabled,
@@ -317,11 +339,11 @@ export function personalResultToProto(event: PersonalResultDto): PersonalResultE
     baseXp: event.baseXp,
     combo: event.combo,
     xpEarned: event.xpEarned,
-    capped: event.capped,
     streak: event.streak,
     streakExtended: event.streakExtended,
     finisherUserIds: event.finisherIds,
     roomDamageXp: event.roomDamageXp,
+    bossOutcome: BOSS_OUTCOME_TO_PROTO[event.bossOutcome],
     ...(event.goalPrompt ? { goalPrompt: goalToProto(event.goalPrompt) } : {}),
     breakEndsAtMs: event.breakEndsAt,
     me: myStatusToProto(event.me),
@@ -347,7 +369,13 @@ const presetFromProto = (p: TimerPreset | undefined): TimerPresetDto =>
       }
     : EMPTY_PRESET;
 
-const goalFromProto = (g: Goal): GoalDto => ({ id: g.id, text: g.text, done: g.done });
+const goalFromProto = (g: Goal): GoalDto => ({
+  id: g.id,
+  text: g.text,
+  done: g.done,
+  createdAt: g.createdAtMs,
+  completedAt: g.completedAtMs > 0 ? g.completedAtMs : null,
+});
 
 const bossFromProto = (b: Boss | undefined): BossDto => ({
   enabled: b?.enabled ?? false,
@@ -398,7 +426,6 @@ export function roomFromProto(room: RoomState | undefined): RoomStateDto {
       bossEnabled: features?.bossEnabled ?? false,
       streakFreezesEnabled: features?.streakFreezesEnabled ?? true,
       goalsPublicByDefault: features?.goalsPublicByDefault ?? true,
-      dailyXpCap: features?.dailyXpCap ?? 0,
       postChannelName: features?.postChannelName ?? "",
       voiceChannelStatus: features?.voiceChannelStatus ?? "",
       feedbackEnabled: features?.feedbackEnabled ?? false,
@@ -518,13 +545,33 @@ export function personalResultFromProto(event: PersonalResultEvent): PersonalRes
     baseXp: event.baseXp,
     combo: event.combo,
     xpEarned: event.xpEarned,
-    capped: event.capped,
     streak: event.streak,
     streakExtended: event.streakExtended,
     finisherIds: event.finisherUserIds,
     roomDamageXp: event.roomDamageXp,
+    bossOutcome: bossOutcomeFromProto(event.bossOutcome),
     goalPrompt: event.goalPrompt ? goalFromProto(event.goalPrompt) : null,
     breakEndsAt: event.breakEndsAtMs,
     me: myStatusFromProto(event.me),
+  };
+}
+
+// ---------------------------------------------------------------- voice channel picker
+
+export function voiceChannelChoiceToProto(choice: VoiceChannelChoiceDto): VoiceChannelChoice {
+  return {
+    canEdit: choice.canEdit,
+    selectedId: choice.selectedId,
+    channels: choice.channels.map((c) => ({ id: c.id, name: c.name })),
+    status: choice.status,
+  };
+}
+
+export function voiceChannelChoiceFromProto(choice: VoiceChannelChoice): VoiceChannelChoiceDto {
+  return {
+    canEdit: choice.canEdit ?? false,
+    selectedId: choice.selectedId ?? "",
+    channels: (choice.channels ?? []).map((c) => ({ id: c.id, name: c.name })),
+    status: choice.status ?? "",
   };
 }

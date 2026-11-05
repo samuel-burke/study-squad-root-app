@@ -3,7 +3,6 @@ import {
   MOVIE_LINES,
   RARE_LINES,
   SQUAD_LINES,
-  type Personality,
   type SquadEvent,
 } from "./squadLines";
 
@@ -33,20 +32,18 @@ function fill(text: string, context: SquadLineContext): string {
 }
 
 /**
- * Picks what the bot says for `event`: a random line from the enabled
- * personalities or the movie lines, every line equally likely. Never the same
+ * Picks what the bot says for `event`: a random line from any personality
+ * or the movie lines, every line equally likely. Never the same
  * line twice in a row for an event, and never the last timer movie line again.
  * `random` returns [0, 1) like Math.random.
  */
 export function pickSquadLine(
   event: SquadEvent,
-  personalities: readonly Personality[],
   last: LastSquadLines,
   random: () => number,
   context: SquadLineContext,
 ): PickedLine & { rare: boolean } {
-  const voices = personalities.length > 0 ? personalities : ALL_PERSONALITIES;
-  const pool = voices.flatMap((p) =>
+  const pool = ALL_PERSONALITIES.flatMap((p) =>
     SQUAD_LINES[event][p].map((text, i) => ({ id: `${event}.${p}.${i}`, text, rare: false })),
   );
   (MOVIE_LINES[event] ?? []).forEach((text, i) =>

@@ -12,9 +12,8 @@ Run `npm run demo` and add these to the printed URL. They only exist in the demo
 | `bots`           | `bots=0`                        | Leaves out the simulated members.                                                                                                                                                |
 | `elapsed`        | `elapsed=10`                    | How far into round 1 the room is when the page opens.                                                                                                                            |
 | `bossLeft`       | `bossLeft=2`                    | HP the weekly boss has left, in XP. Any finished round of 1 minute or more then defeats it.                                                                                      |
-| `bossName`       | `bossName=The Final Final Exam` | Stands in for the Boss name setting. Built-in names keep their strength; other names get one from keywords.                                                                      |
+| `bossName`       | `bossName=The Final Final Exam` | Makes this week's boss the built-in boss with that name, for its strength and badges. Names not in the built-in list are ignored.                                                |
 | `bossHp`         | `bossHp=100`                    | Stands in for the Boss base HP setting.                                                                                                                                          |
-| `cap`            | `cap=1000`                      | Stands in for the Daily XP cap setting.                                                                                                                                          |
 | `streak`         | `streak=6`                      | Your starting streak. With yesterday active, one finished session makes it 7.                                                                                                    |
 | `missed`         | `missed=1`                      | Days missed since you were last active. 1 is covered by the week's freeze; 3 always breaks the streak.                                                                           |
 | `xp`             | `xp=2440`                       | Your starting lifetime XP, for level-ups, Jackpot (any total ending in 777) and Over 9000.                                                                                       |
@@ -33,8 +32,8 @@ Useful combinations:
 
 ## In a Root test community
 
-- **Boss base HP** has a "100 XP (for testing)" option. With Boss name `Snack Break Goblin` (0.5x) the boss has 50 HP, so one 25 minute solo timer defeats it. Set it back before the community uses the app for real.
-- Changing **Boss name** or **Boss base HP** re-sizes this week's boss at once. Damage is never healed, and dropping HP below the damage dealt defeats the boss immediately.
+- **Boss base HP** goes down to 100 XP. This week's boss is 0.5x to 2x that, so a 25 minute solo timer or two defeats it. Set it back before the community uses the app for real.
+- Changing **Boss base HP** re-sizes this week's boss at once. Damage is never healed, and dropping HP below the damage dealt defeats the boss immediately.
 - **Time zone** decides which day a session counts for. Switching from Pacific/Honolulu to Pacific/Auckland moves "today" one day ahead, which tests streaks without waiting. Switching back is ignored, so nothing is lost.
 - The shortest room timer is Custom 15 / 3, a 78 minute cycle.
 
@@ -42,10 +41,10 @@ Useful combinations:
 
 `npm run test:e2e` runs `client/e2e/game.spec.ts` against the demo build with a fake clock, so cycles and days pass in seconds. It covers:
 
-- XP: focus XP times the combo, goal XP, the daily cap (boss damage keeps counting), and landing on a total ending in 777
+- XP: focus XP times the combo, goal XP, and landing on a total ending in 777
 - Badges: Study Group, Speedrun, Marathon, Full Cycle, Unstoppable, Jackpot, the boss badges, the streak badges, and one unlock animation per tier in order
 - "Keep going?": hidden during focus, shown in the long break, a tap carries you into the next cycle, no tap releases you with your XP, and solo timers never ask
-- The boss: strength and HP for custom names, a defeat with loot and badges, and The Final Final Exam
+- The boss: strength and HP for built-in names, a defeat with loot and badges, and The Final Final Exam
 - Streaks: extending across a real day change, the freeze, and a broken streak with Comeback and Phoenix
 
 Still manual, in a Root test community:

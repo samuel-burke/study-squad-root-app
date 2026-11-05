@@ -251,6 +251,22 @@ const migrations: Migration[] = [
       await db.schema.dropTableIfExists("feedback");
     },
   },
+  {
+    // Members can drag their goals into any order. Existing goals keep the
+    // order they had, oldest first.
+    name: "010_goal_order",
+    async up(db) {
+      await db.schema.alterTable("goals", (t) => {
+        t.bigInteger("sort_key").notNullable().defaultTo(0);
+      });
+      await db("goals").update({ sort_key: db.ref("created_at") });
+    },
+    async down(db) {
+      await db.schema.alterTable("goals", (t) => {
+        t.dropColumn("sort_key");
+      });
+    },
+  },
 ];
 
 class CodeMigrationSource implements Knex.MigrationSource<Migration> {

@@ -156,7 +156,7 @@ export function BadgeUnlocked({
 
   return (
     <div
-      className="unlock"
+      className="unlock theme-dark"
       data-tier={tier}
       role="dialog"
       aria-modal="true"

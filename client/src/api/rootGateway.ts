@@ -10,6 +10,7 @@ import {
   progressFromProto,
   roomFromProto,
   snapshotFromProto,
+  voiceChannelChoiceFromProto,
 } from "@studyroom/contract";
 import {
   ClockSync,
@@ -93,6 +94,18 @@ export class RootGateway implements StudyRoomGateway {
     return myStatusFromProto(await call(() => client.deleteGoal({ goalId })));
   }
 
+  async editGoal(goalId: string, text: string) {
+    return myStatusFromProto(await call(() => client.editGoal({ goalId, text })));
+  }
+
+  async clearDoneGoals() {
+    return myStatusFromProto(await call(() => client.clearDoneGoals({})));
+  }
+
+  async reorderGoals(goalIds: string[]) {
+    return myStatusFromProto(await call(() => client.reorderGoals({ goalIds })));
+  }
+
   async setGoalsPrivate(goalsPrivate: boolean) {
     return myStatusFromProto(await call(() => client.setGoalsPrivate({ goalsPrivate })));
   }
@@ -150,6 +163,14 @@ export class RootGateway implements StudyRoomGateway {
 
   async getMemberProfile(userId: string) {
     return memberProfileFromProto(await call(() => client.getMemberProfile({ userId })));
+  }
+
+  async getVoiceChannels() {
+    return voiceChannelChoiceFromProto(await call(() => client.getVoiceChannels({})));
+  }
+
+  async setVoiceChannel(channelId: string) {
+    return voiceChannelChoiceFromProto(await call(() => client.setVoiceChannel({ channelId })));
   }
 
   async getProfiles(userIds: string[]): Promise<Profile[]> {

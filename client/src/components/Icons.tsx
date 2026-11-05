@@ -102,6 +102,30 @@ export const CloseIcon = (p: IconProps) => (
   </Svg>
 );
 
+export const PencilIcon = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16v4z" />
+    <path d="M13.5 6.5l4 4" />
+  </Svg>
+);
+
+export const GripIcon = (p: IconProps) => (
+  <Svg {...p} fill="currentColor" stroke="none">
+    <circle cx="9" cy="6" r="1.6" />
+    <circle cx="15" cy="6" r="1.6" />
+    <circle cx="9" cy="12" r="1.6" />
+    <circle cx="15" cy="12" r="1.6" />
+    <circle cx="9" cy="18" r="1.6" />
+    <circle cx="15" cy="18" r="1.6" />
+  </Svg>
+);
+
+export const ChevronIcon = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M9 6l6 6-6 6" />
+  </Svg>
+);
+
 export const ChartIcon = (p: IconProps) => (
   <Svg {...p}>
     <path d="M4 20V10M10 20V4M16 20v-7M22 20H2" />

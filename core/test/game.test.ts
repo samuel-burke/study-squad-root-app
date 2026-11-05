@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import {
-  applyDailyCap,
   applyDamage,
   BOSSES,
   bossLootXp,
@@ -45,14 +44,6 @@ describe("XP", () => {
     expect(baseFocusXp(4.99)).toBe(8);
   });
 
-  it("applies the daily cap without going negative", () => {
-    expect(applyDailyCap(75, 0, 300)).toBe(75);
-    expect(applyDailyCap(75, 260, 300)).toBe(40);
-    expect(applyDailyCap(75, 300, 300)).toBe(0);
-    expect(applyDailyCap(75, 350, 300)).toBe(0);
-    expect(applyDailyCap(-5, 0, 300)).toBe(0);
-  });
-
   it("needs 500 XP at level 7, like the design", () => {
     expect(xpForLevel(7)).toBe(500);
   });
@@ -68,13 +59,13 @@ describe("XP", () => {
 });
 
 describe("boss", () => {
-  // "Calc II" has no keyword, so it's a 1x boss and HP is the base.
-  const boss = newBoss("2026-10-26", "Calc II", 6000);
+  // Doomscroll Golem is a 1x boss, so HP is the base.
+  const boss = newBoss("2026-10-26", "Doomscroll Golem", 6000);
 
   it("starts with the base HP times its strength", () => {
     expect(boss.maxHpXp).toBe(6000);
     expect(bossHpLeft(boss)).toBe(6000);
-    expect(newBoss("w", "Midterms", 6000).maxHpXp).toBe(9000);
+    expect(newBoss("w", "The Midterm Minotaur", 6000).maxHpXp).toBe(9000);
     expect(newBoss("w", "The Final Final Exam", 6000).maxHpXp).toBe(12_000);
   });
 
@@ -87,7 +78,7 @@ describe("boss", () => {
   });
 
   it("is defeated exactly once and never overkilled", () => {
-    const small = newBoss("w", "Calc II", 60);
+    const small = newBoss("w", "Doomscroll Golem", 60);
     const hit = applyDamage(small, 90, ["a"], 5);
     expect(hit.defeatedNow).toBe(true);
     expect(hit.boss.damageXp).toBe(60);
@@ -105,8 +96,8 @@ describe("boss", () => {
   describe("reconfigureBoss", () => {
     it("renames and resizes without healing", () => {
       const hurt = applyDamage(boss, 600, ["a"], 1).boss;
-      const result = reconfigureBoss(hurt, "Finals", 1500, 2);
-      expect(result.boss.name).toBe("Finals");
+      const result = reconfigureBoss(hurt, "The Final Final Exam", 1500, 2);
+      expect(result.boss.name).toBe("The Final Final Exam");
       expect(result.boss.maxHpXp).toBe(3000);
       expect(result.boss.damageXp).toBe(600);
       expect(result.defeatedNow).toBe(false);
@@ -114,14 +105,14 @@ describe("boss", () => {
 
     it("defeats the boss when HP drops below damage dealt", () => {
       const hurt = applyDamage(boss, 600, ["a"], 1).boss;
-      const result = reconfigureBoss(hurt, "Midterms", 200, 2);
+      const result = reconfigureBoss(hurt, "The Midterm Minotaur", 200, 2);
       expect(result.defeatedNow).toBe(true);
       expect(result.boss.damageXp).toBe(300);
     });
 
     it("keeps a defeated boss defeated", () => {
-      const dead = applyDamage(newBoss("w", "Calc II", 60), 60, ["a"], 1).boss;
-      const result = reconfigureBoss(dead, "Calc III", 100, 2);
+      const dead = applyDamage(newBoss("w", "Doomscroll Golem", 60), 60, ["a"], 1).boss;
+      const result = reconfigureBoss(dead, "Captain Cram", 100, 2);
       expect(result.boss.defeatedAt).toBe(1);
       expect(result.boss.maxHpXp).toBe(60);
       expect(result.defeatedNow).toBe(false);
@@ -135,14 +126,11 @@ describe("bossStrength", () => {
     expect(bossStrength("The Midterm Minotaur")).toBe(1.5);
     expect(bossStrength("Professor Pop Quiz")).toBe(0.75);
     expect(bossStrength("Snack Break Goblin")).toBe(0.5);
-    expect(bossStrength("Finals")).toBeGreaterThan(bossStrength("Midterms"));
-    expect(bossStrength("Midterms")).toBeGreaterThan(bossStrength("Pop quiz"));
-    expect(bossStrength("Calc II")).toBe(1);
   });
 
-  it("matches whole words only", () => {
-    expect(bossStrength("Finalsville")).toBe(1);
-    expect(bossStrength("Quizzes")).toBe(0.75);
+  it("treats a name not on the list, like an old custom name, as 1x", () => {
+    expect(bossStrength("Finals")).toBe(1);
+    expect(bossStrength("Calc II")).toBe(1);
   });
 
   it("averages exactly 1x across the built-in list", () => {
@@ -176,11 +164,6 @@ describe("whole XP", () => {
     for (const m of minutes) isWhole(baseFocusXp(m));
   });
 
-  it("rounds the daily cap remainder", () => {
-    isWhole(applyDailyCap(77, 0, 300));
-    isWhole(applyDailyCap(77, 250.5, 300));
-  });
-
   it("rounds every boss's HP and loot for any base HP", () => {
     for (const { name } of BOSSES) {
       for (const base of [100, 333, 1000, 2501, 10_000, 99_999]) {
@@ -199,22 +182,18 @@ describe("whole XP", () => {
 });
 
 describe("bossNameFor", () => {
-  it("keeps the admin's custom name", () => {
-    expect(bossNameFor("2026-10-26", "Calc II")).toBe("Calc II");
-  });
-
   it("gives every week a built-in name and moves to the next one each Monday", () => {
     const names = BOSSES.map((b) => b.name);
-    const first = names.indexOf(bossNameFor("2026-10-26", ""));
+    const first = names.indexOf(bossNameFor("2026-10-26"));
     expect(first).toBeGreaterThanOrEqual(0);
-    expect(bossNameFor("2026-11-02", "")).toBe(names[(first + 1) % names.length]);
+    expect(bossNameFor("2026-11-02")).toBe(names[(first + 1) % names.length]);
   });
 
   it("does not repeat a name until the list runs out", () => {
     const names = new Set<string>();
     for (let week = 0; week < BOSSES.length; week++) {
       const monday = new Date(Date.UTC(2026, 9, 26) + week * 7 * 86_400_000);
-      names.add(bossNameFor(monday.toISOString().slice(0, 10), ""));
+      names.add(bossNameFor(monday.toISOString().slice(0, 10)));
     }
     expect(names.size).toBe(BOSSES.length);
   });

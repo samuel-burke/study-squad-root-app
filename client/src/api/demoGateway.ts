@@ -1,11 +1,13 @@
 import {
   addDays,
   BADGES,
+  BOSSES,
   badgeById,
   bossNameFor,
   customPreset,
   dayKey,
   DEFAULT_CONFIG,
+  ErrorCode,
   newBoss,
   squadPost,
   weekKey,
@@ -19,10 +21,11 @@ import {
   type PhaseCompletedDto,
   type RecapDto,
   type RoomStateDto,
+  type VoiceChannelChoiceDto,
   type WakeScheduler,
 } from "@studyroom/core";
 import type { GatewayHandlers, Profile, StartRequest, StudyRoomGateway } from "./gateway";
-import { toGatewayError } from "./gateway";
+import { GatewayError, toGatewayError } from "./gateway";
 
 const MINUTE = 60_000;
 export const DEMO_USER_ID = "demo-you";
@@ -37,12 +40,10 @@ export interface DemoOptions {
   // Test knobs. Each one is left out unless its URL parameter is given.
   /** HP the weekly boss has left, in XP. */
   bossHpLeft?: number;
-  /** Stands in for the admin's "Boss name" setting. */
+  /** Makes this week's boss the built-in boss with this name, for its strength and badges. */
   bossName?: string;
   /** Stands in for the admin's "Boss base HP" setting. */
   bossBaseHp?: number;
-  /** Stands in for the admin's "Daily XP cap" setting. */
-  dailyCap?: number;
   /** Your starting streak and XP. */
   streak?: number;
   xp?: number;
@@ -153,7 +154,7 @@ function onePerTier(): string[] {
 
 /**
  * Reads demo knobs from the URL, e.g. `?focus=0.2&break=0.1&bots=0`. Test
- * knobs (`bossLeft`, `bossName`, `bossHp`, `cap`, `streak`, `xp`, `missed`,
+ * knobs (`bossLeft`, `bossName`, `bossHp`, `streak`, `xp`, `missed`,
  * `unlock`, `badges`, `weekHours`) set up states that take days or hours to reach for real. See
  * docs/TESTING.md.
  */
@@ -172,7 +173,7 @@ export function demoOptionsFromSearch(search: string): DemoOptions {
     const value = number(key);
     return value !== undefined && value >= 0 ? Math.min(max, Math.round(value)) : undefined;
   };
-  const bossName = params.get("bossName")?.trim().slice(0, 40);
+  const bossName = params.get("bossName")?.trim();
   const unlock = params.get("unlock");
   const options: DemoOptions = {
     focusMinutes: positive("focus"),
@@ -182,11 +183,9 @@ export function demoOptionsFromSearch(search: string): DemoOptions {
   };
   const bossHpLeft = whole("bossLeft", 1_000_000);
   if (bossHpLeft !== undefined && bossHpLeft > 0) options.bossHpLeft = bossHpLeft;
-  if (bossName) options.bossName = bossName;
+  if (bossName && BOSSES.some((b) => b.name === bossName)) options.bossName = bossName;
   const bossBaseHp = whole("bossHp", 1_000_000);
   if (bossBaseHp !== undefined && bossBaseHp > 0) options.bossBaseHp = bossBaseHp;
-  const dailyCap = whole("cap", 100_000);
-  if (dailyCap !== undefined && dailyCap > 0) options.dailyCap = dailyCap;
   const streak = whole("streak", 1000);
   if (streak !== undefined) options.streak = streak;
   const xp = whole("xp", 10_000_000);
@@ -233,12 +232,7 @@ function demoConfig(options: DemoOptions): AppConfig {
     ...DEFAULT_CONFIG,
     presetKey: custom ? "custom" : DEFAULT_CONFIG.presetKey,
     preset,
-    xp: { ...DEFAULT_CONFIG.xp, dailyCap: options.dailyCap ?? DEFAULT_CONFIG.xp.dailyCap },
-    boss: {
-      ...DEFAULT_CONFIG.boss,
-      name: options.bossName ?? DEFAULT_CONFIG.boss.name,
-      baseHpXp: options.bossBaseHp ?? DEFAULT_CONFIG.boss.baseHpXp,
-    },
+    boss: { ...DEFAULT_CONFIG.boss, baseHpXp: options.bossBaseHp ?? DEFAULT_CONFIG.boss.baseHpXp },
     timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
     postChannelId: "demo-channel",
     postChannelName: "study-hall",
@@ -248,6 +242,13 @@ function demoConfig(options: DemoOptions): AppConfig {
     voiceChannelStatus: "#Study voice",
   };
 }
+
+/** Voice channels the demo community "has", for the Room settings dropdown. */
+const DEMO_VOICE_CHANNELS = [
+  { id: "demo-voice", name: "Study voice" },
+  { id: "demo-voice-2", name: "Quiet library" },
+];
+const VOICE_PICK_KEY = "voiceChannelPick";
 
 /**
  * Runs the real StudyRoomEngine in the browser on an in-memory store, with a
@@ -372,7 +373,7 @@ export class DemoGateway implements StudyRoomGateway {
       if (minutes > 0)
         await this.store.stats.add(DEMO_USER_ID, addDays(today, -back), {
           focusMinutes: minutes,
-          xp: Math.min(this.config.xp.dailyCap, minutes * 2),
+          xp: minutes * 2,
         });
     }
     await this.seedWeekHours(today);
@@ -384,10 +385,7 @@ export class DemoGateway implements StudyRoomGateway {
         const day = addDays(weekKey(today), -back);
         if ((i * 7 + back * 3) % 5 >= 2) continue;
         const focusMinutes = 20 + ((i * 31 + back * 17) % 110);
-        await this.store.stats.add(bot.userId, day, {
-          focusMinutes,
-          xp: Math.min(this.config.xp.dailyCap, focusMinutes * 2),
-        });
+        await this.store.stats.add(bot.userId, day, { focusMinutes, xp: focusMinutes * 2 });
       }
     }
     // Earlier days this week, so the weekly leaderboard has standings to show.
@@ -398,7 +396,7 @@ export class DemoGateway implements StudyRoomGateway {
         const goalXp = ((i * 5 + Number(day.slice(-2))) % 3) * 25;
         await this.store.stats.add(bot.userId, day, {
           focusMinutes,
-          xp: Math.min(this.config.xp.dailyCap, focusMinutes * 2 + goalXp),
+          xp: focusMinutes * 2 + goalXp,
         });
       }
     }
@@ -424,7 +422,8 @@ export class DemoGateway implements StudyRoomGateway {
   /** This week's boss, part way down. Without bots it starts fresh unless `?bossLeft=` says otherwise. */
   private async seedBoss() {
     const week = weekKey(dayKey(Date.now(), this.config.timeZone));
-    const boss = newBoss(week, bossNameFor(week, this.config.boss.name), this.config.boss.baseHpXp);
+    const name = this.options.bossName ?? bossNameFor(week);
+    const boss = newBoss(week, name, this.config.boss.baseHpXp);
     const left = this.options.bossHpLeft;
     const damageXp =
       left !== undefined
@@ -432,7 +431,7 @@ export class DemoGateway implements StudyRoomGateway {
         : this.options.bots
           ? Math.round(boss.maxHpXp * BOSS_DAMAGE_SHARE)
           : 0;
-    if (damageXp > 0) await this.store.bosses.save({ ...boss, damageXp });
+    if (damageXp > 0 || this.options.bossName) await this.store.bosses.save({ ...boss, damageXp });
   }
 
   private async startBot(bot: Bot) {
@@ -549,6 +548,18 @@ export class DemoGateway implements StudyRoomGateway {
     return this.call(() => this.engine.deleteGoal(DEMO_USER_ID, goalId));
   }
 
+  editGoal(goalId: string, text: string) {
+    return this.call(() => this.engine.editGoal(DEMO_USER_ID, goalId, text));
+  }
+
+  clearDoneGoals() {
+    return this.call(() => this.engine.clearDoneGoals(DEMO_USER_ID));
+  }
+
+  reorderGoals(goalIds: string[]) {
+    return this.call(() => this.engine.reorderGoals(DEMO_USER_ID, goalIds));
+  }
+
   setGoalsPrivate(goalsPrivate: boolean) {
     return this.call(() => this.engine.setGoalsPrivate(DEMO_USER_ID, goalsPrivate));
   }
@@ -587,6 +598,34 @@ export class DemoGateway implements StudyRoomGateway {
 
   getMemberProfile(userId: string) {
     return this.call(() => this.engine.getMemberProfile(userId));
+  }
+
+  async getVoiceChannels(): Promise<VoiceChannelChoiceDto> {
+    return {
+      canEdit: true,
+      selectedId: (await this.store.kv.get<string>(VOICE_PICK_KEY)) ?? "",
+      channels: DEMO_VOICE_CHANNELS,
+      status: this.engine.getConfig().voiceChannelStatus,
+    };
+  }
+
+  async setVoiceChannel(channelId: string): Promise<VoiceChannelChoiceDto> {
+    const picked = DEMO_VOICE_CHANNELS.find((c) => c.id === channelId);
+    if (channelId && !picked) {
+      throw new GatewayError(
+        ErrorCode.Validation,
+        "That isn't a voice channel. Pick one from the list.",
+      );
+    }
+    await this.store.kv.set(VOICE_PICK_KEY, channelId);
+    await this.engine.setConfig({
+      ...this.engine.getConfig(),
+      voiceChannelId: picked?.id ?? null,
+      voiceChannelName: picked?.name ?? "",
+      voiceChannelUrl: picked ? "https://rootapp.com" : "",
+      voiceChannelStatus: picked ? `#${picked.name}` : "",
+    });
+    return this.getVoiceChannels();
   }
 
   async getProfiles(userIds: string[]): Promise<Profile[]> {

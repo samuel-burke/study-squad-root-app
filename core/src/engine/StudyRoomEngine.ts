@@ -10,6 +10,7 @@ import type {
   MemberProfileDto,
   MyStatusDto,
   PersonalResultDto,
+  BossOutcome,
   ProgressDto,
   QuestDto,
   RecapDto,
@@ -45,7 +46,7 @@ import {
   SHOWCASE_SIZE,
 } from "../game/cosmetics";
 import { currentStreak, EMPTY_STREAK, freezeAvailable, recordActiveDay } from "../game/streak";
-import { applyDailyCap, baseFocusXp, focusXp, levelFromXp } from "../game/xp";
+import { baseFocusXp, focusXp, levelFromXp } from "../game/xp";
 import type { AppConfig } from "../settings";
 import {
   addDays,
@@ -238,7 +239,7 @@ export class StudyRoomEngine {
       this.config = config;
       if (config.boss.enabled) {
         const boss = await this.loadBoss(tx, now);
-        const name = bossNameFor(boss.weekKey, config.boss.name);
+        const name = bossNameFor(boss.weekKey);
         const result = reconfigureBoss(boss, name, config.boss.baseHpXp, now);
         await tx.bosses.save(result.boss);
         if (result.defeatedNow) await this.onBossDefeated(tx, result.boss, effects);
@@ -641,18 +642,11 @@ export class StudyRoomEngine {
         if (done && !goal.xpAwarded) {
           updated.xpAwarded = true;
           const day = dayKey(now, this.config.timeZone);
-          const xp = this.config.xp.enabled
-            ? applyDailyCap(
-                GAME.xpPerGoal,
-                (await tx.stats.get(userId, day))?.xp ?? 0,
-                this.config.xp.dailyCap,
-              )
-            : 0;
+          const xp = this.config.xp.enabled ? GAME.xpPerGoal : 0;
           const member = await this.loadMember(tx, userId);
           await tx.members.save({ ...member, xpTotal: member.xpTotal + xp });
           await tx.stats.add(userId, day, { xp, goalsDone: 1 });
-          // Goal XP hits the boss as earned, after the daily cap, so the boss
-          // can't be farmed with tiny goals.
+          // Goal XP hits the boss as earned. Each goal pays once, ever.
           await this.damageBoss(tx, effects, xp, [userId], now);
           const quests = await this.rewardQuests(tx, effects, userId, now);
           await this.awardBadges(tx, effects, userId, now, {
@@ -673,6 +667,58 @@ export class StudyRoomEngine {
     return this.run(async (tx, now, effects) => {
       await this.ownGoal(tx, userId, goalId);
       await tx.goals.delete(goalId);
+      this.touch(effects, userId);
+      return this.buildMyStatus(tx, userId, now);
+    });
+  }
+
+  /** Changes a goal's text. Done state, XP and timings stay as they are. */
+  async editGoal(userId: string, goalIdInput: unknown, textInput: unknown): Promise<MyStatusDto> {
+    const goalId = validateId(goalIdInput, "goal id");
+    const text = validateGoalText(textInput);
+    return this.run(async (tx, now, effects) => {
+      const goal = await this.ownGoal(tx, userId, goalId);
+      if (goal.text !== text) await tx.goals.update({ ...goal, text });
+      this.touch(effects, userId);
+      return this.buildMyStatus(tx, userId, now);
+    });
+  }
+
+  /**
+   * Puts the member's open goals in the given order. The top one is the goal
+   * shown on their card. Ids that aren't their open goals are ignored, and open
+   * goals the list leaves out keep their place after the ones it names, so a
+   * reorder racing an add or a tick can't lose a goal.
+   */
+  async reorderGoals(userId: string, goalIdsInput: unknown): Promise<MyStatusDto> {
+    if (!Array.isArray(goalIdsInput) || goalIdsInput.length > LIMITS.maxOpenGoals * 2) {
+      throw validationError("Expected a list of goal ids.");
+    }
+    const goalIds = goalIdsInput.map((id) => validateId(id, "goal id"));
+    return this.run(async (tx, now, effects) => {
+      const open = (await tx.goals.listForUser(userId, now + 1)).filter((g) => !g.done);
+      const byId = new Map(open.map((g) => [g.id, g]));
+      const named = [...new Set(goalIds)].flatMap((id) => byId.get(id) ?? []);
+      const rest = open.filter((g) => !named.includes(g));
+      let keys = open.map((g) => g.sortKey).sort((a, b) => a - b);
+      // Keys must be distinct for the order to hold.
+      if (new Set(keys).size !== keys.length) keys = keys.map((_, i) => keys[0]! + i);
+      for (const [i, goal] of [...named, ...rest].entries()) {
+        if (goal.sortKey !== keys[i]) await tx.goals.update({ ...goal, sortKey: keys[i]! });
+      }
+      this.touch(effects, userId);
+      return this.buildMyStatus(tx, userId, now);
+    });
+  }
+
+  /**
+   * Removes every finished goal from the member's list. XP, stats, quests and
+   * badges were credited when each goal was ticked, so nothing is lost.
+   */
+  async clearDoneGoals(userId: string): Promise<MyStatusDto> {
+    return this.run(async (tx, now, effects) => {
+      const goals = await tx.goals.listForUser(userId, 0);
+      for (const goal of goals) if (goal.done) await tx.goals.delete(goal.id);
       this.touch(effects, userId);
       return this.buildMyStatus(tx, userId, now);
     });
@@ -824,7 +870,7 @@ export class StudyRoomEngine {
 
   /**
    * Study minutes and XP count as they happen: each whole minute of a running
-   * focus block adds its minutes and base XP (under the daily cap) right away,
+   * focus block adds its minutes and base XP right away,
    * so the leaderboard, quests, levels and the board's ranks move every
    * minute. The end of the block adds the rest, including the combo bonus.
    */
@@ -859,9 +905,7 @@ export class StudyRoomEngine {
     if (newMinutes <= 0) return null;
     const { userId } = block;
     const day = dayKey(now, this.config.timeZone);
-    const xpToday = (await tx.stats.get(userId, day))?.xp ?? 0;
-    const rawXp = this.config.xp.enabled ? baseFocusXp(whole) - baseFocusXp(block.liveMinutes) : 0;
-    const xp = applyDailyCap(rawXp, xpToday, this.config.xp.dailyCap);
+    const xp = this.config.xp.enabled ? baseFocusXp(whole) - baseFocusXp(block.liveMinutes) : 0;
     if (xp > 0) {
       const member = await this.loadMember(tx, userId);
       await tx.members.save({ ...member, xpTotal: member.xpTotal + xp });
@@ -978,7 +1022,7 @@ export class StudyRoomEngine {
     if (!this.config.squadBot.enabled || !channelId || userIds.length === 0) return;
     const last = (await tx.kv.get<LastSquadLines>(SQUAD_LAST_KEY)) ?? {};
     const startedAt = (await tx.kv.get<number>(SQUAD_SESSION_KEY)) ?? now;
-    const line = pickSquadLine(event, this.config.squadBot.personalities, last, this.deps.random, {
+    const line = pickSquadLine(event, last, this.deps.random, {
       round,
       togetherMinutes: Math.max(0, now - startedAt) / MINUTE_MS,
       badge,
@@ -1089,8 +1133,8 @@ export class StudyRoomEngine {
       .filter((s) => s.minutes >= finishThreshold)
       .map((s) => s.participant.userId);
     const combo = comboFor(finisherIds.length, this.config.comboEnabled);
-    // Damage is the XP the round earns before the daily cap, so capped members still hit the boss.
-    const roomDamageXp = minuteShares.reduce((sum, s) => sum + focusXp(s.minutes, combo), 0);
+    // Damage is the XP the round earns.
+    const roundXp = minuteShares.reduce((sum, s) => sum + focusXp(s.minutes, combo), 0);
     // Stayed for the whole cycle: this is its last round and they finished round 1 too.
     const focusPhases = phases.filter((p) => p.kind === "focus");
     const lastRound = focusPhases.at(-1)?.index === phase.index;
@@ -1131,6 +1175,8 @@ export class StudyRoomEngine {
       minuteShares.map((s) => s.participant.userId),
       phase.endsAt,
     );
+    const bossOutcome = await this.bossOutcome(tx, phase.startsAt, phase.endsAt);
+    const roomDamageXp = bossOutcome === "alreadyDefeated" ? 0 : roundXp;
     for (const p of participants) {
       if (p.bossXpDealt !== 0 || p.liveMinutes !== 0 || p.liveXp !== 0)
         await tx.room.addParticipant({ ...p, ...NO_LIVE_CREDIT });
@@ -1158,11 +1204,11 @@ export class StudyRoomEngine {
         baseXp: credit.baseXp,
         combo,
         xpEarned: credit.xpEarned,
-        capped: credit.capped,
         streak: credit.streak,
         streakExtended: credit.streakExtended,
         finisherIds,
         roomDamageXp,
+        bossOutcome,
         goalPrompt: await this.goalPrompt(tx, userId),
         breakEndsAt,
         me: withNewBadges(await this.buildMyStatus(tx, userId, phase.endsAt), effects),
@@ -1189,6 +1235,7 @@ export class StudyRoomEngine {
         const damageXp = focusXp(solo.minutes, 1);
         const rest = damageXp - solo.bossXpDealt;
         await this.damageBoss(tx, effects, rest, [solo.userId], solo.endsAt);
+        const bossOutcome = await this.bossOutcome(tx, solo.startedAt, solo.endsAt);
         const stillOnBreak = solo.breakEndsAt > now;
         if (stillOnBreak) await tx.solos.save({ ...solo, phase: "break", ...NO_LIVE_CREDIT });
         else await tx.solos.delete(solo.userId);
@@ -1200,11 +1247,11 @@ export class StudyRoomEngine {
           baseXp: credit.baseXp,
           combo: 1,
           xpEarned: credit.xpEarned,
-          capped: credit.capped,
           streak: credit.streak,
           streakExtended: credit.streakExtended,
           finisherIds: [solo.userId],
-          roomDamageXp: damageXp,
+          roomDamageXp: bossOutcome === "alreadyDefeated" ? 0 : damageXp,
+          bossOutcome,
           goalPrompt: await this.goalPrompt(tx, solo.userId),
           breakEndsAt: solo.breakEndsAt,
           me: withNewBadges(await this.buildMyStatus(tx, solo.userId, now), effects),
@@ -1271,12 +1318,11 @@ export class StudyRoomEngine {
     const live = input.live ?? { liveMinutes: 0, liveXp: 0 };
     const day = dayKey(now, this.config.timeZone);
     const member = await this.loadMember(tx, userId);
-    const xpToday = (await tx.stats.get(userId, day))?.xp ?? 0;
     const rawXp = this.config.xp.enabled ? focusXp(minutes, combo) : 0;
     // Live ticks paid base XP for whole minutes; the end pays the rest,
-    // including the combo bonus, under whatever room the daily cap has left.
+    // including the combo bonus.
     const liveRawXp = this.config.xp.enabled ? baseFocusXp(live.liveMinutes) : 0;
-    const restXp = applyDailyCap(Math.max(0, rawXp - liveRawXp), xpToday, this.config.xp.dailyCap);
+    const restXp = Math.max(0, rawXp - liveRawXp);
     const xpEarned = live.liveXp + restXp;
 
     let streak = member.streak;
@@ -1344,7 +1390,6 @@ export class StudyRoomEngine {
     return {
       baseXp: this.config.xp.enabled ? baseFocusXp(minutes) : 0,
       xpEarned,
-      capped: xpEarned < rawXp,
       streak: streak.streak,
       streakExtended,
     };
@@ -1368,7 +1413,7 @@ export class StudyRoomEngine {
 
   /**
    * Loot: every contributor gets bonus XP scaled by the boss's strength,
-   * outside the daily cap because it happens once a week.
+   * once a week.
    */
   private async onBossDefeated(
     tx: Store,
@@ -1407,9 +1452,7 @@ export class StudyRoomEngine {
 
   /**
    * Pays the reward for every quest the member has just finished this week.
-   * Like boss loot it is outside the daily cap: it comes at most three times
-   * a week, and a capped reward would often be zero. The reward also hits the
-   * boss. Returns the quest facts badges look at.
+   * It comes at most three times a week. The reward also hits the boss. Returns the quest facts badges look at.
    */
   private async rewardQuests(
     tx: Store,
@@ -1565,11 +1608,21 @@ export class StudyRoomEngine {
     return (await tx.cards.list([userId]))[0] ?? { userId, style: null, showcase: null };
   }
 
+  /**
+   * What a session that ran from startedAt to endedAt did to the boss, read
+   * after its damage is applied. A boss that fell before the session started
+   * took none of it, so the break screen shouldn't claim a hit.
+   */
+  private async bossOutcome(tx: Store, startedAt: number, endedAt: number): Promise<BossOutcome> {
+    const { defeatedAt } = await this.loadBoss(tx, endedAt);
+    if (defeatedAt === null) return "hit";
+    return defeatedAt > startedAt ? "finalBlow" : "alreadyDefeated";
+  }
+
   private async loadBoss(tx: Store, now: number): Promise<BossState> {
     const week = weekKey(dayKey(now, this.config.timeZone));
     return (
-      (await tx.bosses.get(week)) ??
-      newBoss(week, bossNameFor(week, this.config.boss.name), this.config.boss.baseHpXp)
+      (await tx.bosses.get(week)) ?? newBoss(week, bossNameFor(week), this.config.boss.baseHpXp)
     );
   }
 
@@ -1588,6 +1641,13 @@ export class StudyRoomEngine {
         `You can have up to ${LIMITS.maxOpenGoals} open goals. Finish or remove one first.`,
       );
     }
+    // New goals go to the bottom of the list, even below goals moved there
+    // in the same millisecond.
+    const lastKey = Math.max(
+      -Infinity,
+      ...(await tx.goals.listForUser(userId, now + 1)).map((g) => g.sortKey),
+    );
+    const firstKey = Math.max(now, lastKey + 1);
     // Offset timestamps so goals typed together keep their order.
     for (const [i, text] of texts.entries()) {
       await tx.goals.insert({
@@ -1598,6 +1658,7 @@ export class StudyRoomEngine {
         xpAwarded: false,
         createdAt: now + i,
         completedAt: null,
+        sortKey: firstKey + i,
       });
     }
   }
@@ -1618,7 +1679,7 @@ export class StudyRoomEngine {
 
   private async goalPrompt(tx: Store, userId: string): Promise<GoalDto | null> {
     const goal = (await tx.goals.firstOpen([userId])).get(userId);
-    return goal ? { id: goal.id, text: goal.text, done: goal.done } : null;
+    return goal ? goalToDto(goal) : null;
   }
 
   private goalsArePrivate(member: MemberRecord | undefined): boolean {
@@ -1711,7 +1772,6 @@ export class StudyRoomEngine {
         bossEnabled: this.config.boss.enabled,
         streakFreezesEnabled: this.config.streakFreezesEnabled,
         goalsPublicByDefault: this.config.goalsPublicByDefault,
-        dailyXpCap: this.config.xp.dailyCap,
         postChannelName: this.config.postChannelId ? this.config.postChannelName : "",
         feedbackEnabled: this.deps.feedbackInbox !== undefined,
         voiceChannelStatus: this.config.voiceChannelStatus,
@@ -1842,7 +1902,7 @@ export class StudyRoomEngine {
       xpToday: (await tx.stats.get(userId, today))?.xp ?? 0,
       streak: currentStreak(streakState, today, this.config.streakFreezesEnabled),
       freezeAvailable: freezeAvailable(streakState, today, this.config.streakFreezesEnabled),
-      goals: goals.map((g) => ({ id: g.id, text: g.text, done: g.done })),
+      goals: goals.map(goalToDto),
       goalsPrivate: this.goalsArePrivate(member),
       keepGoingEndsAt,
     };
@@ -2001,4 +2061,14 @@ function validatePeriod(period: unknown): LeaderboardPeriod {
 function validateMetric(by: unknown): LeaderboardMetric {
   if (by === "minutes" || by === "xp") return by;
   throw validationError("The leaderboard ranks by minutes or xp.");
+}
+
+function goalToDto(goal: GoalRecord): GoalDto {
+  return {
+    id: goal.id,
+    text: goal.text,
+    done: goal.done,
+    createdAt: goal.createdAt,
+    completedAt: goal.completedAt,
+  };
 }

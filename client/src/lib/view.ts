@@ -125,3 +125,14 @@ export function percent(part: number, whole: number): number {
   if (whole <= 0) return 0;
   return Math.round(Math.min(1, Math.max(0, part / whole)) * 100);
 }
+
+/** How long a finished goal took, from adding it to ticking it off: "45m", "2h 10m", "3d 4h". */
+export function goalDuration(createdAt: number, completedAt: number): string {
+  const minutes = Math.floor(Math.max(0, completedAt - createdAt) / 60_000);
+  if (minutes < 1) return "under a minute";
+  if (minutes < 60) return `${minutes}m`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return minutes % 60 ? `${hours}h ${minutes % 60}m` : `${hours}h`;
+  const days = Math.floor(hours / 24);
+  return hours % 24 ? `${days}d ${hours % 24}h` : `${days}d`;
+}

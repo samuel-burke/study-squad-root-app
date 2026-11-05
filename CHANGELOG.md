@@ -4,6 +4,31 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ## [Unreleased]
 
+## [0.3.8] - 2026-11-05
+
+Fewer settings to think about: built-in boss names, no XP cap and a simpler squad bot. Voice stays, with a new channel dropdown.
+
+### Added
+
+- Support contacts: Room settings and the feedback box now show how to reach the developer (hello@samuelburke.dev, or @5amuel on Root), and the website has a new support page.
+- Light mode. Study Squad now matches the light or dark theme picked in Root, and switches live when it changes. Outside Root (the demo) it follows the device setting. The full-screen badge unlock keeps its dark spotlight in both themes.
+- Goals: a "Clear completed" button removes every finished goal at once. XP, stats and badges already earned stay.
+- Goals: edit a goal's text with the pencil button. Enter saves, Escape cancels.
+- Goals: finished goals fold into a "Finished (n)" row and show how long they took, from adding to ticking off.
+- Goals: drag a goal by its handle to reorder (or use the arrow keys on the handle). The top goal is the one on your card.
+- Admins can pick the voice channel from a dropdown in the app's Room settings. It lists the community's voice channels only (Root's own channel picker shows text channels), saves the pick in the app's database so it survives reloads, and applies it straight away. The "Voice channel name" App setting still works as a fallback when nothing is picked.
+
+### Fixed
+
+- The daily recap now posts on Root. Root hands the scheduled job its time as a number rather than a date, and the recap job failed on it every time.
+- After the weekly boss is defeated, the break screen no longer shows boss damage for later sessions. The session that lands the final blow says so.
+
+### Removed
+
+- **Daily XP cap.** Members now keep every XP they earn. The Keep going? check at the end of each cycle already stops a forgotten timer from farming XP all day.
+- **Boss name.** Every community gets the week's built-in boss, so strengths and the boss badges always line up. A boss saved under an old custom name is swapped for the week's built-in one on the next settings change, or on Monday.
+- **Squad bot personalities.** The Squad bot setting is now a plain on/off, and the bot mixes lines from every personality.
+
 ## [0.3.7] - 2026-11-04
 
 The number settings from 0.3.6 now take effect.

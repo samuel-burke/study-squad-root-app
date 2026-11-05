@@ -23,7 +23,7 @@ Fewer settings to think about: built-in boss names, no XP cap and a simpler squa
 
 ### Added
 
-- Support contacts: Room settings and the feedback box now show how to reach the developer (hello@samuelburke.dev, or @5amuel on Root), and the website has a new support page.
+- Support contacts: the feedback box now shows how to reach the developer (hello@samuelburke.dev, or @5amuel on Root), and the website has a new support page.
 - Light mode. Study Squad now matches the light or dark theme picked in Root, and switches live when it changes. Outside Root (the demo) it follows the device setting. The full-screen badge unlock keeps its dark spotlight in both themes.
 - Goals: a "Clear completed" button removes every finished goal at once. XP, stats and badges already earned stay.
 - Goals: edit a goal's text with the pencil button. Enter saves, Escape cancels.

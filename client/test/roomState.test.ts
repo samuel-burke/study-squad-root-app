@@ -13,6 +13,7 @@ async function snapshot(): Promise<SnapshotDto> {
       personalResult() {},
       myStatusUpdated() {},
       badgesEarned() {},
+      highFive() {},
     },
     announcer: {
       async busyRoom() {},

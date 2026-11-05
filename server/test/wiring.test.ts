@@ -214,6 +214,7 @@ describe("findAttachedClient", () => {
       broadcastPersonalResult: vi.fn(),
       broadcastMyStatus: vi.fn(),
       broadcastBadgesEarned: vi.fn(),
+      broadcastHighFive: vi.fn(),
     };
     const notifier = new PushNotifier(broadcaster, (userId) =>
       findAttachedClient(() => [ana, kai], userId),

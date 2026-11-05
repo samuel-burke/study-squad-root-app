@@ -3,6 +3,7 @@ import { StudyRoomServiceBase } from "@studyroom/gen-server";
 import type {
   AddGoalRequest,
   ClearDoneGoalsRequest,
+  CompleteBreakChallengeRequest,
   DeleteGoalRequest,
   DeleteMyDataRequest,
   EditGoalRequest,
@@ -26,6 +27,7 @@ import type {
   SetGoalDoneRequest,
   SetGoalsPrivateRequest,
   SendFeedbackRequest,
+  SendHighFiveRequest,
   SetLeaderboardHiddenRequest,
   SetVoiceChannelRequest,
   StartSoloRequest,
@@ -136,6 +138,17 @@ export class StudyRoomService extends StudyRoomServiceBase {
 
   keepGoing(_request: KeepGoingRequest, client: Client): Promise<MyStatus> {
     return this.call((h) => h.keepGoing(client.userId));
+  }
+
+  completeBreakChallenge(
+    _request: CompleteBreakChallengeRequest,
+    client: Client,
+  ): Promise<RoomSnapshot> {
+    return this.call((h) => h.completeBreakChallenge(client.userId));
+  }
+
+  sendHighFive(request: SendHighFiveRequest, client: Client): Promise<RoomSnapshot> {
+    return this.call((h) => h.sendHighFive(client.userId, request));
   }
 
   private async call<T>(work: (handlers: StudyRoomHandlers) => Promise<T>): Promise<T> {

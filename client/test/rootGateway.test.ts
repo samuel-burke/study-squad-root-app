@@ -69,6 +69,7 @@ vi.mock("@studyroom/gen-client", () => ({
     PersonalResult: "personalResult",
     MyStatus: "myStatus",
     BadgesEarned: "badgesEarned",
+    HighFive: "highFive",
   },
 }));
 
@@ -251,6 +252,7 @@ describe("RootGateway", () => {
       personalResult: vi.fn(),
       myStatus: vi.fn(),
       badgesEarned: vi.fn(),
+      highFive: vi.fn(),
     };
     const unsubscribe = new RootGateway().subscribe(handlers);
     service.emit("roomUpdated", { room: proto.room });
@@ -258,6 +260,7 @@ describe("RootGateway", () => {
     service.emit("phaseCompleted", {});
     service.emit("personalResult", {});
     service.emit("badgesEarned", { badgeIds: ["first-focus"] });
+    service.emit("highFive", { fromUserId: "kai", emoji: "🔥" });
     expect(handlers.roomUpdated.mock.calls[0]?.[0]).toMatchObject({
       serverNow: snapshot.room.serverNow,
     });
@@ -265,6 +268,7 @@ describe("RootGateway", () => {
     expect(handlers.phaseCompleted).toHaveBeenCalledTimes(1);
     expect(handlers.personalResult).toHaveBeenCalledTimes(1);
     expect(handlers.badgesEarned).toHaveBeenCalledWith(["first-focus"]);
+    expect(handlers.highFive).toHaveBeenCalledWith({ fromUserId: "kai", emoji: "🔥" });
     unsubscribe();
     expect([...service.listeners.values()].every((set) => set.size === 0)).toBe(true);
   });

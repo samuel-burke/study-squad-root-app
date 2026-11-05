@@ -5,6 +5,7 @@ import {
   roomToProto,
 } from "@studyroom/contract";
 import type {
+  HighFiveDto,
   MyStatusDto,
   Notifier,
   PersonalResultDto,
@@ -13,6 +14,7 @@ import type {
 } from "@studyroom/core";
 import type {
   BadgesEarnedEvent,
+  HighFiveEvent,
   MyStatusEvent,
   PersonalResultEvent,
   PhaseCompletedEvent,
@@ -28,6 +30,7 @@ export interface Broadcaster<C> {
   broadcastPersonalResult(message: PersonalResultEvent, clients: BroadcastTarget<C>): void;
   broadcastMyStatus(message: MyStatusEvent, clients: BroadcastTarget<C>): void;
   broadcastBadgesEarned(message: BadgesEarnedEvent, clients: BroadcastTarget<C>): void;
+  broadcastHighFive(message: HighFiveEvent, clients: BroadcastTarget<C>): void;
 }
 
 /** Timers and a clock, swappable in tests. */
@@ -121,6 +124,15 @@ export class PushNotifier<C> implements Notifier {
   badgesEarned(userId: string, badgeIds: string[]): void {
     const client = this.findClient(userId);
     if (client) this.broadcaster.broadcastBadgesEarned({ badgeIds }, [client]);
+  }
+
+  highFive(toUserId: string, event: HighFiveDto): void {
+    const client = this.findClient(toUserId);
+    if (client) {
+      this.broadcaster.broadcastHighFive({ fromUserId: event.fromUserId, emoji: event.emoji }, [
+        client,
+      ]);
+    }
   }
 
   private sendRoom(room: RoomStateDto): void {

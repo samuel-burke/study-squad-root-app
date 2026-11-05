@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { StudyRoomGateway } from "./api/gateway";
 import { BadgeUnlocked } from "./components/BadgeUnlocked";
 import { KeepGoing } from "./components/KeepGoing";
+import { HighFiveFloats } from "./components/BreakFun";
 import { MemberProfileSheet } from "./components/MemberProfileSheet";
 import { BreakMoment } from "./components/BreakMoment";
 import { Celebration } from "./components/Celebration";
@@ -152,6 +153,8 @@ export function App({ gateway }: { gateway: StudyRoomGateway }) {
             onOpenProgress={() => setScreen("progress")}
             onOpenSettings={() => setOverlay({ kind: "settings" })}
             onOpenMember={(userId) => setOverlay({ kind: "member", userId })}
+            onChallengeDone={() => void actions.completeBreakChallenge()}
+            onHighFive={actions.sendHighFive}
             podium={
               <LeaderboardPodium
                 gateway={gateway}
@@ -252,6 +255,7 @@ export function App({ gateway }: { gateway: StudyRoomGateway }) {
           onKeepGoing={() => void actions.keepGoing()}
         />
       )}
+      <HighFiveFloats highFives={state.highFives} profiles={profiles} />
       {state.error && <Toast message={state.error} onDismiss={actions.dismissError} />}
     </>
   );

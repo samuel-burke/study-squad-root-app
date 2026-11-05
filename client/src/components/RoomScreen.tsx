@@ -1,8 +1,9 @@
 import type { MyStatusDto, RoomStateDto } from "@studyroom/core";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import type { Profile } from "../api/gateway";
 import { phasePill } from "../lib/view";
 import { BossCard, MobileBoss } from "./BossCard";
+import { BreakChallengeCard, myBreakKey } from "./BreakFun";
 import { ComboCard, ComboPill } from "./ComboCard";
 import type { GoalActions } from "./GoalList";
 import { AppLogo, ChartIcon, PeopleIcon, SlidersIcon, SoundOffIcon, SoundOnIcon } from "./Icons";
@@ -28,6 +29,9 @@ export interface RoomScreenProps {
   onOpenProgress(): void;
   onOpenSettings(): void;
   onOpenMember(userId: string): void;
+  onChallengeDone(): void;
+  /** Resolves true once the high-five went through. */
+  onHighFive(userId: string, emoji: string): Promise<boolean>;
   /** This week's top three, which opens the full leaderboard. */
   podium?: ReactNode;
 }
@@ -110,6 +114,27 @@ function Header({
 export function RoomScreen(props: RoomScreenProps) {
   const { room, me, profiles, now, busy, compact } = props;
   const inSession = me.status !== "idle";
+  const breakKey = myBreakKey(room, me);
+  // Who you high-fived, for the break you're on. A new break starts it fresh.
+  const [sent, setSent] = useState<{ key: string | null; ids: ReadonlySet<string> }>({
+    key: null,
+    ids: new Set(),
+  });
+  const sentIds = sent.key === breakKey ? sent.ids : new Set<string>();
+  const highFive = breakKey
+    ? {
+        sent: sentIds,
+        busy,
+        onSend: (userId: string, emoji: string) => {
+          void props.onHighFive(userId, emoji).then((ok) => {
+            if (ok) setSent({ key: breakKey, ids: new Set([...sentIds, userId]) });
+          });
+        },
+      }
+    : undefined;
+  const challenge = (
+    <BreakChallengeCard room={room} me={me} busy={busy} onDone={props.onChallengeDone} />
+  );
   const timer = (
     <TimerCard
       room={room}
@@ -132,6 +157,7 @@ export function RoomScreen(props: RoomScreenProps) {
       now={now}
       compact={compact}
       onOpenMember={props.onOpenMember}
+      highFive={highFive}
     />
   );
 
@@ -143,6 +169,7 @@ export function RoomScreen(props: RoomScreenProps) {
         <Header {...props} />
         {room.boss.enabled && <MobileBoss boss={room.boss} />}
         {timer}
+        {challenge}
         {props.podium}
         {room.features.comboEnabled && (
           <div style={{ display: "flex", justifyContent: "center", marginBottom: 12 }}>
@@ -183,6 +210,7 @@ export function RoomScreen(props: RoomScreenProps) {
       <div className="room-body">
         <main className="room-main">
           {timer}
+          {challenge}
           {board}
         </main>
         <aside className="room-aside">

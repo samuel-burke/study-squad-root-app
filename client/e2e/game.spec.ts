@@ -66,8 +66,10 @@ async function addAndFinishGoal(page: Page, text: string) {
   await panel.getByRole("button", { name: "Add a goal" }).click();
   await panel.getByLabel("New goal").fill(text);
   await panel.getByRole("button", { name: "Add" }).click();
-  await panel.getByRole("checkbox", { name: text }).check();
-  await expect(panel.getByRole("checkbox", { name: text })).toBeChecked();
+  await panel.getByRole("checkbox", { name: text }).click();
+  // A finished goal folds away under "Finished".
+  await expect(panel.getByRole("checkbox", { name: text })).toBeHidden();
+  await expect(panel.getByRole("button", { name: /^Finished \(/ })).toBeVisible();
 }
 
 test.describe("game rules", () => {

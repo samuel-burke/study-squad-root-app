@@ -121,7 +121,7 @@ await mkdir(out, { recursive: true });
 const browser = await chromium.launch();
 try {
   await capture(browser, DESKTOP, "dark", ["room"]);
-  await capture(browser, DESKTOP, "light", ["room", "progress"]);
+  await capture(browser, DESKTOP, "light", ["room"]);
   await capture(browser, PHONE, "dark", [
     "start-session",
     "break-moment",

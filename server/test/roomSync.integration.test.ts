@@ -113,7 +113,12 @@ describe("room timer sync across clients (engine + SQLite + push adapter)", () =
       store: new KnexStore(db),
       clock,
       scheduler,
-      notifier: new PushNotifier(fanOut, (id) => clients.get(id)),
+      // Room pushes are bundled on the engine's (fake) clock, as on the server.
+      notifier: new PushNotifier(fanOut, (id) => clients.get(id), {
+        now: () => clock.now(),
+        setTimeout: () => null,
+        clearTimeout: () => {},
+      }),
       announcer: new RecordingAnnouncer(),
       logger: silentLogger,
       config: configWith(),

@@ -7,6 +7,7 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 ### Fixed
 
 - Squad bot: when several people unlock badges at the same moment, such as the end of a round in a busy room, the bot now sends one "New badges" post listing them (the first 10 by name, then a count) instead of a post each. In a 50-person test that was 50 posts at once. One person on their own still gets their own post.
+- Busy rooms send far less data. When lots happens at once (everyone joining, or ticking off goals together), the room screen update now goes out at most once a second with the latest state, instead of once per change to every device. In a 50-person test, 50 goals ticked in one second went from 2,500 room updates (about 10 MB) to a couple.
 
 ## [0.3.9] - 2026-11-05
 

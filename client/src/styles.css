@@ -1784,6 +1784,25 @@ textarea.input {
     flex: 1 1 auto;
   }
 
+  .brand.brand-compact {
+    flex: none;
+  }
+}
+
+/* Small phones (iPhone SE): logo and buttons on top, the round pill below. */
+@media (max-width: 380px) {
+  .app-header {
+    flex-wrap: wrap;
+  }
+
+  .header-meta {
+    margin-left: auto;
+  }
+
+  .phase-pill {
+    order: 3;
+  }
+
   .header-meta {
     gap: 6px;
   }

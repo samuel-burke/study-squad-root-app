@@ -4,6 +4,10 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ## [Unreleased]
 
+### Fixed
+
+- On phones the header shows only the logo, so the round pill no longer covers the "Study Squad" title. On very small phones the round pill moves below the buttons so the settings button isn't cut off.
+
 ## [0.3.8] - 2026-11-05
 
 Fewer settings to think about: built-in boss names, no XP cap and a simpler squad bot. Voice stays, with a new channel dropdown.

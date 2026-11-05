@@ -11,12 +11,12 @@ import {
 const logger = () => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn() });
 
 describe("loadConfig", () => {
-  const lookup = (name = async (_id: string) => "study-hall") => ({
-    name: vi.fn(name),
+  const lookup = () => ({
+    name: vi.fn(async () => "study-hall"),
     link: vi.fn(async (id: string) => `https://rootapp.com/${id}`),
     channels: vi.fn(async () => [
       { id: "text-1", name: "study-hall", voice: false },
-      { id: "voice-1", name: "🔊 Study-Voice", voice: true },
+      { id: "voice-1", name: "Study voice", voice: true },
       { id: "voice-2", name: "Gaming", voice: true },
     ]),
   });
@@ -28,60 +28,39 @@ describe("loadConfig", () => {
     expect(config).toMatchObject({ postChannelId: "channel-1", postChannelName: "study-hall" });
   });
 
-  it.each([" #study  voice ", "Study Voice", "study-voice", "STUDYVOICE", "study"])(
-    "finds the voice channel from %j, ignoring case, spaces, dashes and emoji",
-    async (typed) => {
-      const config = await loadConfig({ room: { voiceChannelName: typed } }, lookup(), logger());
-      expect(config).toMatchObject({
-        voiceChannelId: "voice-1",
-        voiceChannelName: "🔊 Study-Voice",
-        voiceChannelUrl: "https://rootapp.com/voice-1",
-        voiceChannelStatus: "#🔊 Study-Voice",
-      });
-    },
-  );
-
-  it("lists the voice channels it can see when none has that name", async () => {
-    const log = logger();
-    const config = await loadConfig({ room: { voiceChannelName: "lounge" } }, lookup(), log);
-    expect(config.voiceChannelId).toBeNull();
-    expect(config.voiceChannelStatus).toBe(
-      'No voice channel called "lounge". Voice channels it can see: #🔊 Study-Voice, #Gaming',
-    );
-    expect(log.warn).toHaveBeenCalledWith("no voice channel has that name", {
-      name: "lounge",
-      voiceChannels: ["🔊 Study-Voice", "Gaming"],
-      channelCount: 3,
+  it("uses the voice channel picked in the app", async () => {
+    const config = await loadConfig(undefined, lookup(), logger(), "voice-2");
+    expect(config).toMatchObject({
+      voiceChannelId: "voice-2",
+      voiceChannelName: "Gaming",
+      voiceChannelUrl: "https://rootapp.com/voice-2",
+      voiceChannelStatus: "#Gaming",
     });
   });
 
-  it("says so when the name is a text channel", async () => {
-    const config = await loadConfig(
-      { room: { voiceChannelName: "study-hall" } },
-      lookup(),
-      logger(),
-    );
-    expect(config.voiceChannelId).toBeNull();
-    expect(config.voiceChannelStatus).toBe("#study-hall isn't a voice channel");
-  });
-
-  it("says when it can't see any voice channels", async () => {
-    const channels = { ...lookup(), channels: vi.fn(async () => []) };
-    const config = await loadConfig({ room: { voiceChannelName: "lounge" } }, channels, logger());
-    expect(config.voiceChannelStatus).toMatch(/can't see any voice channels/);
-  });
-
-  it("falls back to any channel with that name when Root reports no voice channels", async () => {
-    const channels = {
-      ...lookup(),
-      channels: vi.fn(async () => [{ id: "c-9", name: "Study Voice", voice: false }]),
-    };
+  it("ignores the old typed voice channel name setting", async () => {
+    const channels = lookup();
     const config = await loadConfig(
       { room: { voiceChannelName: "study voice" } },
       channels,
       logger(),
     );
-    expect(config.voiceChannelId).toBe("c-9");
+    expect(channels.channels).not.toHaveBeenCalled();
+    expect(config).toMatchObject({ voiceChannelId: null, voiceChannelName: "" });
+  });
+
+  it("never uses a text channel even if its id was saved", async () => {
+    const config = await loadConfig(undefined, lookup(), logger(), "text-1");
+    expect(config.voiceChannelId).toBeNull();
+    expect(config.voiceChannelStatus).toMatch(/picked voice channel is gone/);
+  });
+
+  it("says so when the picked channel is gone", async () => {
+    const log = logger();
+    const config = await loadConfig(undefined, lookup(), log, "deleted");
+    expect(config.voiceChannelId).toBeNull();
+    expect(config.voiceChannelStatus).toMatch(/Pick another one/);
+    expect(log.warn).toHaveBeenCalledWith("picked voice channel is gone", { channelId: "deleted" });
   });
 
   it("keeps the channel for headphones when the join link can't be made", async () => {
@@ -91,7 +70,7 @@ describe("loadConfig", () => {
         throw new Error("403");
       }),
     };
-    const config = await loadConfig({ room: { voiceChannelName: "gaming" } }, channels, logger());
+    const config = await loadConfig(undefined, channels, logger(), "voice-2");
     expect(config).toMatchObject({
       voiceChannelId: "voice-2",
       voiceChannelUrl: "",
@@ -115,71 +94,15 @@ describe("loadConfig", () => {
       throw new Error("403");
     };
     const config = await loadConfig(
-      { room: { postChannel: "channel-1", voiceChannelName: "Study voice" } },
+      { room: { postChannel: "channel-1" } },
       { name: failing, link: failing, channels: failing },
       log,
+      "voice-1",
     );
     expect(config).toMatchObject({ postChannelId: "channel-1", voiceChannelId: null });
     expect(config.voiceChannelStatus).toMatch(/Couldn't read the channel list/);
     expect(log.warn).toHaveBeenCalledWith("could not read post channel", { error: "Error: 403" });
     expect(log.warn).toHaveBeenCalledWith("could not read voice channel", { error: "Error: 403" });
-  });
-});
-
-describe("loadConfig with a voice channel picked in the app", () => {
-  const lookup = () => ({
-    name: vi.fn(async () => "study-hall"),
-    link: vi.fn(async (id: string) => `https://rootapp.com/${id}`),
-    channels: vi.fn(async () => [
-      { id: "text-1", name: "study-hall", voice: false },
-      { id: "voice-1", name: "Study voice", voice: true },
-      { id: "voice-2", name: "Gaming", voice: true },
-    ]),
-  });
-
-  it("uses the picked voice channel over the typed name", async () => {
-    const config = await loadConfig(
-      { room: { voiceChannelName: "study voice" } },
-      lookup(),
-      logger(),
-      "voice-2",
-    );
-    expect(config).toMatchObject({
-      voiceChannelId: "voice-2",
-      voiceChannelName: "Gaming",
-      voiceChannelUrl: "https://rootapp.com/voice-2",
-      voiceChannelStatus: "#Gaming",
-    });
-  });
-
-  it("never uses a text channel even if its id was saved", async () => {
-    const config = await loadConfig(undefined, lookup(), logger(), "text-1");
-    expect(config.voiceChannelId).toBeNull();
-    expect(config.voiceChannelStatus).toMatch(/picked voice channel is gone/);
-  });
-
-  it("falls back to the typed name when the picked channel is gone", async () => {
-    const log = logger();
-    const config = await loadConfig(
-      { room: { voiceChannelName: "study voice" } },
-      lookup(),
-      log,
-      "deleted",
-    );
-    expect(config.voiceChannelId).toBe("voice-1");
-    expect(log.warn).toHaveBeenCalledWith("picked voice channel is gone", { channelId: "deleted" });
-  });
-
-  it("says so when the channel list can't be read", async () => {
-    const channels = {
-      ...lookup(),
-      channels: vi.fn(async () => {
-        throw new Error("403");
-      }),
-    };
-    const config = await loadConfig(undefined, channels, logger(), "voice-1");
-    expect(config.voiceChannelId).toBeNull();
-    expect(config.voiceChannelStatus).toMatch(/Couldn't read the channel list/);
   });
 });
 

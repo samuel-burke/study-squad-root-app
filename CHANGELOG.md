@@ -4,6 +4,15 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ## [Unreleased]
 
+### Changed
+
+- Join voice now asks first, so a stray tap doesn't drop someone into the call.
+- Goal XP: only the first 5 goals finished each day pay +25 XP. Later goals still tick and count for stats, quests and badges, but pay nothing, so goals can't be farmed for XP now that there's no daily cap. The hint under your goals and the break's Done button show this.
+
+### Removed
+
+- The "Voice channel name" App setting. Pick the voice channel in the app's Room settings instead (admins only).
+
 ### Fixed
 
 - On phones the header shows only the logo, so the round pill no longer covers the "Study Squad" title. On very small phones the round pill moves below the buttons so the settings button isn't cut off.

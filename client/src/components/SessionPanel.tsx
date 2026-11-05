@@ -43,7 +43,11 @@ export function SessionPanel({ me, xpEnabled, busy, goalActions }: SessionPanelP
       {xpEnabled && <XpBar me={me} />}
       <h2 style={{ fontSize: 17 }}>Your goals this session</h2>
       <GoalList goals={me.goals} busy={busy} actions={goalActions} />
-      {xpEnabled && <div className="tiny dim">+{GAME.xpPerGoal} XP for each goal you finish</div>}
+      {xpEnabled && (
+        <div className="tiny dim">
+          +{GAME.xpPerGoal} XP for each goal you finish, up to {GAME.goalsWithXpPerDay} a day
+        </div>
+      )}
     </section>
   );
 }

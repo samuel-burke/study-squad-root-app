@@ -20,7 +20,6 @@ export const SETTINGS = {
     customBreak: "customBreakMinutes",
     postChannel: "postChannel",
     squadMentions: "squadMentions",
-    voiceChannel: "voiceChannelName",
     recapEnabled: "recapEnabled",
     recapTime: "recapTime",
     recapLeaderboard: "recapLeaderboard",
@@ -63,17 +62,17 @@ export interface AppConfig {
   /** Display name of that channel, resolved by the server. Empty if unknown. */
   postChannelName: string;
   /**
-   * Voice channel the "Join voice" button opens, found by the server from
-   * voiceChannelName. null = no button.
+   * Voice channel the "Join voice" button opens: the one an admin picked in
+   * the app's Room settings, checked by the server. null = no button.
    */
   voiceChannelId: string | null;
-  /** The name the admin typed, then the channel's own name once found. "" = off. */
+  /** The picked channel's name, resolved by the server. "" = none. */
   voiceChannelName: string;
   /** A link that opens the channel in Root, resolved by the server. */
   voiceChannelUrl: string;
   /**
    * What the server made of the voice channel setting, in words for admins
-   * (shown in the in-app Room settings). "" = no name typed.
+   * (shown in the in-app Room settings). "" = none picked.
    */
   voiceChannelStatus: string;
   recap: { enabled: boolean; hours: number; minutes: number };
@@ -149,11 +148,6 @@ function int(value: unknown, fallback: number, min: number, max: number): number
  * runtime it hands over the protobuf DoubleValue wrapper ({ value: 300 }),
  * so unwrap that first. Bare numbers and old select keys still work.
  */
-function text(value: unknown, fallback: string, maxLength: number): string {
-  const trimmed = typeof value === "string" ? value.trim().slice(0, maxLength) : "";
-  return trimmed.length > 0 ? trimmed : fallback;
-}
-
 function numberSetting(value: unknown, fallback: number, min: number, max: number): number {
   if (value && typeof value === "object" && !Array.isArray(value) && "value" in value)
     return int((value as { value: unknown }).value, fallback, min, max);
@@ -203,7 +197,7 @@ export function parseSettings(raw: RawSettings): AppConfig {
     postChannelId: channel && channel.length > 0 ? channel : null,
     postChannelName: "",
     voiceChannelId: null,
-    voiceChannelName: text(room[r.voiceChannel], "", 100).replace(/^#\s*/, ""),
+    voiceChannelName: "",
     voiceChannelUrl: "",
     voiceChannelStatus: "",
     recap: {

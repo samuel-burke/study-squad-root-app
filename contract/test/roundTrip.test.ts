@@ -144,6 +144,7 @@ const me: MyStatusDto = {
   xpIntoLevel: 415,
   xpForNextLevel: 500,
   xpToday: 75,
+  goalXpLeftToday: 3,
   streak: 6,
   freezeAvailable: true,
   goals: [

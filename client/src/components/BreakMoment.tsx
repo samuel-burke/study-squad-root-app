@@ -1,4 +1,10 @@
-import { formatCountdown, formatXp, type BossDto, type PersonalResultDto } from "@studyroom/core";
+import {
+  formatCountdown,
+  formatXp,
+  GAME,
+  type BossDto,
+  type PersonalResultDto,
+} from "@studyroom/core";
 import type { Profile } from "../api/gateway";
 import { percent } from "../lib/view";
 import { Avatar } from "./Avatar";
@@ -137,7 +143,7 @@ export function BreakMoment({
               disabled={busy}
               onClick={() => onGoalDone(result.goalPrompt!.id)}
             >
-              {xpEnabled ? "Done, +25 XP" : "Done"}
+              {xpEnabled && result.me.goalXpLeftToday > 0 ? `Done, +${GAME.xpPerGoal} XP` : "Done"}
             </button>
             <button type="button" className="btn btn-break" style={{ flex: 1 }} onClick={onClose}>
               Not yet

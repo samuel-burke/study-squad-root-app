@@ -7,6 +7,7 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 ### Changed
 
 - Join voice now asks first, so a stray tap doesn't drop someone into the call.
+- Goal XP: only the first 5 goals finished each day pay +25 XP. Later goals still tick and count for stats, quests and badges, but pay nothing, so goals can't be farmed for XP now that there's no daily cap. The hint under your goals and the break's Done button show this.
 
 ### Removed
 

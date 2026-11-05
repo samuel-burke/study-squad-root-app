@@ -131,6 +131,8 @@ export interface MyStatusDto {
   xpIntoLevel: number;
   xpForNextLevel: number;
   xpToday: number;
+  /** Goals the member can still finish today for XP. 0 when XP is off. */
+  goalXpLeftToday: number;
   streak: number;
   freezeAvailable: boolean;
   goals: GoalDto[];

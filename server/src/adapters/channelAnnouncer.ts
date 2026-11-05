@@ -1,4 +1,5 @@
 import {
+  badgeRoundupPost,
   bossDefeatedPost,
   busyRoomPost,
   dailyRecapPost,
@@ -84,6 +85,20 @@ export class ChannelAnnouncer implements Announcer {
       channelId,
       squadPost(event, text, mentions, userIds.length, heading),
     );
+  }
+
+  async badgeRoundup(
+    channelId: string,
+    entries: readonly { userId: string; badges: string }[],
+    mention = false,
+  ): Promise<void> {
+    // Only the people the post shows get looked up; the rest are counted.
+    const lines = [];
+    for (const { userId, badges } of entries.slice(0, SQUAD_MAX_MENTIONS)) {
+      const who = mention ? await this.mention(userId) : await this.displayName(userId);
+      lines.push({ who, badges });
+    }
+    await this.channel.postMessage(channelId, badgeRoundupPost(lines, entries.length));
   }
 
   /** Root's mention markup, which pings the member: [@Name](root://user/id). */

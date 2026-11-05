@@ -402,18 +402,36 @@ describe("squad bot badge posts", () => {
       .map((p) => p.detail as { event?: string; text: string; userIds: string[] })
       .filter((d) => d.event === "badgeUnlocked");
 
-  it("congratulates each member once, naming every badge they just earned", async () => {
+  const roundups = (posts: { kind: string; detail: unknown }[]) =>
+    posts
+      .filter((p) => p.kind === "badgeRoundup")
+      .map((p) => p.detail as { entries: { userId: string; badges: string }[]; mention: boolean });
+
+  it("congratulates a lone member in a post of their own, naming every badge", async () => {
+    const { engine, announcer, advance } = createHarness();
+    await engine.startSolo("ana", 30);
+    await advance(30 * MINUTE);
+    const posts = badgePosts(announcer.posts);
+    expect(posts.map((p) => p.userIds)).toEqual([["ana"]]);
+    expect(posts[0]!.text).toContain(badgeById("first-session")!.name);
+    expect(roundups(announcer.posts)).toEqual([]);
+  });
+
+  it("rolls everyone who earned badges in the same round into one post", async () => {
     const { engine, announcer, advance } = createHarness();
     await engine.joinRoomTimer("ana");
     await engine.joinRoomTimer("marcus");
     await advance(FOCUS);
-    const posts = badgePosts(announcer.posts);
-    expect(posts.map((p) => p.userIds)).toEqual([["ana"], ["marcus"]]);
+    expect(badgePosts(announcer.posts)).toEqual([]);
+    const posts = roundups(announcer.posts);
+    expect(posts).toHaveLength(1);
+    expect(posts[0]!.entries.map((e) => e.userId)).toEqual(["ana", "marcus"]);
     const names = ["first-session", "squad-up"].map((id) => badgeById(id)!.name);
-    expect(posts[0]!.text).toContain(`${names[0]} and ${names[1]}`);
+    expect(posts[0]!.entries[0]!.badges).toContain(`${names[0]} and ${names[1]}`);
+    expect(posts[0]!.mention).toBe(false);
     // Nothing new next round, so no new post.
     await advance(5 * MINUTE + FOCUS);
-    expect(badgePosts(announcer.posts)).toHaveLength(2);
+    expect(roundups(announcer.posts)).toHaveLength(1);
   });
 
   it("keeps secret badges a surprise for everyone else", async () => {
@@ -429,7 +447,10 @@ describe("squad bot badge posts", () => {
     const config = configWith({ squadBot: { enabled: false, mentions: false } });
     const { engine, announcer, advance } = createHarness(config);
     await engine.startSolo("ana", 30);
+    await engine.joinRoomTimer("marcus");
+    await engine.joinRoomTimer("kai");
     await advance(30 * MINUTE);
     expect(badgePosts(announcer.posts)).toEqual([]);
+    expect(roundups(announcer.posts)).toEqual([]);
   });
 });

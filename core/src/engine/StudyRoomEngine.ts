@@ -157,6 +157,19 @@ class Effects {
   readonly badges = new Map<string, string[]>();
 }
 
+/** Badge names for a post, secret ones hidden: "Night Owl, Squad Up and a secret badge". */
+function badgeNames(badgeIds: readonly string[]): string {
+  const names = [
+    ...new Set(
+      badgeIds.map((id) => {
+        const badge = badgeById(id);
+        return !badge || badge.secret ? SECRET_BADGE_NAME : badge.name;
+      }),
+    ),
+  ];
+  return names.length > 1 ? `${names.slice(0, -1).join(", ")} and ${names.at(-1)}` : names[0]!;
+}
+
 /** `me` with the badges its member earned in this operation, if any. */
 function withNewBadges(me: MyStatusDto, effects: Effects): MyStatusDto {
   const earned = effects.badges.get(me.userId);
@@ -801,8 +814,8 @@ export class StudyRoomEngine {
         }
         for (const [userId, badgeIds] of effects.badges) {
           effects.notifications.push((n) => n.badgesEarned(userId, badgeIds));
-          await this.announceBadges(tx, effects, userId, badgeIds, now);
         }
+        await this.announceBadges(tx, effects, now);
         attachNewBadges(result, effects);
         return { result, nextWake: await this.nextWakeAt(tx, now) };
       });
@@ -1042,25 +1055,24 @@ export class StudyRoomEngine {
     );
   }
 
-  /** The squad bot congratulates a member on badges they just earned, in one post. */
-  private async announceBadges(
-    tx: Store,
-    effects: Effects,
-    userId: string,
-    badgeIds: readonly string[],
-    now: number,
-  ): Promise<void> {
-    const names = [
-      ...new Set(
-        badgeIds.map((id) => {
-          const badge = badgeById(id);
-          return !badge || badge.secret ? SECRET_BADGE_NAME : badge.name;
-        }),
-      ),
-    ];
-    const badge =
-      names.length > 1 ? `${names.slice(0, -1).join(", ")} and ${names.at(-1)}` : names[0];
-    await this.squadMessage(tx, effects, "badgeUnlocked", [userId], 0, now, badge);
+  /**
+   * The squad bot congratulates members on badges they just earned. One
+   * member gets a post of their own; several at once (say, a full room at the
+   * end of a round) share one roundup post, so the channel isn't flooded.
+   */
+  private async announceBadges(tx: Store, effects: Effects, now: number): Promise<void> {
+    const entries = [...effects.badges]
+      .filter(([, badgeIds]) => badgeIds.length > 0)
+      .map(([userId, badgeIds]) => ({ userId, badges: badgeNames(badgeIds) }));
+    if (entries.length === 1) {
+      const { userId, badges } = entries[0]!;
+      await this.squadMessage(tx, effects, "badgeUnlocked", [userId], 0, now, badges);
+      return;
+    }
+    const channelId = this.config.postChannelId;
+    if (entries.length === 0 || !this.config.squadBot.enabled || !channelId) return;
+    const mention = this.config.squadBot.mentions;
+    effects.posts.push((a) => a.badgeRoundup(channelId, entries, mention));
   }
 
   /**

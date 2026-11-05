@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  badgeRoundupPost,
   bossDefeatedPost,
   busyRoomPost,
   dailyRecapPost,
@@ -25,6 +26,27 @@ describe("channel posts", () => {
     const post = squadPost("breakStarted", "Break!", mentions, 12);
     expect(post).toContain("@m9 and 2 others Break!");
     expect(post).not.toContain("@m10");
+  });
+
+  it("rolls several members' new badges into one post", () => {
+    expect(
+      badgeRoundupPost(
+        [
+          { who: "@Ana", badges: "First Steps and Squad Up" },
+          { who: "@Kai", badges: "Night Owl" },
+        ],
+        2,
+      ),
+    ).toBe("🏅 New badges for 2 people\n@Ana: First Steps and Squad Up\n@Kai: Night Owl");
+  });
+
+  it("sums up a big badge roundup instead of listing everyone", () => {
+    const lines = Array.from({ length: 50 }, (_, i) => ({ who: `@m${i}`, badges: "Squad Up" }));
+    const post = badgeRoundupPost(lines, 50);
+    expect(post.split("\n")).toHaveLength(12);
+    expect(post).toContain("@m9: Squad Up");
+    expect(post).not.toContain("@m10");
+    expect(post).toMatch(/…and 40 others unlocked badges too\.$/);
   });
 
   it("announces a busy room", () => {

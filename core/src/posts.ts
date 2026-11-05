@@ -73,6 +73,25 @@ export function squadPost(
   return heading ? `${heading}\n${body}` : body;
 }
 
+/** One member's line in a badge roundup: their mention tag or cleaned name, and the badges. */
+export interface BadgeRoundupLine {
+  who: string;
+  badges: string;
+}
+
+/**
+ * One squad bot post for everyone who unlocked badges at the same moment,
+ * such as the end of a busy round, so a full room doesn't get a post each.
+ * Shows the first few members and counts the rest.
+ */
+export function badgeRoundupPost(lines: readonly BadgeRoundupLine[], memberCount: number): string {
+  const shown = lines.slice(0, SQUAD_MAX_MENTIONS);
+  const extra = Math.max(0, memberCount - shown.length);
+  const rows = shown.map((l) => `${l.who}: ${l.badges}`);
+  if (extra > 0) rows.push(`…and ${pluralize(extra, "other")} unlocked badges too.`);
+  return [`🏅 New badges for ${pluralize(memberCount, "person", "people")}`, ...rows].join("\n");
+}
+
 /**
  * The first line of a timer post, so it's clear at a glance whether it's
  * study time or a break, even when the bot posts a movie line. Join and badge

@@ -1,5 +1,6 @@
 import {
   addDays,
+  badgeRoundupPost,
   BADGES,
   BOSSES,
   badgeById,
@@ -295,6 +296,13 @@ export class DemoGateway implements StudyRoomGateway {
           this.post(`${this.nameOf(userId)} just hit a ${streak} day streak.`),
         bossDefeated: async (_c, name) => this.post(`The room defeated ${name}!`),
         dailyRecap: async (_c, recap: RecapDto) => this.post(`${recap.weekday} recap`),
+        badgeRoundup: async (_c, entries) =>
+          this.post(
+            badgeRoundupPost(
+              entries.map((e) => ({ who: this.nameOf(e.userId), badges: e.badges })),
+              entries.length,
+            ),
+          ),
         squadMessage: async (_c, event, text, userIds, heading) =>
           this.post(
             squadPost(

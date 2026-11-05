@@ -4,6 +4,10 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ## [Unreleased]
 
+### Fixed
+
+- Squad bot: when several people unlock badges at the same moment, such as the end of a round in a busy room, the bot now sends one "New badges" post listing them (the first 10 by name, then a count) instead of a post each. In a 50-person test that was 50 posts at once. One person on their own still gets their own post.
+
 ## [0.3.9] - 2026-11-05
 
 This week's top 3 on the room screen, fairer goal XP, a confirm step before joining voice, and phone layout fixes.

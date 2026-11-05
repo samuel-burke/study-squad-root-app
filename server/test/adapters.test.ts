@@ -133,6 +133,32 @@ describe("ChannelAnnouncer", () => {
     expect(posts[0]!.content).toContain("and 3 others Back to it.");
   });
 
+  it("rolls a badge roundup into one post, mentioning only the members it shows", async () => {
+    const { posts, channel } = port();
+    const entries = Array.from({ length: 12 }, (_, i) => ({
+      userId: i === 0 ? "ana" : `m${i}`,
+      badges: "Squad Up",
+    }));
+    await new ChannelAnnouncer(channel).badgeRoundup("c1", entries, true);
+    expect(posts).toHaveLength(1);
+    expect(channel.nickname).toHaveBeenCalledTimes(10);
+    const lines = posts[0]!.content.split("\n");
+    expect(lines[0]).toBe("🏅 New badges for 12 people");
+    expect(lines[1]).toBe("[@everyone Ana R.](root://user/ana): Squad Up");
+    expect(lines.at(-1)).toBe("…and 2 others unlocked badges too.");
+  });
+
+  it("writes plain names in a badge roundup when bot mentions are off", async () => {
+    const { posts, channel } = port();
+    await new ChannelAnnouncer(channel).badgeRoundup("c1", [
+      { userId: "ana", badges: "Night Owl" },
+      { userId: "kai", badges: "Squad Up" },
+    ]);
+    expect(posts[0]!.content).toBe(
+      "🏅 New badges for 2 people\neveryone Ana R.: Night Owl\nSomeone: Squad Up",
+    );
+  });
+
   it("posts recaps, busy rooms and boss defeats", async () => {
     const { posts, channel } = port();
     const announcer = new ChannelAnnouncer(channel);

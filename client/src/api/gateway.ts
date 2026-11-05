@@ -9,6 +9,7 @@ import type {
   ProgressDto,
   RoomStateDto,
   SnapshotDto,
+  VoiceChannelChoiceDto,
 } from "@studyroom/core";
 
 export interface Profile {
@@ -84,6 +85,10 @@ export interface StudyRoomGateway {
   sendFeedback(text: string): Promise<void>;
   /** Another member's public game stats, for their profile card. */
   getMemberProfile(userId: string): Promise<MemberProfileDto>;
+  /** The community's voice channels for the Room settings dropdown, and the current pick. */
+  getVoiceChannels(): Promise<VoiceChannelChoiceDto>;
+  /** Admins only: saves the voice channel ("" clears the pick). */
+  setVoiceChannel(channelId: string): Promise<VoiceChannelChoiceDto>;
   getProfiles(userIds: string[]): Promise<Profile[]>;
   subscribe(handlers: GatewayHandlers): () => void;
 }

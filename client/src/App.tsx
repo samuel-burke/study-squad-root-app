@@ -189,6 +189,7 @@ export function App({ gateway }: { gateway: StudyRoomGateway }) {
       {overlay?.kind === "settings" && (
         <SettingsSheet
           room={room}
+          gateway={gateway}
           onClose={() => setOverlay(null)}
           onSendFeedback={() => setOverlay({ kind: "feedback" })}
         />

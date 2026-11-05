@@ -12,6 +12,7 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 - Goals: edit a goal's text with the pencil button. Enter saves, Escape cancels.
 - Goals: finished goals fold into a "Finished (n)" row and show how long they took, from adding to ticking off.
 - Goals: drag a goal by its handle to reorder (or use the arrow keys on the handle). The top goal is the one on your card.
+- Admins can pick the voice channel from a dropdown in the app's Room settings. It lists the community's voice channels only (Root's own channel picker shows text channels), saves the pick in the app's database so it survives reloads, and applies it straight away. The "Voice channel name" App setting still works as a fallback when nothing is picked.
 
 ## [0.3.7] - 2026-11-04
 

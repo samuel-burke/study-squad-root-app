@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { createHarness } from "../../core/test/helpers";
@@ -62,6 +62,7 @@ describe("GoalsSheet", () => {
     add: vi.fn(async () => true),
     edit: vi.fn(async () => true),
     clearDone: vi.fn(),
+    reorder: vi.fn(),
   });
 
   it("lists goals, shows XP when enabled, and closes with Done", async () => {
@@ -79,7 +80,7 @@ describe("GoalsSheet", () => {
     expect(onClose).toHaveBeenCalled();
   });
 
-  it("puts finished goals last with how long they took, and clears them in one go", async () => {
+  it("folds finished goals away with how long they took, and clears them in one go", async () => {
     const { engine, advance } = createHarness();
     await engine.addGoal("ana", "Read ch. 4");
     let me = await engine.addGoal("ana", "Flashcards");
@@ -90,10 +91,70 @@ describe("GoalsSheet", () => {
     render(
       <GoalsSheet me={me} xpEnabled={false} busy={false} actions={actions} onClose={vi.fn()} />,
     );
-    const items = screen.getAllByRole("listitem");
-    expect(items.map((li) => li.textContent)).toEqual(["Flashcards", "Read ch. 4Took 1h 35m"]);
-    await user.click(screen.getByRole("button", { name: "Clear completed (1)" }));
+    const texts = (name: string) =>
+      within(screen.getByRole("list", { name }))
+        .getAllByRole("listitem")
+        .map((li) => li.textContent);
+    expect(texts("Open goals")).toEqual(["Flashcards"]);
+    expect(screen.queryByRole("list", { name: "Finished goals" })).not.toBeInTheDocument();
+    const fold = screen.getByRole("button", { name: "Finished (1)" });
+    expect(fold).toHaveAttribute("aria-expanded", "false");
+    await user.click(fold);
+    expect(texts("Finished goals")).toEqual(["Read ch. 4Took 1h 35m"]);
+    await user.click(screen.getByRole("button", { name: "Clear completed" }));
     expect(actions.clearDone).toHaveBeenCalled();
+  });
+
+  it("reorders goals with the arrow keys on the handle and marks the one on the card", async () => {
+    const { engine } = createHarness();
+    await engine.joinRoomTimer("ana", { goals: ["A", "B", "C"] });
+    const me = (await engine.getSnapshot("ana")).me;
+    const [a, b, c] = me.goals.map((g) => g.id);
+    const user = userEvent.setup();
+    const actions = goalActions();
+    const sheet = (busy: boolean) => (
+      <GoalsSheet me={me} xpEnabled={false} busy={busy} actions={actions} onClose={vi.fn()} />
+    );
+    const { rerender } = render(sheet(false));
+    const items = within(screen.getByRole("list", { name: "Open goals" })).getAllByRole("listitem");
+    expect(items[0]).toHaveTextContent("On your card");
+    expect(items[1]).not.toHaveTextContent("On your card");
+    screen.getByRole("button", { name: /Reorder goal: A/ }).focus();
+    await user.keyboard("{ArrowDown}");
+    expect(actions.reorder).toHaveBeenCalledWith([b, a, c]);
+    // Shown in the new order while the request is out.
+    rerender(sheet(true));
+    expect(
+      within(screen.getByRole("list", { name: "Open goals" }))
+        .getAllByRole("checkbox")
+        .map((box) => box.getAttribute("aria-label")),
+    ).toEqual(["B", "A", "C"]);
+    expect(screen.getByText("A moved to 2 of 3.")).toBeInTheDocument();
+  });
+
+  it("drags a goal by its handle to a new place", async () => {
+    const { engine } = createHarness();
+    await engine.joinRoomTimer("ana", { goals: ["A", "B", "C"] });
+    const me = (await engine.getSnapshot("ana")).me;
+    const [a, b, c] = me.goals.map((g) => g.id);
+    const actions = goalActions();
+    render(
+      <GoalsSheet me={me} xpEnabled={false} busy={false} actions={actions} onClose={vi.fn()} />,
+    );
+    // jsdom has no layout, so give each row a 40px slot.
+    const rows = within(screen.getByRole("list", { name: "Open goals" })).getAllByRole("listitem");
+    rows.forEach((row, i) => {
+      const top = i * 40;
+      row.getBoundingClientRect = () =>
+        ({ top, bottom: top + 40, height: 40, left: 0, right: 300, width: 300 }) as DOMRect;
+      Object.defineProperty(row, "offsetHeight", { value: 40 });
+    });
+    const handle = screen.getByRole("button", { name: /Reorder goal: A/ });
+    handle.setPointerCapture = vi.fn();
+    fireEvent.pointerDown(handle, { pointerId: 1, button: 0, clientY: 20 });
+    fireEvent.pointerMove(handle, { pointerId: 1, clientY: 105 });
+    fireEvent.pointerUp(handle, { pointerId: 1, clientY: 105 });
+    expect(actions.reorder).toHaveBeenCalledWith([b, c, a]);
   });
 
   it("edits a goal in place", async () => {

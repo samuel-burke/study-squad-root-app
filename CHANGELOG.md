@@ -8,7 +8,8 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 - Goals: a "Clear completed" button removes every finished goal at once. XP, stats and badges already earned stay.
 - Goals: edit a goal's text with the pencil button. Enter saves, Escape cancels.
-- Goals: finished goals move below open ones and show how long they took, from adding to ticking off.
+- Goals: finished goals fold into a "Finished (n)" row and show how long they took, from adding to ticking off.
+- Goals: drag a goal by its handle to reorder (or use the arrow keys on the handle). The top goal is the one on your card.
 
 ## [0.3.7] - 2026-11-04
 

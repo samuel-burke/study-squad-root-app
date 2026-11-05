@@ -61,6 +61,8 @@ export interface StudyRoomGateway {
   deleteGoal(goalId: string): Promise<MyStatusDto>;
   editGoal(goalId: string, text: string): Promise<MyStatusDto>;
   clearDoneGoals(): Promise<MyStatusDto>;
+  /** Open goals, top first. */
+  reorderGoals(goalIds: string[]): Promise<MyStatusDto>;
   setGoalsPrivate(goalsPrivate: boolean): Promise<MyStatusDto>;
   getProgress(): Promise<ProgressDto>;
   /** This week by focus minutes unless `by` and `period` say otherwise. */

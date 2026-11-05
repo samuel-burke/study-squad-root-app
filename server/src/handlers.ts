@@ -26,6 +26,7 @@ import type {
   MemberProfile,
   MyStatus,
   Progress,
+  ReorderGoalsRequest,
   RoomSnapshot,
   SetGoalDoneRequest,
   SetBadgeShowcaseRequest,
@@ -187,6 +188,12 @@ export class StudyRoomHandlers {
   clearDoneGoals(userId: string): Promise<MyStatus> {
     return this.handle("clearDoneGoals", userId, "write", async () =>
       myStatusToProto(await this.engine.clearDoneGoals(userId)),
+    );
+  }
+
+  reorderGoals(userId: string, request: ReorderGoalsRequest): Promise<MyStatus> {
+    return this.handle("reorderGoals", userId, "write", async () =>
+      myStatusToProto(await this.engine.reorderGoals(userId, request.goalIds)),
     );
   }
 

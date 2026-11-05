@@ -363,6 +363,34 @@ describe("goals", () => {
     expect((await engine.getSnapshot("bo")).me.goals).toHaveLength(1);
   });
 
+  it("reorders open goals, and the top one goes on the card", async () => {
+    const { engine } = createHarness();
+    await engine.joinRoomTimer("ana", { goals: ["A", "B", "C"] });
+    const ids = (await engine.getSnapshot("ana")).me.goals.map((g) => g.id);
+    const me = await engine.reorderGoals("ana", [ids[2], ids[0], ids[1]]);
+    expect(me.goals.map((g) => g.text)).toEqual(["C", "A", "B"]);
+    expect((await engine.getSnapshot("ana")).room.members[0]).toMatchObject({ goalText: "C" });
+    // A goal added later goes to the bottom.
+    expect((await engine.addGoal("ana", "D")).goals.map((g) => g.text)).toEqual([
+      "C",
+      "A",
+      "B",
+      "D",
+    ]);
+  });
+
+  it("keeps goals a reorder leaves out, and ignores ids that aren't open goals of theirs", async () => {
+    const { engine } = createHarness();
+    await engine.joinRoomTimer("ana", { goals: ["A", "B", "C"] });
+    const bo = (await engine.addGoal("bo", "Bo's")).goals[0]!.id;
+    const ids = (await engine.getSnapshot("ana")).me.goals.map((g) => g.id);
+    const me = await engine.reorderGoals("ana", [bo, ids[1], "gone"]);
+    expect(me.goals.map((g) => g.text)).toEqual(["B", "A", "C"]);
+    expect((await engine.getSnapshot("bo")).me.goals.map((g) => g.text)).toEqual(["Bo's"]);
+    await expectError(engine.reorderGoals("ana", "nope"), ErrorCode.Validation);
+    await expectError(engine.reorderGoals("ana", ["../x"]), ErrorCode.Validation);
+  });
+
   it("refuses to touch someone else's goal and doesn't reveal that it exists", async () => {
     const { engine } = createHarness();
     const id = (await engine.addGoal("ana", "Mine")).goals[0]!.id;

@@ -886,12 +886,100 @@ h3 {
   flex: none;
 }
 
-.clear-done {
-  align-self: flex-start;
-  min-height: 36px;
-  padding: 0 4px;
+.goal-grip {
+  width: 28px;
+  height: var(--tap);
+  margin-left: -8px;
+  margin-right: -6px;
   border: none;
+  background: transparent;
+  color: var(--outline-dim);
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  cursor: grab;
+  /* The finger drags the goal, not the page. */
+  touch-action: none;
+}
+
+.goal-grip:hover:not(:disabled),
+.goal-grip:focus-visible {
+  color: var(--text-muted);
+}
+
+.goal[data-dragging="true"] {
+  position: relative;
+  z-index: 2;
+  background: var(--surface);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.45);
+  outline: 1px solid var(--border-strong);
+}
+
+.goal[data-dragging="true"] .goal-grip {
+  cursor: grabbing;
+  color: var(--text);
+}
+
+.goal-current {
+  color: var(--amber-soft);
+  font-weight: 600;
+}
+
+.done-fold {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border-top: 1px solid var(--divider);
+  padding-top: 6px;
+}
+
+.done-fold-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.done-toggle,
+.clear-done {
+  min-height: 36px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
   font-size: 13px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 4px;
+  border-radius: var(--radius-sm);
+}
+
+.done-toggle svg {
+  transition: transform 0.15s ease;
+}
+
+.done-toggle[aria-expanded="true"] svg {
+  transform: rotate(90deg);
+}
+
+.clear-done {
+  color: var(--text-dim);
+  font-weight: 500;
+}
+
+.clear-done:hover:not(:disabled),
+.done-toggle:hover {
+  color: var(--text);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .done-toggle svg {
+    transition: none;
+  }
 }
 
 .input {

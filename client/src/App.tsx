@@ -80,6 +80,7 @@ export function App({ gateway }: { gateway: StudyRoomGateway }) {
       add: actions.addGoal,
       edit: actions.editGoal,
       clearDone: () => void actions.clearDoneGoals(),
+      reorder: (ids) => void actions.reorderGoals(ids),
     }),
     [actions],
   );

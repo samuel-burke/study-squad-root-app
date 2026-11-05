@@ -51,6 +51,7 @@ describe("migrations", () => {
       });
       await migrateToLatest(db);
       expect(await db("bosses").first()).toMatchObject({ max_hp_xp: 12_000, damage_xp: 3001 });
+      await db.migrate.down(migratorConfig); // 010_goal_order
       await db.migrate.down(migratorConfig); // 009_feedback
       await db.migrate.down(migratorConfig); // 008_live_stats
       await db.migrate.down(migratorConfig); // 007_live_boss_damage
@@ -59,6 +60,26 @@ describe("migrations", () => {
         max_hp_minutes: 6000,
         damage_minutes: 1500.5,
       });
+    } finally {
+      await db.destroy();
+    }
+  });
+
+  it("keeps existing goals in the order they were added", async () => {
+    const db = openDatabase(":memory:");
+    try {
+      await db.migrate.up({ ...migratorConfig, name: "001_initial" });
+      // Up to 009_feedback, one migration at a time.
+      for (let i = 2; i <= 9; i++) await db.migrate.up(migratorConfig);
+      await db("goals").insert([
+        { id: "a", user_id: "ana", text: "A", done: false, xp_awarded: false, created_at: 200 },
+        { id: "b", user_id: "ana", text: "B", done: false, xp_awarded: false, created_at: 100 },
+      ]);
+      await migrateToLatest(db);
+      expect(await db("goals").select("id", "sort_key").orderBy("id")).toEqual([
+        { id: "a", sort_key: 200 },
+        { id: "b", sort_key: 100 },
+      ]);
     } finally {
       await db.destroy();
     }

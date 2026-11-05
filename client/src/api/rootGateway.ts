@@ -101,6 +101,10 @@ export class RootGateway implements StudyRoomGateway {
     return myStatusFromProto(await call(() => client.clearDoneGoals({})));
   }
 
+  async reorderGoals(goalIds: string[]) {
+    return myStatusFromProto(await call(() => client.reorderGoals({ goalIds })));
+  }
+
   async setGoalsPrivate(goalsPrivate: boolean) {
     return myStatusFromProto(await call(() => client.setGoalsPrivate({ goalsPrivate })));
   }

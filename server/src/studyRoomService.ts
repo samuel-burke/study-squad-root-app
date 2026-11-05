@@ -19,6 +19,7 @@ import type {
   MemberProfile,
   MyStatus,
   Progress,
+  ReorderGoalsRequest,
   RoomSnapshot,
   SetBadgeShowcaseRequest,
   SetCardStyleRequest,
@@ -80,6 +81,10 @@ export class StudyRoomService extends StudyRoomServiceBase {
 
   clearDoneGoals(_request: ClearDoneGoalsRequest, client: Client): Promise<MyStatus> {
     return this.call((h) => h.clearDoneGoals(client.userId));
+  }
+
+  reorderGoals(request: ReorderGoalsRequest, client: Client): Promise<MyStatus> {
+    return this.call((h) => h.reorderGoals(client.userId, request));
   }
 
   setGoalsPrivate(request: SetGoalsPrivateRequest, client: Client): Promise<MyStatus> {

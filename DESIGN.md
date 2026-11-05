@@ -29,7 +29,7 @@ The room timer is the default and the brighter button because joining it is what
 | Rule              | Value                                                             | Why                                                                      |
 | ----------------- | ----------------------------------------------------------------- | ------------------------------------------------------------------------ |
 | Focus XP          | 2 XP per whole minute × combo                                     | Rewards time, not task count                                             |
-| Goal XP           | +25 once per goal                                                 | Unchecking and rechecking can't farm it                                  |
+| Goal XP           | +25 once per goal, for the first 5 goals finished each day        | Unchecking, rechecking or adding quick goals can't farm it               |
 | Level curve       | Level _n_ needs 150 + 50·_n_ XP (level 7 needs 500)               | Matches the mockups; early levels come fast                              |
 | Combo             | 1.0x + 0.1x per extra person who **finishes** the round, max 2.0x | Rewards focusing together                                                |
 | Finishing a round | At least 5 minutes in that round (or half the round, if shorter)  | Joining in the last seconds doesn't count toward the combo or the streak |
@@ -51,7 +51,7 @@ The room timer never interrupts a focus round and never takes back anything earn
 - people who joined during the final long break haven't focused yet, so they roll into a fresh cycle instead of being dropped;
 - a forgotten timer stops after one cycle, which bounds what any idle timer can earn.
 
-There was a daily XP cap (an admin setting) until 0.3.8. It was removed: the Keep going? check already stops 24/7 farming, and a cap mostly punished long honest study days.
+There was a daily XP cap (an admin setting) until 0.3.8. It was removed: the Keep going? check already stops 24/7 farming, and a cap mostly punished long honest study days. Without it, goals were the one reward with no time behind them (add, tick, clear, repeat), so only the first 5 goals finished each day pay XP (`GAME.goalsWithXpPerDay`). Later goals still tick and count for stats, quests and badges. Focus is never limited.
 
 ## Days start at 4am
 
@@ -77,7 +77,7 @@ A boss spawns lazily each Monday (community time zone), taking the week's name f
 All XP counts as damage except boss loot:
 
 - **Focus** hits the boss live. While anyone is focusing the engine wakes every minute, and each whole minute of a running block deals its base XP (2 per minute). The combo bonus lands when the round ends, because the combo depends on who finishes. Each room participant and solo timer remembers what it has already dealt (`bossXpDealt`), so the end of a round, leaving early or stopping a solo only deals the rest, and the total always equals the block's focus XP. It's dealt even with XP turned off; there's just no loot then.
-- **Goals** deal the XP they pay (25 each, once per goal, ever).
+- **Goals** deal the XP they pay (25 each, once per goal, ever, and only for the day's first 5 goals).
 - **Quest rewards** deal their XP. They come at most three times a week.
 
 Admins can resize the live boss; damage is never healed, and lowering HP below the damage dealt defeats it on the spot (with the usual post and loot).

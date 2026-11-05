@@ -300,6 +300,37 @@ describe("goals", () => {
     expect((await engine.setGoalDone("ana", id, true)).xpTotal).toBe(25);
   });
 
+  it("pays XP for the first five goals each day, so quick goals can't be farmed", async () => {
+    const { engine, advance } = createHarness();
+    const tick = async () => {
+      const me = await engine.addGoal("ana", "Quick one");
+      const goal = me.goals.find((g) => !g.done)!;
+      const after = await engine.setGoalDone("ana", goal.id, true);
+      await engine.clearDoneGoals("ana");
+      return after;
+    };
+    expect((await engine.getSnapshot("ana")).me.goalXpLeftToday).toBe(5);
+    for (let i = 0; i < 4; i++) await tick();
+    let me = await tick();
+    // Five goals at 25 XP, plus 40 for this week's "Finish 5 goals" quest.
+    expect([me.xpTotal, me.goalXpLeftToday]).toEqual([165, 0]);
+    // Later goals still tick and count, but pay nothing and deal no boss damage.
+    me = await tick();
+    expect(me.xpTotal).toBe(165);
+    const snap = await engine.getSnapshot("ana");
+    expect(snap.room.boss.damageXp).toBe(165);
+    expect((await engine.getProgress("ana")).quests[0]).toMatchObject({ id: "goals", done: true });
+    // A new day brings five more.
+    await advance(24 * 60 * MINUTE);
+    expect((await engine.getSnapshot("ana")).me.goalXpLeftToday).toBe(5);
+    expect((await tick()).xpTotal).toBe(165 + 25);
+  });
+
+  it("shows no goal XP left when XP is off", async () => {
+    const { engine } = createHarness(configWith({ xp: { enabled: false } }));
+    expect((await engine.getSnapshot("ana")).me.goalXpLeftToday).toBe(0);
+  });
+
   it("keeps finished goals visible until 4am, so late-night sessions keep theirs", async () => {
     const { engine, advance } = createHarness();
     const id = (await engine.addGoal("ana", "Essay intro draft")).goals[0]!.id;
@@ -1056,7 +1087,8 @@ describe("weekly quests", () => {
     // Unticking and ticking a goal again pays nothing more.
     await engine.setGoalDone("ana", goals[0]!.id, false);
     await engine.setGoalDone("ana", goals[0]!.id, true);
-    expect((await engine.getSnapshot("ana")).me.xpTotal).toBe(6 * 25 + 40);
+    // The sixth goal of the day pays no XP.
+    expect((await engine.getSnapshot("ana")).me.xpTotal).toBe(5 * 25 + 40);
     const goalsQuest = (await engine.getProgress("ana")).quests[0]!;
     expect(goalsQuest).toMatchObject({ id: "goals", progress: 5, done: true });
   });

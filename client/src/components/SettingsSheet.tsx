@@ -33,7 +33,7 @@ export function SettingsSheet({
         ? "Shown by default. You can make yours private."
         : "Private by default.",
     ],
-    ["XP and levels", f.xpEnabled ? "On · 2 XP per focus minute, +25 per goal" : "Off"],
+    ["XP and levels", f.xpEnabled ? "On · 2 XP per focus minute, +25 per goal (5 a day)" : "Off"],
     ["Combo multiplier", f.comboEnabled ? "On · +0.1x per extra person, up to 2.0x" : "Off"],
     ["Weekly boss", f.bossEnabled ? `On · ${room.boss.name}` : "Off"],
     ["Streak freezes", f.streakFreezesEnabled ? "One free missed day per week" : "Off"],

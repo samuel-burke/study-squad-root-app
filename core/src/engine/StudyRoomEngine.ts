@@ -642,11 +642,14 @@ export class StudyRoomEngine {
         if (done && !goal.xpAwarded) {
           updated.xpAwarded = true;
           const day = dayKey(now, this.config.timeZone);
-          const xp = this.config.xp.enabled ? GAME.xpPerGoal : 0;
+          const doneToday = (await tx.stats.get(userId, day))?.goalsDone ?? 0;
+          const paid = this.config.xp.enabled && doneToday < GAME.goalsWithXpPerDay;
+          const xp = paid ? GAME.xpPerGoal : 0;
           const member = await this.loadMember(tx, userId);
           await tx.members.save({ ...member, xpTotal: member.xpTotal + xp });
           await tx.stats.add(userId, day, { xp, goalsDone: 1 });
-          // Goal XP hits the boss as earned. Each goal pays once, ever.
+          // Goal XP hits the boss as earned. Each goal pays once, ever, and
+          // only the day's first few pay, so quick goals can't be farmed.
           await this.damageBoss(tx, effects, xp, [userId], now);
           const quests = await this.rewardQuests(tx, effects, userId, now);
           await this.awardBadges(tx, effects, userId, now, {
@@ -1890,6 +1893,7 @@ export class StudyRoomEngine {
     }
 
     const goals = await tx.goals.listForUser(userId, startOfDay(today, tz));
+    const todayStats = await tx.stats.get(userId, today);
     return {
       userId,
       status,
@@ -1899,7 +1903,10 @@ export class StudyRoomEngine {
       level: progress.level,
       xpIntoLevel: progress.xpIntoLevel,
       xpForNextLevel: progress.xpForNextLevel,
-      xpToday: (await tx.stats.get(userId, today))?.xp ?? 0,
+      xpToday: todayStats?.xp ?? 0,
+      goalXpLeftToday: this.config.xp.enabled
+        ? Math.max(0, GAME.goalsWithXpPerDay - (todayStats?.goalsDone ?? 0))
+        : 0,
       streak: currentStreak(streakState, today, this.config.streakFreezesEnabled),
       freezeAvailable: freezeAvailable(streakState, today, this.config.streakFreezesEnabled),
       goals: goals.map(goalToDto),

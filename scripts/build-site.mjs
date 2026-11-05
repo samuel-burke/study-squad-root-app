@@ -128,6 +128,12 @@ function build() {
       root: "./",
       content: readFileSync(join(site, "home.html"), "utf8"),
     },
+    "support/index.html": {
+      title: "Support · Study Squad",
+      description: "How to get help with Study Squad: email or message us on Root.",
+      root: "../",
+      content: readFileSync(join(site, "support.html"), "utf8"),
+    },
     "privacy/index.html": {
       title: `Privacy policy · Study Squad`,
       description: "What Study Squad keeps, why, who sees it, and how to delete it.",

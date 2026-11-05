@@ -4,6 +4,10 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ## [Unreleased]
 
+### Added
+
+- Support contacts: Room settings and the feedback box now show how to reach the developer (hello@samuelburke.dev, or @5amuel on Root), and the website has a new support page.
+
 ## [0.3.7] - 2026-11-04
 
 The number settings from 0.3.6 now take effect.

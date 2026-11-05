@@ -132,6 +132,13 @@ describe("Study Squad app", () => {
     const opener = screen.getByRole("button", { name: "Room settings" });
     await user.click(opener);
     expect(screen.getByRole("dialog", { name: "Room settings" })).toHaveTextContent("25 / 5");
+    expect(screen.getByRole("dialog", { name: "Room settings" })).toHaveTextContent(
+      "Need help? Email hello@samuelburke.dev or message @5amuel on Root.",
+    );
+    expect(screen.getByRole("link", { name: "hello@samuelburke.dev" })).toHaveAttribute(
+      "href",
+      "mailto:hello@samuelburke.dev",
+    );
     await user.keyboard("{Escape}");
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     expect(opener).toHaveFocus();

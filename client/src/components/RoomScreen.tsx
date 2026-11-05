@@ -43,17 +43,24 @@ function Header({
   const channel = room.features.postChannelName;
   return (
     <header className="app-header">
-      <div className="brand">
-        {!compact && (
+      {compact ? (
+        // Phones only have room for the logo next to the round pill.
+        <div className="brand brand-compact">
+          <div className="brand-mark" role="img" aria-label="Study Squad">
+            <AppLogo size={32} />
+          </div>
+        </div>
+      ) : (
+        <div className="brand">
           <div className="brand-mark" aria-hidden="true">
             <AppLogo size={32} />
           </div>
-        )}
-        <div style={{ minWidth: 0 }}>
-          <div className="brand-name">Study Squad</div>
-          {channel && <div className="brand-sub">Posts in #{channel}</div>}
+          <div style={{ minWidth: 0 }}>
+            <div className="brand-name">Study Squad</div>
+            {channel && <div className="brand-sub">Posts in #{channel}</div>}
+          </div>
         </div>
-      </div>
+      )}
       <div className="phase-pill" data-phase={room.timer.phase}>
         <span className="dot" />
         {compact && room.timer.phase !== "idle" && room.timer.phase !== "longBreak"

@@ -77,7 +77,7 @@ export function FeedbackSheet({
             Want a reply? Email {SUPPORT.email} or message {SUPPORT.rootUsername} on Root instead.
           </span>
           {error && (
-            <div role="alert" className="small" style={{ color: "var(--coral)" }}>
+            <div role="alert" className="small" style={{ color: "var(--coral-text)" }}>
               {error}
             </div>
           )}

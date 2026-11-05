@@ -121,7 +121,10 @@ export function StartSessionSheet(props: StartSessionSheetProps) {
             aria-checked={mode === "room"}
             onClick={() => setMode("room")}
           >
-            <PeopleIcon size={22} stroke={mode === "room" ? "var(--amber)" : "var(--text-muted)"} />
+            <PeopleIcon
+              size={22}
+              stroke={mode === "room" ? "var(--amber-strong)" : "var(--text-muted)"}
+            />
             <span style={{ flex: 1 }}>
               <span className="choice-title">Join the room timer</span>
               <span className="choice-sub">{roomHint(room, now)}</span>
@@ -134,7 +137,10 @@ export function StartSessionSheet(props: StartSessionSheetProps) {
             aria-checked={mode === "solo"}
             onClick={() => setMode("solo")}
           >
-            <TimerIcon size={22} stroke={mode === "solo" ? "var(--amber)" : "var(--text-muted)"} />
+            <TimerIcon
+              size={22}
+              stroke={mode === "solo" ? "var(--amber-strong)" : "var(--text-muted)"}
+            />
             <span style={{ flex: 1 }}>
               <span className="choice-title">Solo timer</span>
               <span className="choice-sub">Pick your own length. Still shows on the board.</span>

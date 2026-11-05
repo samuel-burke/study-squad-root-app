@@ -74,7 +74,7 @@ export function BreakMoment({
         {xpEnabled && (
           <div className="stat">
             <div className="stat-label">You earned</div>
-            <div className="stat-value" style={{ color: "var(--teal)" }}>
+            <div className="stat-value" style={{ color: "var(--teal-text)" }}>
               +{result.xpEarned} XP
             </div>
             <div className="stat-sub">
@@ -165,7 +165,7 @@ export function BreakMoment({
         <button
           type="button"
           className="btn btn-break"
-          style={{ color: "var(--teal)" }}
+          style={{ color: "var(--teal-text)" }}
           onClick={onClose}
         >
           Back to the room

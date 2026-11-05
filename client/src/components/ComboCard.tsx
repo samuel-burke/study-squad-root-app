@@ -30,7 +30,7 @@ export function ComboCard({ combo, participants }: { combo: number; participants
 export function ComboPill({ combo, participants }: { combo: number; participants: number }) {
   return (
     <div className="combo-pill">
-      <BoltIcon size={14} stroke="var(--amber)" />
+      <BoltIcon size={14} stroke="var(--amber-strong)" />
       <strong>{formatCombo(combo)} combo</strong>
       <span className="muted">· {participants} on the room timer</span>
     </div>

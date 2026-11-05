@@ -7,6 +7,7 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 ### Added
 
 - Support contacts: Room settings and the feedback box now show how to reach the developer (hello@samuelburke.dev, or @5amuel on Root), and the website has a new support page.
+- Light mode. Study Squad now matches the light or dark theme picked in Root, and switches live when it changes. Outside Root (the demo) it follows the device setting. The full-screen badge unlock keeps its dark spotlight in both themes.
 
 ## [0.3.7] - 2026-11-04
 

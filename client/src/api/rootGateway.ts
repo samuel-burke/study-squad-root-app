@@ -118,6 +118,14 @@ export class RootGateway implements StudyRoomGateway {
     await call(() => client.sendFeedback({ text }));
   }
 
+  completeBreakChallenge() {
+    return this.snapshot(() => client.completeBreakChallenge({}));
+  }
+
+  sendHighFive(userId: string, emoji: string) {
+    return this.snapshot(() => client.sendHighFive({ toUserId: userId, emoji }));
+  }
+
   async keepGoing() {
     return myStatusFromProto(await call(() => client.keepGoing({})));
   }
@@ -198,17 +206,21 @@ export class RootGateway implements StudyRoomGateway {
     const onStatus = (e: { me?: Parameters<typeof myStatusFromProto>[0] }) =>
       handlers.myStatus(myStatusFromProto(e.me));
     const onBadges = (e: { badgeIds: string[] }) => handlers.badgesEarned(e.badgeIds);
+    const onHighFive = (e: { fromUserId: string; emoji: string }) =>
+      handlers.highFive({ fromUserId: e.fromUserId, emoji: e.emoji });
     client.on(StudyRoomServiceClientEvent.RoomUpdated, onRoom);
     client.on(StudyRoomServiceClientEvent.PhaseCompleted, onPhase);
     client.on(StudyRoomServiceClientEvent.PersonalResult, onPersonal);
     client.on(StudyRoomServiceClientEvent.MyStatus, onStatus);
     client.on(StudyRoomServiceClientEvent.BadgesEarned, onBadges);
+    client.on(StudyRoomServiceClientEvent.HighFive, onHighFive);
     return () => {
       client.off(StudyRoomServiceClientEvent.RoomUpdated, onRoom);
       client.off(StudyRoomServiceClientEvent.PhaseCompleted, onPhase);
       client.off(StudyRoomServiceClientEvent.PersonalResult, onPersonal);
       client.off(StudyRoomServiceClientEvent.MyStatus, onStatus);
       client.off(StudyRoomServiceClientEvent.BadgesEarned, onBadges);
+      client.off(StudyRoomServiceClientEvent.HighFive, onHighFive);
     };
   }
 }

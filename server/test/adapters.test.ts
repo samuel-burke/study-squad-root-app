@@ -16,6 +16,7 @@ describe("PushNotifier", () => {
     broadcastPersonalResult: vi.fn(),
     broadcastMyStatus: vi.fn(),
     broadcastBadgesEarned: vi.fn(),
+    broadcastHighFive: vi.fn(),
   });
 
   it("sends room events to everyone and personal events to one member", async () => {

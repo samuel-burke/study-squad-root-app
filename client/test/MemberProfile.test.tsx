@@ -121,6 +121,8 @@ describe("opening a profile from the board", () => {
     badges: [],
     cardStyle: "classic",
     weeklyRank: 0,
+    challengeDone: false,
+    highFives: 0,
   });
 
   it.each([false, true])("opens the tapped member (compact: %s)", async (compact) => {

@@ -281,6 +281,8 @@ describe("MemberBoard", () => {
     badges: [],
     cardStyle: "default",
     weeklyRank: 0,
+    challengeDone: false,
+    highFives: 0,
   };
 
   it.each([false, true])("shows your Root name instead of You (compact: %s)", (compact) => {

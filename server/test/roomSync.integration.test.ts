@@ -8,6 +8,7 @@ import { StudyRoomEngine } from "@studyroom/core";
 import type { Knex } from "knex";
 import {
   BadgesEarnedEvent,
+  HighFiveEvent,
   MyStatusEvent,
   PersonalResultEvent,
   PhaseCompletedEvent,
@@ -86,6 +87,10 @@ class FanOut implements Broadcaster<FakeClient> {
       (b) => BadgesEarnedEvent.fromBinary(b).badgeIds,
       t,
     );
+  }
+
+  broadcastHighFive(m: HighFiveEvent, t: BroadcastTarget<FakeClient>) {
+    this.deliver("highFive", HighFiveEvent.toBinary(m), (b) => HighFiveEvent.fromBinary(b), t);
   }
 
   of(userId: string, type?: string) {
@@ -179,6 +184,24 @@ describe("room timer sync across clients (engine + SQLite + push adapter)", () =
     expect(anaResult).toMatchObject({ xpEarned: 55, goalPrompt: { text: "Make 20 flashcards" } });
     expect(fanOut.of("marcus", "personal")).toHaveLength(1);
     expect(fanOut.of("viewer", "personal")).toHaveLength(0);
+  });
+
+  it("sends a high-five over the wire to the receiver only, and the count to everyone", async () => {
+    await engine.joinRoomTimer("ana");
+    await engine.joinRoomTimer("marcus");
+    await advanceTo(T0 + 26 * MINUTE);
+    await engine.sendHighFive("ana", "marcus", "👋");
+    await engine.completeBreakChallenge("marcus");
+    expect(fanOut.of("marcus", "highFive").map((m) => m.payload)).toEqual([
+      { fromUserId: "ana", emoji: "👋" },
+    ]);
+    expect(fanOut.of("ana", "highFive")).toHaveLength(0);
+    expect(fanOut.of("viewer", "highFive")).toHaveLength(0);
+    // Room pushes are bundled, so read the room fresh.
+    const marcusCard = (await engine.getSnapshot("viewer")).room.members.find(
+      (m) => m.userId === "marcus",
+    );
+    expect(marcusCard).toMatchObject({ highFives: 1, challengeDone: true });
   });
 
   it("keeps each member's status private to their own devices", async () => {

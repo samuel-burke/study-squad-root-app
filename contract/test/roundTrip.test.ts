@@ -69,6 +69,8 @@ const room: RoomStateDto = {
       badges: ["night-owl", "first-boss", "longest-day"],
       cardStyle: "gold",
       weeklyRank: 3,
+      challengeDone: false,
+      highFives: 0,
     },
     {
       userId: "u2",
@@ -81,6 +83,8 @@ const room: RoomStateDto = {
       badges: [],
       cardStyle: "classic",
       weeklyRank: 0,
+      challengeDone: true,
+      highFives: 4,
     },
     {
       userId: "u3",
@@ -93,6 +97,8 @@ const room: RoomStateDto = {
       badges: [],
       cardStyle: "classic",
       weeklyRank: 0,
+      challengeDone: false,
+      highFives: 0,
     },
     {
       userId: "u4",
@@ -105,6 +111,8 @@ const room: RoomStateDto = {
       badges: [],
       cardStyle: "classic",
       weeklyRank: 0,
+      challengeDone: false,
+      highFives: 0,
     },
   ],
   presentCount: 9,

@@ -2,6 +2,7 @@ import {
   addDays,
   badgeRoundupPost,
   BADGES,
+  breakRecapLines,
   BOSSES,
   badgeById,
   bossNameFor,
@@ -15,6 +16,7 @@ import {
   MemoryStore,
   StudyRoomEngine,
   type AppConfig,
+  type HighFiveDto,
   type LeaderboardMetric,
   type LeaderboardPeriod,
   type MyStatusDto,
@@ -265,6 +267,8 @@ export class DemoGateway implements StudyRoomGateway {
   private readonly config: AppConfig;
   private readonly pendingBots = new Set<string>();
   private skewMs = 0;
+  /** Breaks the bots already joined in on, so they do the challenge once. */
+  private readonly botBreaks = new Set<string>();
   private unlockPreviewed = false;
   private nextId = 1;
 
@@ -276,7 +280,10 @@ export class DemoGateway implements StudyRoomGateway {
       clock: { now },
       scheduler: new BrowserScheduler(now),
       notifier: {
-        roomUpdated: (room: RoomStateDto) => this.emit((h) => h.roomUpdated(room)),
+        roomUpdated: (room: RoomStateDto) => {
+          this.emit((h) => h.roomUpdated(room));
+          this.botsTakeBreak(room);
+        },
         phaseCompleted: (event: PhaseCompletedDto) => this.emit((h) => h.phaseCompleted(event)),
         personalResult: (userId: string, event: PersonalResultDto) => {
           if (userId === DEMO_USER_ID) this.emit((h) => h.personalResult(event));
@@ -287,6 +294,10 @@ export class DemoGateway implements StudyRoomGateway {
         },
         badgesEarned: (userId: string, badgeIds: string[]) => {
           if (userId === DEMO_USER_ID) this.emit((h) => h.badgesEarned(badgeIds));
+        },
+        highFive: (toUserId: string, event: HighFiveDto) => {
+          if (toUserId === DEMO_USER_ID) this.emit((h) => h.highFive(event));
+          else if (event.fromUserId === DEMO_USER_ID) this.highFiveBack(toUserId);
         },
       },
       announcer: {
@@ -303,7 +314,7 @@ export class DemoGateway implements StudyRoomGateway {
               entries.length,
             ),
           ),
-        squadMessage: async (_c, event, text, userIds, heading) =>
+        squadMessage: async (_c, event, text, userIds, heading, _mention, recap) =>
           this.post(
             squadPost(
               event,
@@ -311,6 +322,12 @@ export class DemoGateway implements StudyRoomGateway {
               userIds.map((id) => this.nameOf(id)),
               userIds.length,
               heading,
+              recap
+                ? breakRecapLines(
+                    recap,
+                    new Map(recap.highFives.map((h) => [h.userId, this.nameOf(h.userId)])),
+                  )
+                : [],
             ),
           ),
       },
@@ -474,6 +491,46 @@ export class DemoGateway implements StudyRoomGateway {
   }
 
   /**
+   * On a break, bots on it do the challenge a few seconds in, and one of
+   * them high-fives you if you're on the break too.
+   */
+  private botsTakeBreak(room: RoomStateDto) {
+    for (const card of room.members) {
+      const bot = BOTS.find((b) => b.userId === card.userId);
+      const onBreak = card.status === "roomBreak" || card.status === "soloBreak";
+      const key = `${card.userId}:${card.endsAt}`;
+      if (!bot || !onBreak || card.challengeDone || this.botBreaks.has(key)) continue;
+      this.botBreaks.add(key);
+      setTimeout(
+        () => this.engine.completeBreakChallenge(card.userId).catch(() => undefined),
+        2_000 + Math.random() * 6_000,
+      );
+    }
+    const you = room.members.find((m) => m.userId === DEMO_USER_ID);
+    const youKey = you ? `you:${you.endsAt}` : "";
+    if (
+      you &&
+      you.status !== "roomFocus" &&
+      you.status !== "soloFocus" &&
+      !this.botBreaks.has(youKey)
+    ) {
+      this.botBreaks.add(youKey);
+      const friend = room.members.find(
+        (m) => m.status === you.status && BOTS.some((b) => b.userId === m.userId),
+      );
+      if (friend) setTimeout(() => this.highFiveBack(friend.userId), 4_000);
+    }
+  }
+
+  /** A bot you high-fived sends one back. */
+  private highFiveBack(botId: string) {
+    setTimeout(
+      () => this.engine.sendHighFive(botId, DEMO_USER_ID, "👋").catch(() => undefined),
+      1_200,
+    );
+  }
+
+  /**
    * `?unlock=` plays unlock animations once, on the first click or key press:
    * browsers only allow sound after one. Nothing is awarded, so a reload
    * plays them again.
@@ -582,6 +639,14 @@ export class DemoGateway implements StudyRoomGateway {
 
   keepGoing() {
     return this.call(() => this.engine.keepGoing(DEMO_USER_ID));
+  }
+
+  completeBreakChallenge() {
+    return this.call(() => this.engine.completeBreakChallenge(DEMO_USER_ID));
+  }
+
+  sendHighFive(userId: string, emoji: string) {
+    return this.call(() => this.engine.sendHighFive(DEMO_USER_ID, userId, emoji));
   }
 
   getProgress() {

@@ -1,4 +1,5 @@
 import type {
+  HighFiveDto,
   LeaderboardDto,
   LeaderboardMetric,
   LeaderboardPeriod,
@@ -30,6 +31,8 @@ export interface GatewayHandlers {
   myStatus(me: MyStatusDto): void;
   /** Badges the current member just earned. */
   badgesEarned(badgeIds: string[]): void;
+  /** Someone high-fived the current member. */
+  highFive(event: HighFiveDto): void;
 }
 
 /** An error the UI can show as-is. */
@@ -81,6 +84,10 @@ export interface StudyRoomGateway {
   deleteMyData(): Promise<MyStatusDto>;
   /** Answers "Keep going?" so the member rolls into the next cycle. */
   keepGoing(): Promise<MyStatusDto>;
+  /** Marks this break's challenge done. */
+  completeBreakChallenge(): Promise<SnapshotDto>;
+  /** High-fives another member on a break with 👋 or 🔥. */
+  sendHighFive(userId: string, emoji: string): Promise<SnapshotDto>;
   /** Sends an anonymous note to the developer. */
   sendFeedback(text: string): Promise<void>;
   /** Another member's public game stats, for their profile card. */

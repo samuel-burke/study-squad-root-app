@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { roomFromProto } from "@studyroom/contract";
 import type { MyStatusDto, RecapDto } from "@studyroom/core";
+import type { RoomUpdatedEvent } from "@studyroom/gen-shared";
 import { ChannelAnnouncer, type ChannelPort } from "../src/adapters/channelAnnouncer";
 import { createLogger } from "../src/adapters/logger";
 import { PushNotifier, type Broadcaster } from "../src/adapters/pushNotifier";
@@ -31,6 +33,81 @@ describe("PushNotifier", () => {
     expect(b.broadcastMyStatus).toHaveBeenCalledWith({ me: expect.any(Object) }, [
       { id: "ana-client" },
     ]);
+  });
+
+  /** Timers on a hand-moved clock, so bundling can be stepped through. */
+  const manualTimers = () => {
+    const t = {
+      current: 0,
+      due: null as { at: number; run: () => void } | null,
+      now: () => t.current,
+      setTimeout: (run: () => void, ms: number) => (t.due = { at: t.current + ms, run }),
+      clearTimeout: () => {
+        t.due = null;
+      },
+      advance(ms: number) {
+        t.current += ms;
+        if (t.due && t.due.at <= t.current) {
+          const { run } = t.due;
+          t.due = null;
+          run();
+        }
+      },
+    };
+    return t;
+  };
+  const sentRooms = (b: ReturnType<typeof broadcaster>) =>
+    vi
+      .mocked(b.broadcastRoomUpdated)
+      .mock.calls.map(([message]) => roomFromProto((message as RoomUpdatedEvent).room));
+
+  it("bundles a burst of room changes into one push of the newest room", async () => {
+    const b = broadcaster();
+    const timers = manualTimers();
+    const notifier = new PushNotifier(b, () => undefined, timers);
+    const { engine } = createHarness();
+    const room = (await engine.getSnapshot("ana")).room;
+    // 50 people tick a goal in the same second.
+    for (let i = 0; i < 50; i++) {
+      notifier.roomUpdated({ ...room, presentCount: i, serverNow: 1_000 + i * 10 });
+      timers.advance(10);
+    }
+    // The first goes out at once; the rest wait for the window to close.
+    expect(b.broadcastRoomUpdated).toHaveBeenCalledTimes(1);
+    // The window closes 1 s after the first push.
+    timers.advance(499);
+    expect(b.broadcastRoomUpdated).toHaveBeenCalledTimes(1);
+    timers.advance(1);
+    expect(b.broadcastRoomUpdated).toHaveBeenCalledTimes(2);
+    const last = sentRooms(b).at(-1)!;
+    expect(last).toMatchObject({ presentCount: 49 });
+    // Its clock reading moved on by the 510 ms it waited (built at 490, sent at 1000).
+    expect(last.serverNow).toBe(1_000 + 49 * 10 + 510);
+    // A quiet room sends its next change straight away.
+    timers.advance(5_000);
+    notifier.roomUpdated(room);
+    expect(b.broadcastRoomUpdated).toHaveBeenCalledTimes(3);
+  });
+
+  it("drops a waiting room push when a phase ends, since that event carries a newer room", async () => {
+    const b = broadcaster();
+    const timers = manualTimers();
+    const notifier = new PushNotifier(b, () => undefined, timers);
+    const { engine } = createHarness();
+    const room = (await engine.getSnapshot("ana")).room;
+    notifier.roomUpdated(room);
+    notifier.roomUpdated(room);
+    notifier.phaseCompleted({
+      kind: "focus",
+      round: 1,
+      finisherIds: [],
+      roomDamageXp: 0,
+      combo: 1,
+      room,
+    });
+    timers.advance(2_000);
+    expect(b.broadcastRoomUpdated).toHaveBeenCalledTimes(1);
+    expect(b.broadcastPhaseCompleted).toHaveBeenCalledTimes(1);
   });
 
   it("sends earned badges only to the member who earned them", () => {
@@ -131,6 +208,32 @@ describe("ChannelAnnouncer", () => {
     await new ChannelAnnouncer(channel).squadMessage("c1", "studyResumed", "Back to it.", ids);
     expect(channel.nickname).toHaveBeenCalledTimes(10);
     expect(posts[0]!.content).toContain("and 3 others Back to it.");
+  });
+
+  it("rolls a badge roundup into one post, mentioning only the members it shows", async () => {
+    const { posts, channel } = port();
+    const entries = Array.from({ length: 12 }, (_, i) => ({
+      userId: i === 0 ? "ana" : `m${i}`,
+      badges: "Squad Up",
+    }));
+    await new ChannelAnnouncer(channel).badgeRoundup("c1", entries, true);
+    expect(posts).toHaveLength(1);
+    expect(channel.nickname).toHaveBeenCalledTimes(10);
+    const lines = posts[0]!.content.split("\n");
+    expect(lines[0]).toBe("🏅 New badges for 12 people");
+    expect(lines[1]).toBe("[@everyone Ana R.](root://user/ana): Squad Up");
+    expect(lines.at(-1)).toBe("…and 2 others unlocked badges too.");
+  });
+
+  it("writes plain names in a badge roundup when bot mentions are off", async () => {
+    const { posts, channel } = port();
+    await new ChannelAnnouncer(channel).badgeRoundup("c1", [
+      { userId: "ana", badges: "Night Owl" },
+      { userId: "kai", badges: "Squad Up" },
+    ]);
+    expect(posts[0]!.content).toBe(
+      "🏅 New badges for 2 people\neveryone Ana R.: Night Owl\nSomeone: Squad Up",
+    );
   });
 
   it("posts recaps, busy rooms and boss defeats", async () => {

@@ -317,6 +317,16 @@ export interface Announcer {
     heading?: string,
     mention?: boolean,
   ): Promise<void>;
+  /**
+   * One squad bot post for several members who unlocked badges in the same
+   * moment, each with their badge names already worded ("Night Owl and
+   * Squad Up"). With `mention` the people are pinged.
+   */
+  badgeRoundup(
+    channelId: string,
+    entries: readonly { userId: string; badges: string }[],
+    mention?: boolean,
+  ): Promise<void>;
 }
 
 /**

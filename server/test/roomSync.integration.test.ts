@@ -113,7 +113,12 @@ describe("room timer sync across clients (engine + SQLite + push adapter)", () =
       store: new KnexStore(db),
       clock,
       scheduler,
-      notifier: new PushNotifier(fanOut, (id) => clients.get(id)),
+      // Room pushes are bundled on the engine's (fake) clock, as on the server.
+      notifier: new PushNotifier(fanOut, (id) => clients.get(id), {
+        now: () => clock.now(),
+        setTimeout: () => null,
+        clearTimeout: () => {},
+      }),
       announcer: new RecordingAnnouncer(),
       logger: silentLogger,
       config: configWith(),
@@ -218,6 +223,10 @@ describe("room timer sync across clients (engine + SQLite + push adapter)", () =
     restarted.stop();
     expect(
       announcer.posts.map((p) => {
+        if (p.kind === "badgeRoundup") {
+          const { entries } = p.detail as { entries: { userId: string }[] };
+          return `badgeRoundup ${entries.map((e) => e.userId).join(",")}`;
+        }
         const { event, userIds } = p.detail as { event: string; userIds: string[] };
         return `${event} ${userIds.join(",")}`;
       }),
@@ -225,8 +234,7 @@ describe("room timer sync across clients (engine + SQLite + push adapter)", () =
       "sessionStarted ana",
       "memberJoined marcus",
       "breakStarted ana,marcus",
-      "badgeUnlocked ana",
-      "badgeUnlocked marcus",
+      "badgeRoundup ana,marcus",
       "studyResumed ana,marcus",
     ]);
   });

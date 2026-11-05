@@ -1789,8 +1789,9 @@ textarea.input {
   }
 }
 
-/* Small phones (iPhone SE): logo and buttons on top, the round pill below. */
-@media (max-width: 380px) {
+/* Phones up to 420px wide (iPhone SE to iPhone 16): logo and buttons on top,
+   the round pill below. With the voice count the row needs about 410px. */
+@media (max-width: 420px) {
   .app-header {
     flex-wrap: wrap;
   }

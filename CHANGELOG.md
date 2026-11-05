@@ -15,7 +15,7 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ### Fixed
 
-- On phones the header shows only the logo, so the round pill no longer covers the "Study Squad" title. On very small phones the round pill moves below the buttons so the settings button isn't cut off.
+- On phones the header shows only the logo, so the round pill no longer covers the "Study Squad" title. On phones up to 420px wide (most iPhones) the round pill moves below the buttons, so the settings button is no longer pushed off the right edge.
 
 ## [0.3.8] - 2026-11-05
 

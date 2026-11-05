@@ -4,6 +4,8 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ## [Unreleased]
 
+## [0.3.8] - 2026-11-05
+
 Fewer settings to think about: built-in boss names, no XP cap and a simpler squad bot. Voice stays, with a new channel dropdown.
 
 ### Added

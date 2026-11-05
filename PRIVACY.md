@@ -88,4 +88,4 @@ If we update this policy, we'll change the date at the top and note what changed
 
 ## Contact
 
-Questions or requests? Email us at [hello@samuelburke.dev](mailto:hello@samuelburke.dev) or message **@5amuel** on Root. You can also use the developer contact on Study Squad's listing in Root's app directory, or open an issue at [github.com/samuel-burke/study-squad-root-app](https://github.com/samuel-burke/study-squad-root-app/issues). Please don't put personal details in a public issue.
+Questions or requests? Email us at [hello@samuelburke.dev](mailto:hello@samuelburke.dev) or message **@5amuel** on Root. You can also use the developer contact on Study Squad's listing in Root's app directory.

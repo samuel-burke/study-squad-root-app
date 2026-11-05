@@ -213,11 +213,16 @@ describe("contract round trip", () => {
       streakExtended: true,
       finisherIds: ["u1"],
       roomDamageXp: 60,
+      bossOutcome: "finalBlow",
       goalPrompt: { id: "g2", text: "Make 20 flashcards", done: false },
       breakEndsAt: 123,
       me,
     };
-    for (const event of [base, { ...base, source: "room" as const, goalPrompt: null }]) {
+    for (const event of [
+      base,
+      { ...base, source: "room" as const, goalPrompt: null, bossOutcome: "hit" as const },
+      { ...base, roomDamageXp: 0, bossOutcome: "alreadyDefeated" as const },
+    ]) {
       const bytes = PersonalResultEvent.toBinary(personalResultToProto(event));
       expect(personalResultFromProto(PersonalResultEvent.fromBinary(bytes))).toEqual(event);
     }

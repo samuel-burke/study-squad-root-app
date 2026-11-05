@@ -1,5 +1,6 @@
 import type {
   BossDto,
+  BossOutcome as BossOutcomeDto,
   CardLookDto,
   GoalDto,
   LeaderboardDto,
@@ -23,6 +24,7 @@ import type {
   TimerPreset as TimerPresetDto,
 } from "@studyroom/core";
 import {
+  BossOutcome,
   LeaderboardMetric,
   LeaderboardPeriod,
   MemberStatus,
@@ -60,6 +62,19 @@ const PHASE_TO_PROTO: Record<RoomPhase, Phase> = {
   break: Phase.BREAK,
   longBreak: Phase.LONG_BREAK,
 };
+
+const BOSS_OUTCOME_TO_PROTO: Record<BossOutcomeDto, BossOutcome> = {
+  hit: BossOutcome.HIT,
+  finalBlow: BossOutcome.FINAL_BLOW,
+  alreadyDefeated: BossOutcome.ALREADY_DEFEATED,
+};
+
+/** Unspecified (an older server) reads as a hit, which is how it behaved before. */
+function bossOutcomeFromProto(outcome: BossOutcome): BossOutcomeDto {
+  if (outcome === BossOutcome.FINAL_BLOW) return "finalBlow";
+  if (outcome === BossOutcome.ALREADY_DEFEATED) return "alreadyDefeated";
+  return "hit";
+}
 
 const STATUS_TO_PROTO: Record<MyStatusKind, MemberStatus> = {
   idle: MemberStatus.IDLE,
@@ -322,6 +337,7 @@ export function personalResultToProto(event: PersonalResultDto): PersonalResultE
     streakExtended: event.streakExtended,
     finisherUserIds: event.finisherIds,
     roomDamageXp: event.roomDamageXp,
+    bossOutcome: BOSS_OUTCOME_TO_PROTO[event.bossOutcome],
     ...(event.goalPrompt ? { goalPrompt: goalToProto(event.goalPrompt) } : {}),
     breakEndsAtMs: event.breakEndsAt,
     me: myStatusToProto(event.me),
@@ -523,6 +539,7 @@ export function personalResultFromProto(event: PersonalResultEvent): PersonalRes
     streakExtended: event.streakExtended,
     finisherIds: event.finisherUserIds,
     roomDamageXp: event.roomDamageXp,
+    bossOutcome: bossOutcomeFromProto(event.bossOutcome),
     goalPrompt: event.goalPrompt ? goalFromProto(event.goalPrompt) : null,
     breakEndsAt: event.breakEndsAtMs,
     me: myStatusFromProto(event.me),

@@ -135,13 +135,6 @@ describe("Study Squad app", () => {
     const opener = screen.getByRole("button", { name: "Room settings" });
     await user.click(opener);
     expect(screen.getByRole("dialog", { name: "Room settings" })).toHaveTextContent("25 / 5");
-    expect(screen.getByRole("dialog", { name: "Room settings" })).toHaveTextContent(
-      "Need help? Email hello@samuelburke.dev or message @5amuel on Root.",
-    );
-    expect(screen.getByRole("link", { name: "hello@samuelburke.dev" })).toHaveAttribute(
-      "href",
-      "mailto:hello@samuelburke.dev",
-    );
     await user.keyboard("{Escape}");
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     expect(opener).toHaveFocus();
@@ -150,8 +143,14 @@ describe("Study Squad app", () => {
   it("sends anonymous feedback to the developer from room settings", async () => {
     const { user, gateway } = await renderApp();
     await user.click(screen.getByRole("button", { name: "Room settings" }));
+    expect(screen.getByRole("dialog", { name: "Room settings" })).not.toHaveTextContent(
+      "hello@samuelburke.dev",
+    );
     await user.click(screen.getByRole("button", { name: "Send feedback" }));
     const dialog = screen.getByRole("dialog", { name: "Send feedback" });
+    expect(dialog).toHaveTextContent(
+      "Want a reply? Email hello@samuelburke.dev or message @5amuel on Root instead.",
+    );
     const send = within(dialog).getByRole("button", { name: "Send" });
     expect(send).toBeDisabled();
     await user.type(within(dialog).getByRole("textbox"), "More boss names{Enter}please");

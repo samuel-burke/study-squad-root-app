@@ -1,7 +1,6 @@
 import { presetLabel, type RoomStateDto, type VoiceChannelChoiceDto } from "@studyroom/core";
 import { useEffect, useState } from "react";
 import { toGatewayError, type StudyRoomGateway } from "../api/gateway";
-import { SUPPORT } from "../lib/support";
 import { Sheet } from "./Sheet";
 
 /**
@@ -59,18 +58,6 @@ export function SettingsSheet({
       </dl>
       <div className="tiny dim">
         Community admins can change these in App settings for Study Squad.
-      </div>
-      <div className="small muted">
-        Need help? Email{" "}
-        <a
-          href={`mailto:${SUPPORT.email}`}
-          target="_blank"
-          rel="noreferrer"
-          style={{ color: "var(--text)" }}
-        >
-          {SUPPORT.email}
-        </a>{" "}
-        or message <strong>{SUPPORT.rootUsername}</strong> on Root.
       </div>
       {f.feedbackEnabled && (
         <button type="button" className="btn btn-quiet" onClick={onSendFeedback}>

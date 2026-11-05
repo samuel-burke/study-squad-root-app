@@ -46,7 +46,7 @@ import {
   SHOWCASE_SIZE,
 } from "../game/cosmetics";
 import { currentStreak, EMPTY_STREAK, freezeAvailable, recordActiveDay } from "../game/streak";
-import { applyDailyCap, baseFocusXp, focusXp, levelFromXp } from "../game/xp";
+import { baseFocusXp, focusXp, levelFromXp } from "../game/xp";
 import type { AppConfig } from "../settings";
 import {
   addDays,
@@ -239,7 +239,7 @@ export class StudyRoomEngine {
       this.config = config;
       if (config.boss.enabled) {
         const boss = await this.loadBoss(tx, now);
-        const name = bossNameFor(boss.weekKey, config.boss.name);
+        const name = bossNameFor(boss.weekKey);
         const result = reconfigureBoss(boss, name, config.boss.baseHpXp, now);
         await tx.bosses.save(result.boss);
         if (result.defeatedNow) await this.onBossDefeated(tx, result.boss, effects);
@@ -642,18 +642,11 @@ export class StudyRoomEngine {
         if (done && !goal.xpAwarded) {
           updated.xpAwarded = true;
           const day = dayKey(now, this.config.timeZone);
-          const xp = this.config.xp.enabled
-            ? applyDailyCap(
-                GAME.xpPerGoal,
-                (await tx.stats.get(userId, day))?.xp ?? 0,
-                this.config.xp.dailyCap,
-              )
-            : 0;
+          const xp = this.config.xp.enabled ? GAME.xpPerGoal : 0;
           const member = await this.loadMember(tx, userId);
           await tx.members.save({ ...member, xpTotal: member.xpTotal + xp });
           await tx.stats.add(userId, day, { xp, goalsDone: 1 });
-          // Goal XP hits the boss as earned, after the daily cap, so the boss
-          // can't be farmed with tiny goals.
+          // Goal XP hits the boss as earned. Each goal pays once, ever.
           await this.damageBoss(tx, effects, xp, [userId], now);
           const quests = await this.rewardQuests(tx, effects, userId, now);
           await this.awardBadges(tx, effects, userId, now, {
@@ -877,7 +870,7 @@ export class StudyRoomEngine {
 
   /**
    * Study minutes and XP count as they happen: each whole minute of a running
-   * focus block adds its minutes and base XP (under the daily cap) right away,
+   * focus block adds its minutes and base XP right away,
    * so the leaderboard, quests, levels and the board's ranks move every
    * minute. The end of the block adds the rest, including the combo bonus.
    */
@@ -912,9 +905,7 @@ export class StudyRoomEngine {
     if (newMinutes <= 0) return null;
     const { userId } = block;
     const day = dayKey(now, this.config.timeZone);
-    const xpToday = (await tx.stats.get(userId, day))?.xp ?? 0;
-    const rawXp = this.config.xp.enabled ? baseFocusXp(whole) - baseFocusXp(block.liveMinutes) : 0;
-    const xp = applyDailyCap(rawXp, xpToday, this.config.xp.dailyCap);
+    const xp = this.config.xp.enabled ? baseFocusXp(whole) - baseFocusXp(block.liveMinutes) : 0;
     if (xp > 0) {
       const member = await this.loadMember(tx, userId);
       await tx.members.save({ ...member, xpTotal: member.xpTotal + xp });
@@ -1031,7 +1022,7 @@ export class StudyRoomEngine {
     if (!this.config.squadBot.enabled || !channelId || userIds.length === 0) return;
     const last = (await tx.kv.get<LastSquadLines>(SQUAD_LAST_KEY)) ?? {};
     const startedAt = (await tx.kv.get<number>(SQUAD_SESSION_KEY)) ?? now;
-    const line = pickSquadLine(event, this.config.squadBot.personalities, last, this.deps.random, {
+    const line = pickSquadLine(event, last, this.deps.random, {
       round,
       togetherMinutes: Math.max(0, now - startedAt) / MINUTE_MS,
       badge,
@@ -1142,7 +1133,7 @@ export class StudyRoomEngine {
       .filter((s) => s.minutes >= finishThreshold)
       .map((s) => s.participant.userId);
     const combo = comboFor(finisherIds.length, this.config.comboEnabled);
-    // Damage is the XP the round earns before the daily cap, so capped members still hit the boss.
+    // Damage is the XP the round earns.
     const roundXp = minuteShares.reduce((sum, s) => sum + focusXp(s.minutes, combo), 0);
     // Stayed for the whole cycle: this is its last round and they finished round 1 too.
     const focusPhases = phases.filter((p) => p.kind === "focus");
@@ -1213,7 +1204,6 @@ export class StudyRoomEngine {
         baseXp: credit.baseXp,
         combo,
         xpEarned: credit.xpEarned,
-        capped: credit.capped,
         streak: credit.streak,
         streakExtended: credit.streakExtended,
         finisherIds,
@@ -1257,7 +1247,6 @@ export class StudyRoomEngine {
           baseXp: credit.baseXp,
           combo: 1,
           xpEarned: credit.xpEarned,
-          capped: credit.capped,
           streak: credit.streak,
           streakExtended: credit.streakExtended,
           finisherIds: [solo.userId],
@@ -1329,12 +1318,11 @@ export class StudyRoomEngine {
     const live = input.live ?? { liveMinutes: 0, liveXp: 0 };
     const day = dayKey(now, this.config.timeZone);
     const member = await this.loadMember(tx, userId);
-    const xpToday = (await tx.stats.get(userId, day))?.xp ?? 0;
     const rawXp = this.config.xp.enabled ? focusXp(minutes, combo) : 0;
     // Live ticks paid base XP for whole minutes; the end pays the rest,
-    // including the combo bonus, under whatever room the daily cap has left.
+    // including the combo bonus.
     const liveRawXp = this.config.xp.enabled ? baseFocusXp(live.liveMinutes) : 0;
-    const restXp = applyDailyCap(Math.max(0, rawXp - liveRawXp), xpToday, this.config.xp.dailyCap);
+    const restXp = Math.max(0, rawXp - liveRawXp);
     const xpEarned = live.liveXp + restXp;
 
     let streak = member.streak;
@@ -1402,7 +1390,6 @@ export class StudyRoomEngine {
     return {
       baseXp: this.config.xp.enabled ? baseFocusXp(minutes) : 0,
       xpEarned,
-      capped: xpEarned < rawXp,
       streak: streak.streak,
       streakExtended,
     };
@@ -1426,7 +1413,7 @@ export class StudyRoomEngine {
 
   /**
    * Loot: every contributor gets bonus XP scaled by the boss's strength,
-   * outside the daily cap because it happens once a week.
+   * once a week.
    */
   private async onBossDefeated(
     tx: Store,
@@ -1465,9 +1452,7 @@ export class StudyRoomEngine {
 
   /**
    * Pays the reward for every quest the member has just finished this week.
-   * Like boss loot it is outside the daily cap: it comes at most three times
-   * a week, and a capped reward would often be zero. The reward also hits the
-   * boss. Returns the quest facts badges look at.
+   * It comes at most three times a week. The reward also hits the boss. Returns the quest facts badges look at.
    */
   private async rewardQuests(
     tx: Store,
@@ -1637,8 +1622,7 @@ export class StudyRoomEngine {
   private async loadBoss(tx: Store, now: number): Promise<BossState> {
     const week = weekKey(dayKey(now, this.config.timeZone));
     return (
-      (await tx.bosses.get(week)) ??
-      newBoss(week, bossNameFor(week, this.config.boss.name), this.config.boss.baseHpXp)
+      (await tx.bosses.get(week)) ?? newBoss(week, bossNameFor(week), this.config.boss.baseHpXp)
     );
   }
 
@@ -1788,7 +1772,6 @@ export class StudyRoomEngine {
         bossEnabled: this.config.boss.enabled,
         streakFreezesEnabled: this.config.streakFreezesEnabled,
         goalsPublicByDefault: this.config.goalsPublicByDefault,
-        dailyXpCap: this.config.xp.dailyCap,
         postChannelName: this.config.postChannelId ? this.config.postChannelName : "",
         feedbackEnabled: this.deps.feedbackInbox !== undefined,
         voiceChannelStatus: this.config.voiceChannelStatus,

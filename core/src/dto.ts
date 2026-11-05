@@ -62,7 +62,6 @@ export interface RoomFeaturesDto {
   bossEnabled: boolean;
   streakFreezesEnabled: boolean;
   goalsPublicByDefault: boolean;
-  dailyXpCap: number;
   postChannelName: string;
   /** How the voice channel setting resolved, in words for admins. "" = not set. */
   voiceChannelStatus: string;
@@ -177,8 +176,6 @@ export interface PersonalResultDto {
   baseXp: number;
   combo: number;
   xpEarned: number;
-  /** True when the daily cap trimmed this award. */
-  capped: boolean;
   streak: number;
   streakExtended: boolean;
   finisherIds: string[];

@@ -104,7 +104,9 @@ message RoomFeatures {
   bool boss_enabled = 4;
   bool streak_freezes_enabled = 5;
   bool goals_public_by_default = 6;
-  int32 daily_xp_cap = 7;
+  // 7 was daily_xp_cap, removed.
+  reserved 7;
+  reserved "daily_xp_cap";
   // Where recaps and break chat happen. Empty when admins haven't picked one.
   string post_channel_name = 8;
   // The server can deliver feedback to the developer, so the box is shown.
@@ -388,7 +390,9 @@ message PersonalResultEvent {
   int32 base_xp = 5;
   double combo = 6;
   int32 xp_earned = 7;
-  bool capped = 8;
+  // 8 was capped (the daily XP cap), removed.
+  reserved 8;
+  reserved "capped";
   int32 streak = 9;
   bool streak_extended = 10;
   repeated string finisher_user_ids = 11;

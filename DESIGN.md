@@ -30,17 +30,16 @@ The room timer is the default and the brighter button because joining it is what
 | ----------------- | ----------------------------------------------------------------- | ------------------------------------------------------------------------ |
 | Focus XP          | 2 XP per whole minute × combo                                     | Rewards time, not task count                                             |
 | Goal XP           | +25 once per goal                                                 | Unchecking and rechecking can't farm it                                  |
-| Daily cap         | 300 XP (admin setting)                                            | Nobody should feel pushed to study 12 hours                              |
 | Level curve       | Level _n_ needs 150 + 50·_n_ XP (level 7 needs 500)               | Matches the mockups; early levels come fast                              |
 | Combo             | 1.0x + 0.1x per extra person who **finishes** the round, max 2.0x | Rewards focusing together                                                |
 | Finishing a round | At least 5 minutes in that round (or half the round, if shorter)  | Joining in the last seconds doesn't count toward the combo or the streak |
 | Leaving early     | Minutes so far are credited, round not finished                   | Honest time still counts                                                 |
-| Boss loot         | +100 XP × boss strength to every contributor, outside the cap     | Happens once a week; a capped reward would often be zero                 |
-| Weekly quests     | +30 to +40 XP per quest, once per week, outside the cap           | At most three a week; a capped reward would often be zero                |
+| Boss loot         | +100 XP × boss strength to every contributor                      | Happens once a week                                                      |
+| Weekly quests     | +30 to +40 XP per quest, once per week                            | At most three a week                                                     |
 
 The live combo on screen counts everyone on the room timer, as a preview. The combo actually paid out counts finishers.
 
-Focus is credited **live**. While anyone is focusing, the engine wakes every minute and credits each whole minute of a running block: the minutes go into `daily_stats`, and the base XP (2 per minute, under the daily cap) goes to the member's total and `daily_stats`. That's what makes the XP bar, level, minute-based quests, the leaderboard and the rank chips move during a session. Each room participant and solo timer remembers what it has already credited (`liveMinutes`, `liveXp`), so the end of a block (round end, leaving early, stopping a solo) adds only the rest, including the combo bonus, and a block's totals and session log are exactly what they'd be without live crediting. The counters are stored, so a server restart mid-block doesn't credit anything twice. Each minute pushes the room and the member's status, and the progress screen reloads on each room push while it's open.
+Focus is credited **live**. While anyone is focusing, the engine wakes every minute and credits each whole minute of a running block: the minutes go into `daily_stats`, and the base XP (2 per minute) goes to the member's total and `daily_stats`. That's what makes the XP bar, level, minute-based quests, the leaderboard and the rank chips move during a session. Each room participant and solo timer remembers what it has already credited (`liveMinutes`, `liveXp`), so the end of a block (round end, leaving early, stopping a solo) adds only the rest, including the combo bonus, and a block's totals and session log are exactly what they'd be without live crediting. The counters are stored, so a server restart mid-block doesn't credit anything twice. Each minute pushes the room and the member's status, and the progress screen reloads on each room push while it's open.
 
 ## Anti-AFK guardrails
 
@@ -50,11 +49,13 @@ The room timer never interrupts a focus round and never takes back anything earn
   - This replaced a random mid-round "Still there?" check. That one interrupted focus, and couldn't reach people with their screen off, so it ended up penalising people who were genuinely studying. The app has no way to send a phone notification, so the generous window matters.
   - Solo timers need no check: they end on their own (at most three hours).
 - people who joined during the final long break haven't focused yet, so they roll into a fresh cycle instead of being dropped;
-- the daily XP cap bounds what any idle timer can earn.
+- a forgotten timer stops after one cycle, which bounds what any idle timer can earn.
+
+There was a daily XP cap (an admin setting) until 0.3.8. It was removed: the Keep going? check already stops 24/7 farming, and a cap mostly punished long honest study days.
 
 ## Days start at 4am
 
-A new day starts at 4am in the community's time zone, not midnight (`DAY_START_HOUR` in `core/src/time/calendar.ts`). A session at 1am still counts toward the day before, so late-night studiers keep their streak day, daily XP cap, finished goals and stats together. Weeks start at 4am on Monday, which also moves weekly quests, the weekly boss and the leaderboard. Clock-time features keep the real clock: the daily recap's post time, and badges such as Burning the Midnight Oil.
+A new day starts at 4am in the community's time zone, not midnight (`DAY_START_HOUR` in `core/src/time/calendar.ts`). A session at 1am still counts toward the day before, so late-night studiers keep their streak day, finished goals and stats together. Weeks start at 4am on Monday, which also moves weekly quests, the weekly boss and the leaderboard. Clock-time features keep the real clock: the daily recap's post time, and badges such as Burning the Midnight Oil.
 
 ## Streaks without guilt
 
@@ -71,20 +72,20 @@ Data is kept for as long as the app is installed, so streaks and history survive
 
 ## Weekly boss
 
-A boss spawns lazily each Monday (community time zone) with the admin's name (or the week's built-in name) and HP in XP. Each boss has a strength from 0.5x to 2x that fits its name, so "The Final Final Exam" is tougher than "Professor Pop Quiz". The built-in list averages exactly 1x, with weaker bosses below and stronger ones above. Its HP (the XP it takes to defeat) is the admin's base HP times its strength, and so is its loot. Names an admin types get strength from keywords: finals, thesis and boards are 2x; midterms, exams, deadlines and projects 1.5x; quizzes and homework 0.75x; anything else 1x.
+A boss spawns lazily each Monday (community time zone), taking the week's name from the built-in list (`BOSSES`), so every community fights the same boss the same week. Each boss has a strength from 0.5x to 2x that fits its name, so "The Final Final Exam" is tougher than "Professor Pop Quiz". The list averages exactly 1x, with weaker bosses below and stronger ones above. Its HP (the XP it takes to defeat) is the admin's base HP times its strength, and so is its loot. Admins could type their own boss name until 0.3.8; a boss saved under an old custom name counts as 1x and is replaced by the week's built-in boss on the next settings change or the next Monday.
 
 All XP counts as damage except boss loot:
 
-- **Focus** hits the boss live. While anyone is focusing the engine wakes every minute, and each whole minute of a running block deals its base XP (2 per minute). The combo bonus lands when the round ends, because the combo depends on who finishes. Each room participant and solo timer remembers what it has already dealt (`bossXpDealt`), so the end of a round, leaving early or stopping a solo only deals the rest, and the total always equals the block's focus XP. Focus damage is counted **before** the daily cap: the cap limits what a member earns, not how much they help the room. It's dealt even with XP turned off; there's just no loot then.
-- **Goals** deal the XP they actually pay, **after** the daily cap. Goals are cheap to add and check off, so without the cap one person could farm the boss down alone.
-- **Quest rewards** deal their XP. They're outside the cap already and come at most three times a week.
+- **Focus** hits the boss live. While anyone is focusing the engine wakes every minute, and each whole minute of a running block deals its base XP (2 per minute). The combo bonus lands when the round ends, because the combo depends on who finishes. Each room participant and solo timer remembers what it has already dealt (`bossXpDealt`), so the end of a round, leaving early or stopping a solo only deals the rest, and the total always equals the block's focus XP. It's dealt even with XP turned off; there's just no loot then.
+- **Goals** deal the XP they pay (25 each, once per goal, ever).
+- **Quest rewards** deal their XP. They come at most three times a week.
 
-Admins can rename or resize the live boss; damage is never healed, and lowering HP below the damage dealt defeats it on the spot (with the usual post and loot).
+Admins can resize the live boss; damage is never healed, and lowering HP below the damage dealt defeats it on the spot (with the usual post and loot).
 
 ## Leaderboard
 
 - Ranked by focus **minutes** by default, so it can't be gamed with tiny tasks. It sums `daily_stats` for the current week; there's no separate counter to drift.
-- Members can switch the board to **XP**: `daily_stats` XP for the period (focus and goals, already under the daily cap) plus the `quest_rewards` paid in it (by `rewarded_at`, so a reward lands in the month or year it was earned). Boss loot isn't counted, because everyone who helped gets the same loot. Every entry carries both totals; only the ranking changes. Rank chips on cards, the recap's top 3 and the leaderboard badges stay minute-based, so the XP view is a second way to look, not a second competition.
+- Members can switch the board to **XP**: `daily_stats` XP for the period (focus and goals) plus the `quest_rewards` paid in it (by `rewarded_at`, so a reward lands in the month or year it was earned). Boss loot isn't counted, because everyone who helped gets the same loot. Every entry carries both totals; only the ranking changes. Rank chips on cards, the recap's top 3 and the leaderboard badges stay minute-based, so the XP view is a second way to look, not a second competition.
 - The week is the boss's week: Monday to Sunday in the community time zone. A new week starts empty.
 - Minutes are rounded down to whole minutes before ranking, and equal minutes share a rank (1, 2, 2, 4), so two people shown with the same time never get different places.
 - Members can also switch the period to **this month**, **this year** or **all time** (calendar month and year in the community time zone). Every period runs the same queries over a different day range, so there are no extra totals to keep in sync; all time is just a range starting at `0000-01-01`. Each period starts over at its own boundary (all time never does). Opt-outs apply to every period. The weekly view stays the default, and the card rank chips, badges and recap remain weekly, since a weekly race gives newcomers a fresh chance every Monday.
@@ -128,8 +129,8 @@ Earning a badge opens a full-screen moment (`BadgeUnlocked.tsx`) that grows with
 - **Daily recap**: at the admin's time, as a one-time Root job rescheduled after each run so it stays correct across daylight saving changes. Quiet days are skipped so the channel never reads "0 hours". A missed job is still posted if it's under two hours late.
 - **Milestones and boss defeats**: as they happen.
 - **Squad bot**: posts like a friend in the study group when the room timer starts, at each break, when study resumes (including a new cycle for whoever kept going), when the four rounds are done, when someone joins a running room, and when someone unlocks a badge. Each post mentions the people it's for with Root's `[@Name](root://user/id)` markup. Only the first ten are mentioned and the rest are counted, so a big room doesn't flood the channel.
-  - The lines live in `core/src/squad/squadLines.ts`, grouped by event and by six personalities (Hype Squad, Drill Sergeant, Chill Friend, Meme Lord, Gamer Mode, Chaos Mode). Adding a personality means adding its name and a block of lines; a test checks every personality covers every event. Personalities are a community setting, not a member one, because everyone reads the same channel.
-  - `squadVoice.ts` picks a random line from the personalities admins enabled plus the movie lines (`RARE_LINES` fit any timer post, `MOVIE_LINES` fit one event, like a break or a join), every line equally likely, never the same line twice in a row for an event. A line that makes a claim ("studying together for 2 hours") is only said when it's true.
+  - The lines live in `core/src/squad/squadLines.ts`, grouped by event and by six personalities (Hype Squad, Drill Sergeant, Chill Friend, Meme Lord, Gamer Mode, Chaos Mode) so the mix stays varied. Adding a personality means adding its name and a block of lines; a test checks every personality covers every event. Admins used to pick personalities; since 0.3.8 the bot always mixes all of them, and admins only turn it on or off.
+  - `squadVoice.ts` picks a random line from every personality plus the movie lines (`RARE_LINES` fit any timer post, `MOVIE_LINES` fit one event, like a break or a join), every line equally likely, never the same line twice in a row for an event. A line that makes a claim ("studying together for 2 hours") is only said when it's true.
   - Each timer post starts with a heading line saying what the timer just switched to: "📚 Focus · Round 2 of 4", "☕ Break" or "🛋️ Long break". Join and badge posts have none.
   - Posts come only from the engine's settling of real timer events, in the same transaction, and go out once after it commits. Clients never post, so several devices or reconnects can't duplicate a post, and the timer stays the single source of truth. A switch more than two minutes old (after downtime) is skipped rather than replayed.
   - When someone earns badges, it congratulates them in one post naming them all ("Night Owl and Week Warrior"). Secret badges are called "a secret badge" so the surprise isn't spoiled for everyone else.
@@ -137,7 +138,7 @@ Earning a badge opens a full-screen moment (`BadgeUnlocked.tsx`) that grows with
 
 Display names come from Root nicknames and are stripped of markup and mention characters before they're posted. The only mentions Study Squad writes are the squad bot's, built from Root user ids.
 
-## Voice uses Root's voice channels
+## No voice channel
 
 Study Squad doesn't run calls. The SDK gives apps no microphone access, and Root's voice channels already work well. Root's channel picker setting only offers text channels and has no way to ask for voice ones, so admins pick the channel from a dropdown in the app's own Room settings. The server builds that list from `channelGroups.list()` then `channels.list({ channelGroupId })` for each group, keeping channels whose `channelType` is `ChannelType.Voice` (4). Only the community owner or members with a role that can manage apps, manage the community, or has full control (`communityRoles.list` + `communityMemberRoles.list`) get the dropdown, and the server checks again on save and only accepts a voice channel id from that list. The pick is stored in the `kv` table (`voiceChannelPick`) and wins over the **Voice channel name** text setting, which stays as a fallback: with no pick, the server looks through the community's voice channels for that name (ignoring case, extra spaces and a leading #) and asks Root for a link to it (`communityLinks.communityChannelCreate`), and the room shows a Join voice button that opens the link. The server also follows who is in that channel (`channelWebRtcs.list` on start and on settings changes, then the attach and detach events), and the board shows headphones next to them. Someone counts as in voice until their last device leaves (`VoiceRoster`). The voice list is kept in memory only.
 
@@ -152,12 +153,11 @@ Numeric settings are `select` items, not `number` items: in `@rootsdk/dev-tools`
 - **Name**: the mockups say "Study Room"; the app is now called Study Squad. Internal code names (`StudyRoomEngine`, the `StudyRoomService` Protobuf service, `@studyroom/*` packages) keep the old name, because renaming the service would change the wire paths for no user benefit.
 - **Admin setup** is Root's App settings screen (see above). The room shows a read-only summary behind the settings button.
 - **Weekly quests and badges** came after v1. Quest rewards are smaller than the mockup's (+30 to +40 XP rather than +50 to +100) to keep them a bonus next to focus XP, and "Join 3 room timers" counts finished room rounds.
-- **"Chat in #study-hall"** on the break screen is a hint, not a link. The voice channel's Join voice button uses Root's channel links, so the post channel could get one too.
+- **"Chat in #study-hall"** on the break screen is a hint, not a link. Root's `communityLinks.communityChannelCreate` could make it one.
 - **Avatars** use Root profile pictures when a member has one, and the design's initials and colors otherwise.
 - Fonts (DM Sans, Space Grotesk) are bundled with the client instead of loaded from Google Fonts, to avoid third-party requests from inside Root.
 
 ## Known limits
 
 - One room per installed app instance (one Root server process serves one community).
-- The Join voice link and the voice events haven't been tried in a live Root community yet. If Root needs a permission to list a voice channel, the button still works but the headphones won't show.
 - Not yet run against a live Root community; that needs a developer token. The server compiles against the real SDK types and boots up to Root's environment check.

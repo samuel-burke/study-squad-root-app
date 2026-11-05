@@ -295,7 +295,6 @@ describe("BreakMoment boss panel", () => {
       baseXp: 50,
       combo: 1,
       xpEarned: 50,
-      capped: false,
       streak: 1,
       streakExtended: true,
       finisherIds: ["me"],

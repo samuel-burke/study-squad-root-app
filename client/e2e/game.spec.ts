@@ -110,18 +110,6 @@ test.describe("game rules", () => {
       await expect(breakMoment(page)).toContainText("+2 XP");
       await expectEarned(page, ["Jackpot"]);
     });
-
-    test("the daily cap stops XP but not boss damage", async ({ page }) => {
-      await open(page, "?focus=1&break=0.5&bots=0&cap=2");
-      await joinRoom(page);
-      await wait(page, MINUTE + SECOND);
-      await expect(breakMoment(page)).toContainText("+2 XP");
-      await clearOverlays(page);
-      await wait(page, 1.5 * MINUTE);
-      await expect(breakMoment(page)).toContainText("+0 XP");
-      await expect(breakMoment(page)).toContainText("Daily XP cap reached");
-      await expect(breakMoment(page)).toContainText(/hit .+ for 2 XP/);
-    });
   });
 
   test.describe("Keep going?", () => {
@@ -174,10 +162,10 @@ test.describe("game rules", () => {
 
   test.describe("the weekly boss", () => {
     const names = [
-      { name: "Finals week", strength: "2.0", hp: "2,000" },
-      { name: "Midterm", strength: "1.5", hp: "1,500" },
-      { name: "Bob", strength: "1.0", hp: "1,000" },
-      { name: "Pop quiz", strength: "0.75", hp: "750" },
+      { name: "The Final Final Exam", strength: "2.0", hp: "2,000" },
+      { name: "The Midterm Minotaur", strength: "1.5", hp: "1,500" },
+      { name: "Doomscroll Golem", strength: "1.0", hp: "1,000" },
+      { name: "Professor Pop Quiz", strength: "0.75", hp: "750" },
       { name: "Snack Break Goblin", strength: "0.5", hp: "500" },
     ];
     for (const { name, strength, hp } of names) {

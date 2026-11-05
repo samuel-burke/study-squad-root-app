@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DomainError, ErrorCode, EMPTY_STREAK, addDays, badgeById } from "../src";
+import { DomainError, ErrorCode, EMPTY_STREAK, addDays, badgeById, newBoss } from "../src";
 import { configWith, createHarness, MINUTE, T0 } from "./helpers";
 
 const FOCUS = 25 * MINUTE;
@@ -95,8 +95,8 @@ describe("earning badges", () => {
   });
 
   it("gives boss badges to everyone who helped, and Final Blow to whoever finished it", async () => {
-    // A 1x boss with 100 HP: each 30-minute solo deals 60 XP of damage.
-    const config = configWith({ boss: { enabled: true, name: "Calc II", baseHpXp: 100 } });
+    // This week's boss is 1.25x, so 80 base HP is 100: each 30-minute solo deals 60 XP of damage.
+    const config = configWith({ boss: { enabled: true, baseHpXp: 80 } });
     const { engine, notifier, advance } = createHarness(config);
     await engine.startSolo("kai", 30);
     await advance(30 * MINUTE);
@@ -110,7 +110,7 @@ describe("earning badges", () => {
   });
 
   it("gives One-Person Army for a boss defeated alone", async () => {
-    const config = configWith({ boss: { enabled: true, name: "Calc II", baseHpXp: 50 } });
+    const config = configWith({ boss: { enabled: true, baseHpXp: 40 } });
     const { engine, notifier, advance } = createHarness(config);
     await engine.startSolo("ana", 30);
     await advance(30 * MINUTE);
@@ -120,9 +120,10 @@ describe("earning badges", () => {
   });
 
   it("gives Giant Slayer for a 2x boss, using the boss's strength", async () => {
-    // "Finals" is a 2x boss, so 25 base HP becomes 50.
-    const config = configWith({ boss: { enabled: true, name: "Finals", baseHpXp: 25 } });
-    const { engine, notifier, advance } = createHarness(config);
+    // The Final Final Exam is a 2x boss, so 25 base HP becomes 50.
+    const config = configWith({ boss: { enabled: true, baseHpXp: 25 } });
+    const { engine, store, notifier, advance } = createHarness(config);
+    await store.bosses.save(newBoss("2026-10-26", "The Final Final Exam", 25));
     await engine.startSolo("ana", 30);
     await advance(30 * MINUTE);
     expect(notifier.badgesFor("ana")).toContain("giant-slayer");
@@ -203,7 +204,7 @@ describe("delivering every unlock", () => {
   });
 
   it("when focus defeats the boss mid-timer", async () => {
-    const config = configWith({ boss: { enabled: true, name: "Calc II", baseHpXp: 50 } });
+    const config = configWith({ boss: { enabled: true, baseHpXp: 40 } });
     const { engine, notifier, advance } = createHarness(config);
     await engine.startSolo("ana", 30);
     await advance(30 * MINUTE);
@@ -425,9 +426,7 @@ describe("squad bot badge posts", () => {
   });
 
   it("stays quiet when the squad bot is off", async () => {
-    const config = configWith({
-      squadBot: { enabled: false, personalities: ["hype"], mentions: false },
-    });
+    const config = configWith({ squadBot: { enabled: false, mentions: false } });
     const { engine, announcer, advance } = createHarness(config);
     await engine.startSolo("ana", 30);
     await advance(30 * MINUTE);

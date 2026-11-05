@@ -8,8 +8,7 @@ export interface BossKind {
 }
 
 /**
- * Built-in bosses. When admins leave "Boss name" blank, each week's boss
- * takes the next one in this list, so every member sees the same boss and
+ * The bosses. Each week's boss takes the next one in this list, so every member sees the same boss and
  * none repeats until the list runs out (about a year). Strength fits the name:
  * small annoyances are 0.5x, exams and deadlines up to 2x. The list averages
  * exactly 1x, so over a year the base HP is what the room really faces.
@@ -69,36 +68,23 @@ export const BOSSES: readonly BossKind[] = [
   { name: "The Final Final Exam", strength: 2 },
 ];
 
-/**
- * Strength for a name an admin typed. Words that sound like a big exam make a
- * tougher boss, so "Finals" beats "Midterms" and both beat "Pop quiz".
- */
-const CUSTOM_STRENGTHS: readonly { pattern: RegExp; strength: number }[] = [
-  { pattern: /\b(finals?|thesis|dissertation|bar exam|boards?)\b/i, strength: 2 },
-  { pattern: /\b(midterms?|exams?|deadline|project)\b/i, strength: 1.5 },
-  { pattern: /\b(quiz(zes)?|homework|worksheet)\b/i, strength: 0.75 },
-];
-
-/** Strength for any boss name: the built-in list first, then keywords, else 1x. */
+/** A boss's strength. Names not in the list (bosses saved before custom names were removed) are 1x. */
 export function bossStrength(name: string): number {
-  const builtIn = BOSSES.find((b) => b.name === name);
-  if (builtIn) return builtIn.strength;
-  return CUSTOM_STRENGTHS.find((c) => c.pattern.test(name))?.strength ?? 1;
+  return BOSSES.find((b) => b.name === name)?.strength ?? 1;
 }
 
 /** Monday 1970-01-05, the first week counted. */
 const FIRST_WEEK: DayKey = "1970-01-05";
 
-/** The boss name for a week: the admin's name if set, otherwise the week's built-in name. */
-export function bossNameFor(week: DayKey, customName: string): string {
-  if (customName.length > 0) return customName;
+/** The boss name for a week. Every community gets the same boss the same week. */
+export function bossNameFor(week: DayKey): string {
   const weekNumber = Math.floor(daysBetween(FIRST_WEEK, week) / 7);
   const n = BOSSES.length;
   return BOSSES[((weekNumber % n) + n) % n]!.name;
 }
 
 /**
- * HP and damage are in XP: focus deals the XP it earns, before the daily cap.
+ * HP and damage are in XP: focus deals the XP it earns.
  * Every amount is a whole number of XP.
  */
 export interface BossState {

@@ -21,7 +21,13 @@ test.describe("focus room", () => {
 
   test("links to the voice channel and marks who is in it", async ({ page }) => {
     await page.goto("/");
-    const join = page.getByRole("link", { name: "Join voice #Study voice, 2 in there" });
+    await page.getByRole("button", { name: "Join voice #Study voice, 2 in there" }).click();
+    const confirm = page.getByRole("dialog", { name: "Join #Study voice?" });
+    await expect(confirm).toContainText("2 people are in there.");
+    await confirm.getByRole("button", { name: "Cancel" }).click();
+    await expect(confirm).toBeHidden();
+    await page.getByRole("button", { name: "Join voice #Study voice, 2 in there" }).click();
+    const join = confirm.getByRole("link", { name: "Join voice" });
     await expect(join).toHaveAttribute("href", "https://rootapp.com");
     await expect(join).toHaveAttribute("target", "_blank");
     await expect(page.getByRole("listitem", { name: /^Ana R\., .*, in voice$/ })).toBeVisible();

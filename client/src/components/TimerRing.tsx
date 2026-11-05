@@ -9,7 +9,7 @@ interface TimerRingProps {
   children: React.ReactNode;
 }
 
-const STROKE = { focus: "var(--amber)", break: "var(--teal)", idle: "var(--outline-dim)" };
+const STROKE = { focus: "var(--amber-strong)", break: "var(--teal)", idle: "var(--outline-dim)" };
 
 export function TimerRing({ size, remaining, tone, children }: TimerRingProps) {
   return (

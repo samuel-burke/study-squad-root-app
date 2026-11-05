@@ -73,7 +73,7 @@ export function FeedbackSheet({
             </span>
           </label>
           {error && (
-            <div role="alert" className="small" style={{ color: "var(--coral)" }}>
+            <div role="alert" className="small" style={{ color: "var(--coral-text)" }}>
               {error}
             </div>
           )}

@@ -4,6 +4,10 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ## [Unreleased]
 
+### Added
+
+- Light mode. Study Squad now matches the light or dark theme picked in Root, and switches live when it changes. Outside Root (the demo) it follows the device setting. The full-screen badge unlock keeps its dark spotlight in both themes.
+
 ## [0.3.7] - 2026-11-04
 
 The number settings from 0.3.6 now take effect.

@@ -14,8 +14,14 @@
   src: url("./assets/fonts/space-grotesk-latin.woff2") format("woff2");
 }
 
-/* Design tokens, taken from the Study Squad design canvas. */
-:root {
+/*
+ * Design tokens, taken from the Study Squad design canvas. Dark is the
+ * default; lib/theme.ts sets data-theme on <html> to follow Root's theme
+ * (or the device's in the demo). .theme-dark pins a piece of UI to the
+ * dark palette in either theme, as the full-screen badge unlock does.
+ */
+:root,
+.theme-dark {
   --bg: #0e1320;
   --bg-deep: #080b12;
   --surface: #161d2d;
@@ -31,6 +37,9 @@
   --outline-dim: #4a556e;
 
   --amber: #f5b83d;
+  --amber-hover: #ffc75c;
+  --amber-strong: #f5b83d;
+  --amber-text: #f5b83d;
   --amber-ink: #1a1300;
   --amber-bg: #2a2414;
   --amber-you: #6a5a2c;
@@ -38,6 +47,7 @@
   --level-bg: #262014;
 
   --teal: #46c7ae;
+  --teal-text: #46c7ae;
   --teal-ink: #062320;
   --teal-bg: #13302b;
   --break-bg: #0b1a1c;
@@ -58,6 +68,40 @@
   --boss-muted: #c7b6bc;
 
   --flame: #ff8a5c;
+  --danger-ink: #2a0a05;
+
+  --pip: #2b3448;
+  --heat-0: #1d2536;
+  --heat-1: #3a3420;
+  --heat-2: #8a6a24;
+  --error-bg: #2a1215;
+  --error-border: #5c2b2e;
+  --error-text: #ffb4a8;
+  --sheet-border: #2e3852;
+  --scrim: rgba(8, 11, 18, 0.72);
+  --shadow-pop: 0 8px 30px rgba(0, 0, 0, 0.4);
+  --hover-tint: rgba(255, 255, 255, 0.04);
+  --medal-shadow: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.5));
+  --medal-shadow-sm: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.45));
+
+  /* Tints behind the profile card styles and the found-secret badge tile. */
+  --tint-ember: #2a1c18;
+  --tint-nebula: #1f1a38;
+  --tint-legend: #2a2414;
+  --tint-solstice: #2b2508;
+  --tint-secret: #241c3a;
+  --secret-border: #6d55a8;
+  --midnight-border: #4a5fa8;
+  --midnight-from: #10183a;
+  --midnight-to: #0b1020;
+
+  /* Locked medals are drawn in these greys (see BadgeMedal.tsx). */
+  --locked-rim-0: #3d4658;
+  --locked-rim-1: #2b3241;
+  --locked-rim-2: #1e2430;
+  --locked-face: #151a24;
+  --locked-ink: #566175;
+  --locked-stamp: #9aa4b5;
 
   --font-body: "DM Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-display: "Space Grotesk", "DM Sans", system-ui, sans-serif;
@@ -69,6 +113,99 @@
   --tap: 44px;
 
   color-scheme: dark;
+}
+
+/* Re-resolve inherited text colour inside a pinned-dark island. */
+.theme-dark {
+  color: var(--text);
+}
+
+/*
+ * Light theme. Bright accents stay as fills (buttons, bars, the timer
+ * ring); text and thin strokes use the deeper --*-text and --*-strong
+ * shades so they keep at least 4.5:1 (text) and 3:1 (graphics) on white.
+ */
+:root[data-theme="light"] {
+  --bg: #f4f6fb;
+  --bg-deep: #e8ecf4;
+  --surface: #ffffff;
+  --border: #dde2ec;
+  --border-strong: #c3cad8;
+  --divider: #e6eaf2;
+  --track: #e3e8f1;
+
+  --text: #141a29;
+  --text-soft: #273047;
+  --text-muted: #4f5a72;
+  --text-dim: #5d6880;
+  --outline-dim: #a3adc2;
+
+  --amber: #f5b83d;
+  --amber-hover: #f7c255;
+  --amber-strong: #c98400;
+  --amber-text: #8f5b00;
+  --amber-ink: #1a1300;
+  --amber-bg: #fdf3dc;
+  --amber-you: #e2b85a;
+  --amber-soft: #7a6326;
+  --level-bg: #fbefd2;
+
+  --teal: #46c7ae;
+  --teal-text: #0e7a66;
+  --teal-ink: #062320;
+  --teal-bg: #dcf4ee;
+  --break-bg: #eaf6f4;
+  --break-surface: #ffffff;
+  --break-border: #c2e4dd;
+  --break-border-strong: #8fcdbf;
+  --break-muted: #3f6660;
+
+  --blue: #3456c9;
+  --blue-bg: #e3eaff;
+
+  --coral: #ff6b57;
+  --coral-text: #c2341f;
+  --coral-pale: #ffb8ab;
+  --boss-bg: #fff3f1;
+  --boss-border: #f1c4bc;
+  --boss-track: #f6dcd7;
+  --boss-muted: #6e5559;
+
+  --flame: #c24a15;
+  --danger-ink: #2a0a05;
+
+  --pip: #dfe4ee;
+  --heat-0: #e6eaf2;
+  --heat-1: #f8e3ad;
+  --heat-2: #efbf55;
+  --error-bg: #fdecea;
+  --error-border: #f1b9b1;
+  --error-text: #a3261a;
+  --sheet-border: #dde2ec;
+  --scrim: rgba(20, 26, 41, 0.45);
+  --shadow-pop: 0 8px 30px rgba(20, 26, 41, 0.16);
+  --hover-tint: rgba(20, 26, 41, 0.04);
+  --medal-shadow: drop-shadow(0 2px 4px rgba(20, 26, 41, 0.25));
+  --medal-shadow-sm: drop-shadow(0 1px 1px rgba(20, 26, 41, 0.3));
+
+  --tint-ember: #fff0e8;
+  --tint-nebula: #efeaff;
+  --tint-legend: #fdf3dc;
+  --tint-solstice: #fff8d6;
+  --tint-secret: #efeaff;
+  --secret-border: #8f74d6;
+  --midnight-border: #4a5fa8;
+  --midnight-from: #e4e9ff;
+  --midnight-to: #d8dff8;
+
+  --locked-rim-0: #dfe4ec;
+  --locked-rim-1: #c3cad6;
+  --locked-rim-2: #a4adbc;
+  --locked-face: #eef1f6;
+  --locked-ink: #98a2b3;
+  --locked-stamp: #3f4a60;
+
+  color-scheme: light;
 }
 
 *,
@@ -107,7 +244,7 @@ button:disabled {
 }
 
 :focus-visible {
-  outline: 2px solid var(--amber);
+  outline: 2px solid var(--amber-strong);
   outline-offset: 2px;
 }
 
@@ -155,7 +292,7 @@ h3 {
 }
 
 .btn-primary:hover:not(:disabled) {
-  background: #ffc75c;
+  background: var(--amber-hover);
 }
 
 .btn-quiet {
@@ -176,7 +313,7 @@ h3 {
 .btn-danger {
   border: none;
   background: var(--coral);
-  color: #2a0a05;
+  color: var(--danger-ink);
 }
 
 .btn-dashed {
@@ -306,14 +443,14 @@ h3 {
   font-size: 13px;
   font-weight: 700;
   background: var(--amber-bg);
-  color: var(--amber);
+  color: var(--amber-text);
   white-space: nowrap;
 }
 
 .phase-pill[data-phase="break"],
 .phase-pill[data-phase="longBreak"] {
   background: var(--teal-bg);
-  color: var(--teal);
+  color: var(--teal-text);
 }
 
 .phase-pill[data-phase="idle"] {
@@ -379,7 +516,7 @@ h3 {
 
 .in-voice {
   display: inline-flex;
-  color: var(--teal);
+  color: var(--teal-text);
   flex: none;
 }
 
@@ -656,7 +793,7 @@ h3 {
 }
 
 .rank-chip[data-top="true"] {
-  color: var(--amber);
+  color: var(--amber-text);
   border-color: var(--amber-you);
 }
 
@@ -701,7 +838,7 @@ h3 {
 }
 
 .chip[data-tone="room"] {
-  color: var(--amber);
+  color: var(--amber-text);
   background: var(--amber-bg);
 }
 
@@ -711,7 +848,7 @@ h3 {
 }
 
 .chip[data-tone="break"] {
-  color: var(--teal);
+  color: var(--teal-text);
   background: var(--teal-bg);
 }
 
@@ -755,24 +892,24 @@ h3 {
 }
 
 .boss-text strong {
-  color: #fff;
+  color: var(--text);
 }
 
 .boss[data-defeated="true"] .boss-name::after {
   content: " · defeated";
-  color: var(--teal);
+  color: var(--teal-text);
   font-size: 16px;
 }
 
 .combo .eyebrow {
-  color: var(--amber);
+  color: var(--amber-text);
 }
 
 .combo-value {
   font-family: var(--font-display);
   font-size: 28px;
   font-weight: 700;
-  color: var(--amber);
+  color: var(--amber-text);
 }
 
 .pips {
@@ -784,7 +921,7 @@ h3 {
   flex: 1;
   height: 10px;
   border-radius: 3px;
-  background: #2b3448;
+  background: var(--pip);
   transition: background 0.3s;
 }
 
@@ -827,7 +964,7 @@ h3 {
 .goal input[type="checkbox"] {
   width: 18px;
   height: 18px;
-  accent-color: var(--teal);
+  accent-color: var(--teal-text);
   margin: 0;
   flex: none;
 }
@@ -889,7 +1026,7 @@ textarea.input {
 }
 
 .input:focus {
-  border-color: var(--amber);
+  border-color: var(--amber-text);
   outline: none;
 }
 
@@ -910,7 +1047,7 @@ textarea.input {
 .backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(8, 11, 18, 0.72);
+  background: var(--scrim);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -924,7 +1061,7 @@ textarea.input {
   max-height: calc(100vh - 48px);
   overflow-y: auto;
   background: var(--surface);
-  border: 1px solid #2e3852;
+  border: 1px solid var(--sheet-border);
   border-radius: 24px;
   padding: 20px 20px 24px;
   display: flex;
@@ -960,7 +1097,7 @@ textarea.input {
 }
 
 .choice[aria-checked="true"] {
-  border: 2px solid var(--amber);
+  border: 2px solid var(--amber-strong);
   background: var(--amber-bg);
 }
 
@@ -1048,7 +1185,7 @@ textarea.input {
 }
 
 .break-hero .eyebrow {
-  color: var(--teal);
+  color: var(--teal-text);
   justify-content: center;
 }
 
@@ -1149,13 +1286,13 @@ textarea.input {
   transform: translateX(-50%);
   z-index: 30;
   background: var(--teal-bg);
-  color: var(--teal);
+  color: var(--teal-text);
   border: 1px solid var(--break-border-strong);
   border-radius: 999px;
   padding: 10px 18px;
   font-weight: 700;
   font-size: 14px;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+  box-shadow: var(--shadow-pop);
   animation: pop-in 0.35s cubic-bezier(0.2, 1.4, 0.4, 1);
   width: max-content;
   max-width: calc(100% - 32px);
@@ -1202,7 +1339,7 @@ textarea.input {
   height: 64px;
   border-radius: 18px;
   background: var(--teal-bg);
-  border: 2px solid var(--teal);
+  border: 2px solid var(--teal-text);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1213,7 +1350,7 @@ textarea.input {
 .level-badge small {
   font-size: 10px;
   font-weight: 700;
-  color: var(--teal);
+  color: var(--teal-text);
 }
 
 .level-badge strong {
@@ -1243,15 +1380,15 @@ textarea.input {
 .heat {
   aspect-ratio: 1;
   border-radius: 5px;
-  background: #1d2536;
+  background: var(--heat-0);
 }
 
 .heat[data-level="1"] {
-  background: #3a3420;
+  background: var(--heat-1);
 }
 
 .heat[data-level="2"] {
-  background: #8a6a24;
+  background: var(--heat-2);
 }
 
 .heat[data-level="3"] {
@@ -1282,7 +1419,7 @@ textarea.input {
 }
 
 .quest-reward {
-  color: var(--amber);
+  color: var(--amber-text);
 }
 
 /* ---------------------------------------------------------------- toast */
@@ -1297,9 +1434,9 @@ textarea.input {
   align-items: center;
   gap: 12px;
   max-width: calc(100% - 32px);
-  background: #2a1215;
-  border: 1px solid #5c2b2e;
-  color: #ffb4a8;
+  background: var(--error-bg);
+  border: 1px solid var(--error-border);
+  color: var(--error-text);
   padding: 10px 10px 10px 16px;
   border-radius: var(--radius);
   font-size: 14px;
@@ -1371,7 +1508,7 @@ textarea.input {
 }
 
 .combo-pill strong {
-  color: var(--amber);
+  color: var(--amber-text);
 }
 
 .mobile-board {
@@ -1423,7 +1560,7 @@ textarea.input {
 }
 
 .member-row .time[data-tone="room"] {
-  color: var(--amber);
+  color: var(--amber-text);
 }
 
 .member-row .time[data-tone="solo"] {
@@ -1431,7 +1568,7 @@ textarea.input {
 }
 
 .member-row .time[data-tone="break"] {
-  color: var(--teal);
+  color: var(--teal-text);
 }
 
 /* ---------------------------------------------------------------- leaderboard */
@@ -1454,7 +1591,7 @@ textarea.input {
 }
 
 .leaderboard .member-row:nth-child(1) .rank {
-  color: var(--amber);
+  color: var(--amber-text);
 }
 
 /* Minutes | XP switch above the standings. */
@@ -1487,7 +1624,7 @@ textarea.input {
 }
 
 .segmented button:focus-visible {
-  outline: 2px solid var(--amber);
+  outline: 2px solid var(--amber-strong);
   outline-offset: 1px;
 }
 
@@ -1598,7 +1735,7 @@ textarea.input {
 
 [data-style="ember"] {
   --card-border: var(--flame);
-  --card-bg: linear-gradient(160deg, #2a1c18, var(--surface) 60%);
+  --card-bg: linear-gradient(160deg, var(--tint-ember), var(--surface) 60%);
 }
 
 [data-style="gold"] {
@@ -1616,7 +1753,7 @@ textarea.input {
 [data-style="nebula"] {
   --card-border: transparent;
   --card-bg:
-    linear-gradient(160deg, #1f1a38, var(--surface) 70%) padding-box,
+    linear-gradient(160deg, var(--tint-nebula), var(--surface) 70%) padding-box,
     linear-gradient(135deg, #7b5cff, #e48bf0, #9db7ff) border-box;
   --card-glow: 0 0 20px rgba(123, 92, 255, 0.18);
 }
@@ -1624,7 +1761,7 @@ textarea.input {
 [data-style="legend"] {
   --card-border: transparent;
   --card-bg:
-    linear-gradient(160deg, #2a2414, var(--surface) 65%) padding-box,
+    linear-gradient(160deg, var(--tint-legend), var(--surface) 65%) padding-box,
     linear-gradient(120deg, #f5b83d, #fff1c4, #f5b83d, #c98a1c) border-box;
   --card-glow: 0 0 0 1px rgba(245, 184, 61, 0.4), 0 0 26px rgba(245, 184, 61, 0.25);
 }
@@ -1637,8 +1774,8 @@ textarea.input {
 }
 
 [data-style="midnight"] {
-  --card-border: #4a5fa8;
-  --card-bg: linear-gradient(160deg, #10183a, #0b1020);
+  --card-border: var(--midnight-border);
+  --card-bg: linear-gradient(160deg, var(--midnight-from), var(--midnight-to));
 }
 
 [data-style="boss-slayer"] {
@@ -1648,7 +1785,7 @@ textarea.input {
 
 [data-style="solstice"] {
   --card-border: #ffd84d;
-  --card-bg: linear-gradient(160deg, #2b2508, var(--surface) 70%);
+  --card-bg: linear-gradient(160deg, var(--tint-solstice), var(--surface) 70%);
   --card-glow: 0 0 14px rgba(255, 216, 77, 0.2);
 }
 
@@ -1715,7 +1852,7 @@ textarea.input {
   display: inline-flex;
   flex: none;
   line-height: 0;
-  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.45));
+  filter: var(--medal-shadow-sm);
 }
 
 .badge-medal {
@@ -1764,7 +1901,7 @@ textarea.input {
   background: none;
   padding: 0;
   min-height: 0;
-  color: var(--amber);
+  color: var(--amber-text);
   font-weight: 700;
 }
 
@@ -1811,7 +1948,7 @@ textarea.input {
 }
 
 .badge-tile[data-earned="true"] .badge-medal {
-  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.5));
+  filter: var(--medal-shadow);
 }
 
 .badge-tile[data-earned="false"] .badge-medal {
@@ -1823,12 +1960,12 @@ textarea.input {
 }
 
 .badge-tile[data-secret="true"][data-earned="true"] {
-  border-color: #6d55a8;
-  background: linear-gradient(160deg, #241c3a, var(--bg));
+  border-color: var(--secret-border);
+  background: linear-gradient(160deg, var(--tint-secret), var(--bg));
 }
 
 .badge-tile[aria-pressed="true"] {
-  outline: 2px solid var(--amber);
+  outline: 2px solid var(--amber-strong);
   outline-offset: 1px;
 }
 
@@ -1891,7 +2028,7 @@ textarea.input {
 }
 
 .open-profile:hover {
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--hover-tint);
 }
 
 .open-profile:focus-visible {
@@ -2546,14 +2683,14 @@ textarea.input {
   border: 1px solid var(--amber-you);
   border-radius: var(--radius);
   padding: 10px 10px 10px 16px;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+  box-shadow: var(--shadow-pop);
   animation: pop-in 0.35s cubic-bezier(0.2, 1.4, 0.4, 1);
 }
 
 .keep-going-title {
   font-family: var(--font-display);
   font-weight: 700;
-  color: var(--amber);
+  color: var(--amber-text);
 }
 
 /* Holds the leaderboard and data card inside the progress page's column. */

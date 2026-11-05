@@ -7,6 +7,7 @@ import {
   JobInterval,
   JobScheduleEvent,
   rootServer,
+  WellKnownRootGuids,
   type ChannelGuid,
   type GlobalSettings,
   type JobData,
@@ -19,6 +20,7 @@ import { loadFeedbackDestination, RelayFeedbackInbox } from "./adapters/feedback
 import { createLogger } from "./adapters/logger";
 import { PushNotifier } from "./adapters/pushNotifier";
 import { TimeoutScheduler } from "./adapters/timeoutScheduler";
+import { VoiceChannelPicker } from "./adapters/voiceChannelPicker";
 import { VoiceRoster } from "./adapters/voiceRoster";
 import { StudyRoomHandlers } from "./handlers";
 import { RecapScheduler } from "./jobs/recapScheduler";
@@ -26,12 +28,44 @@ import { openDatabase } from "./persistence/database";
 import { KnexStore } from "./persistence/knexStore";
 import { migrateToLatest } from "./persistence/migrations";
 import { studyRoomService } from "./studyRoomService";
-import { createShutdown, findAttachedClient, loadConfig, presenceHandlers } from "./wiring";
+import {
+  canManageApps,
+  createShutdown,
+  findAttachedClient,
+  loadConfig,
+  presenceHandlers,
+  type ChannelInfo,
+} from "./wiring";
 
 const logger = createLogger();
 let shutdown: (() => Promise<void>) | null = null;
 
-function loadRootConfig(settings: GlobalSettings | undefined): Promise<AppConfig> {
+/**
+ * Every channel Study Squad can see. Root has no "list all channels" call:
+ * channels.list needs a channel group, so this walks channelGroups.list().
+ * channelType tells voice (ChannelType.Voice = 4) from text.
+ */
+async function listChannels(): Promise<ChannelInfo[]> {
+  const groups = await rootServer.community.channelGroups.list();
+  // One group Study Squad can't read shouldn't hide the rest.
+  const lists = await Promise.allSettled(
+    groups.map((g) => rootServer.community.channels.list({ channelGroupId: g.id })),
+  );
+  const failed = lists.filter((r) => r.status === "rejected").length;
+  if (failed > 0) logger.warn("could not list some channel groups", { failed });
+  return lists
+    .flatMap((r) => (r.status === "fulfilled" ? r.value : []))
+    .map((c) => ({
+      id: c.id,
+      name: c.name,
+      voice: Number(c.channelType) === ChannelType.Voice,
+    }));
+}
+
+function loadRootConfig(
+  settings: GlobalSettings | undefined,
+  pickedVoiceId: string,
+): Promise<AppConfig> {
   return loadConfig(
     settings,
     {
@@ -42,25 +76,23 @@ function loadRootConfig(settings: GlobalSettings | undefined): Promise<AppConfig
             channelId: id as ChannelGuid,
           })
         ).url,
-      channels: async () => {
-        const groups = await rootServer.community.channelGroups.list();
-        // One group Study Squad can't read shouldn't hide the rest.
-        const lists = await Promise.allSettled(
-          groups.map((g) => rootServer.community.channels.list({ channelGroupId: g.id })),
-        );
-        const failed = lists.filter((r) => r.status === "rejected").length;
-        if (failed > 0) logger.warn("could not list some channel groups", { failed });
-        return lists
-          .flatMap((r) => (r.status === "fulfilled" ? r.value : []))
-          .map((c) => ({
-            id: c.id,
-            name: c.name,
-            voice: Number(c.channelType) === ChannelType.Voice,
-          }));
-      },
+      channels: listChannels,
     },
     logger,
+    pickedVoiceId,
   );
+}
+
+/** Community owner, or a role that can manage apps (see canManageApps). */
+function isRootAdmin(userId: string): Promise<boolean> {
+  return canManageApps(userId, {
+    ownerUserId: async () => (await rootServer.community.communities.get()).ownerUserId,
+    memberRoleIds: async (id) =>
+      (await rootServer.community.communityMemberRoles.list({ userId: id as UserGuid }))
+        .communityRoleIds,
+    roles: () => rootServer.community.communityRoles.list(),
+    everyoneRoleId: WellKnownRootGuids.CommunityRoles.EveryoneRole,
+  });
 }
 
 async function onStarting(state: RootAppStartState): Promise<void> {
@@ -72,8 +104,20 @@ async function onStarting(state: RootAppStartState): Promise<void> {
   const feedback = loadFeedbackDestination(process.env, __dirname);
   logger.info(feedback ? "feedback goes to the relay" : "feedback not configured, box hidden");
 
+  const store = new KnexStore(db);
+  // Set once the engine and voice roster exist; the picker only applies after start.
+  let applyVoicePick: () => Promise<void> = async () => {};
+  const voicePicker = new VoiceChannelPicker({
+    channels: listChannels,
+    canManage: isRootAdmin,
+    store: store.kv,
+    apply: () => applyVoicePick(),
+    status: (): string => engine.getConfig().voiceChannelStatus,
+    logger,
+  });
+
   const engine = new StudyRoomEngine({
-    store: new KnexStore(db),
+    store,
     clock: { now: Date.now },
     scheduler: new TimeoutScheduler(),
     notifier: new PushNotifier(studyRoomService, (userId) =>
@@ -91,11 +135,14 @@ async function onStarting(state: RootAppStartState): Promise<void> {
     }),
     feedbackInbox: feedback ? new RelayFeedbackInbox(feedback) : undefined,
     logger,
-    config: await loadRootConfig(state.globalSettings ?? rootServer.globalSettings),
+    config: await loadRootConfig(
+      state.globalSettings ?? rootServer.globalSettings,
+      await voicePicker.picked(),
+    ),
     newId: randomUUID,
     random: Math.random,
   });
-  studyRoomService.bind(new StudyRoomHandlers(engine, logger));
+  studyRoomService.bind(new StudyRoomHandlers(engine, logger, { voicePicker }));
   rootServer.lifecycle.addService(studyRoomService);
   await engine.start();
 
@@ -152,17 +199,21 @@ async function onStarting(state: RootAppStartState): Promise<void> {
   );
   await recap.start();
 
-  // Admins edit settings in Root's App settings; apply them live.
+  // Admins edit settings in Root's App settings (and pick the voice channel
+  // in the app's Room settings); apply them live.
+  let currentSettings = state.globalSettings ?? rootServer.globalSettings;
+  const applySettings = async () => {
+    const config = await loadRootConfig(currentSettings, await voicePicker.picked());
+    await engine.setConfig(config);
+    await voice.watch(config.voiceChannelId);
+    await recap.reschedule();
+  };
+  applyVoicePick = applySettings;
   rootServer.globalSettings?.on(GlobalSettingsEvent.Update, (event) => {
-    void (async () => {
-      const config = await loadRootConfig(event.current);
-      await engine.setConfig(config);
-      await voice.watch(config.voiceChannelId);
-      await recap.reschedule();
-      logger.info("settings updated");
-    })().catch((error: unknown) =>
-      logger.error("settings update failed", { error: String(error) }),
-    );
+    currentSettings = event.current;
+    void applySettings()
+      .then(() => logger.info("settings updated"))
+      .catch((error: unknown) => logger.error("settings update failed", { error: String(error) }));
   });
 
   shutdown = createShutdown(engine, () => db.destroy(), logger);

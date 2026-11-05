@@ -116,12 +116,15 @@ describe("Study Squad app", () => {
     expect(within(panel).getByText("365 / 500 XP")).toBeInTheDocument();
     await user.click(within(panel).getByRole("button", { name: "Add a goal" }));
     await user.type(within(panel).getByLabelText("New goal"), "Stats HW 5{Enter}");
-    const checkbox = await within(panel).findByRole("checkbox", { name: "Stats HW 5" });
-    await user.click(checkbox);
+    const checkbox = () => within(panel).findByRole("checkbox", { name: "Stats HW 5" });
+    await user.click(await checkbox());
     await waitFor(() => expect(within(panel).getByText("390 / 500 XP")).toBeInTheDocument());
-    await user.click(checkbox);
-    await user.click(checkbox);
-    await waitFor(() => expect(checkbox).toBeChecked());
+    // Finished goals fold away.
+    await user.click(within(panel).getByRole("button", { name: "Finished (1)" }));
+    await user.click(await checkbox());
+    await waitFor(async () => expect(await checkbox()).not.toBeChecked());
+    await user.click(await checkbox());
+    await waitFor(async () => expect(await checkbox()).toBeChecked());
     expect(within(panel).getByText("390 / 500 XP")).toBeInTheDocument();
     await user.click(within(panel).getByRole("button", { name: "Remove goal: Stats HW 5" }));
     await waitFor(() => expect(within(panel).queryByText("Stats HW 5")).not.toBeInTheDocument());
@@ -132,6 +135,13 @@ describe("Study Squad app", () => {
     const opener = screen.getByRole("button", { name: "Room settings" });
     await user.click(opener);
     expect(screen.getByRole("dialog", { name: "Room settings" })).toHaveTextContent("25 / 5");
+    expect(screen.getByRole("dialog", { name: "Room settings" })).toHaveTextContent(
+      "Need help? Email hello@samuelburke.dev or message @5amuel on Root.",
+    );
+    expect(screen.getByRole("link", { name: "hello@samuelburke.dev" })).toHaveAttribute(
+      "href",
+      "mailto:hello@samuelburke.dev",
+    );
     await user.keyboard("{Escape}");
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     expect(opener).toHaveFocus();
@@ -150,6 +160,48 @@ describe("Study Squad app", () => {
     await waitFor(() => expect(gateway.posts.at(-1)).toBe("Feedback: More boss names\nplease"));
     await user.click(within(dialog).getByRole("button", { name: "Done" }));
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("lets an admin pick a voice channel, save it, and see it again on reopen", async () => {
+    const { user } = await renderApp();
+    await user.click(screen.getByRole("button", { name: "Room settings" }));
+    let dialog = screen.getByRole("dialog", { name: "Room settings" });
+    const select = await within(dialog).findByRole("combobox", { name: "Voice channel" });
+    expect(
+      within(select)
+        .getAllByRole("option")
+        .map((o) => o.textContent),
+    ).toEqual(["No voice channel picked", "#Study voice", "#Quiet library"]);
+    const save = within(dialog).getByRole("button", { name: "Save" });
+    expect(save).toBeDisabled();
+    await user.selectOptions(select, "#Quiet library");
+    await user.click(save);
+    expect(await within(dialog).findByRole("status")).toHaveTextContent("Saved");
+    expect(dialog).toHaveTextContent("#Quiet library");
+
+    await user.keyboard("{Escape}");
+    await user.click(screen.getByRole("button", { name: "Room settings" }));
+    dialog = screen.getByRole("dialog", { name: "Room settings" });
+    await waitFor(() =>
+      expect(within(dialog).getByRole("combobox", { name: "Voice channel" })).toHaveDisplayValue(
+        "#Quiet library",
+      ),
+    );
+  });
+
+  it("shows members the voice channel without the dropdown", async () => {
+    const { user, gateway } = await renderApp();
+    vi.spyOn(gateway, "getVoiceChannels").mockResolvedValue({
+      canEdit: false,
+      selectedId: "",
+      channels: [],
+      status: "#Study voice",
+    });
+    await user.click(screen.getByRole("button", { name: "Room settings" }));
+    const dialog = screen.getByRole("dialog", { name: "Room settings" });
+    await waitFor(() => expect(gateway.getVoiceChannels).toHaveBeenCalled());
+    expect(dialog).toHaveTextContent("#Study voice");
+    expect(within(dialog).queryByRole("combobox")).not.toBeInTheDocument();
   });
 
   it("shows why feedback couldn't be sent and keeps the note", async () => {
@@ -391,8 +443,10 @@ describe("Study Squad app", () => {
       await user.click(nice);
     }
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    const session = screen.getByRole("region", { name: "Your session" });
+    await user.click(within(session).getByRole("button", { name: "Finished (1)" }));
     expect(
-      within(screen.getByRole("region", { name: "Your session" })).getByRole("checkbox", {
+      within(session).getByRole("checkbox", {
         name: "Read ch. 4",
       }),
     ).toBeChecked();

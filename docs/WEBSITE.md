@@ -1,15 +1,16 @@
 # Website
 
-Study Squad has a small website with a home page and the privacy policy, hosted free on GitHub Pages. It's the link to give Root's app listing as the privacy policy URL.
+Study Squad has a small website with a home page, a support page and the privacy policy, hosted free on GitHub Pages. It's the link to give Root's app listing as the privacy policy URL.
 
 - Home: `https://studysquad.samuelburke.dev/`
+- Support: `https://studysquad.samuelburke.dev/support/`
 - Privacy policy: `https://studysquad.samuelburke.dev/privacy/`
 
 Until the custom domain is set up, the same pages are at `https://samuel-burke.github.io/study-squad-root-app/`.
 
 ## How it works
 
-`PRIVACY.md` is the only copy of the policy. `scripts/build-site.mjs` turns it into a styled page, together with the files in `site/` (the page layout, the home page and the stylesheet), and writes everything to `_site/`. It has no dependencies, so its markdown converter only knows what `PRIVACY.md` uses: headings, paragraphs, bold, italics, links, lists and tables.
+`PRIVACY.md` is the only copy of the policy. `scripts/build-site.mjs` turns it into a styled page, together with the files in `site/` (the page layout, the home and support pages and the stylesheet), and writes everything to `_site/`. It has no dependencies, so its markdown converter only knows what `PRIVACY.md` uses: headings, paragraphs, bold, italics, links, lists and tables.
 
 The **Website** workflow (`.github/workflows/pages.yml`) publishes it whenever a change to the policy or the site reaches `main`. CI builds it on every pull request too, so a broken page shows up before merging.
 

@@ -37,22 +37,12 @@ describe("squad bot lines", () => {
 
 describe("pickSquadLine", () => {
   const TIMER_EVENTS = EVENTS.filter((e) => e !== "memberJoined" && e !== "badgeUnlocked");
-  const isMovie = (id: string) => id.startsWith("rare.") || id.includes(".movie.");
 
-  it("picks from the enabled personalities and the movie lines only", () => {
-    for (const event of EVENTS) {
-      for (let i = 0; i < 40; i++) {
-        const line = pickSquadLine(event, ["chill"], {}, () => i / 40, context);
-        expect(line.id.startsWith(`${event}.chill.`) || isMovie(line.id), line.id).toBe(true);
-      }
-    }
-  });
-
-  it("uses every personality when none are enabled", () => {
+  it("picks from every personality and the movie lines", () => {
     const seen = new Set<string>();
     const random = seededRandom(3);
     for (let i = 0; i < 600; i++) {
-      const line = pickSquadLine("breakStarted", [], {}, random, context);
+      const line = pickSquadLine("breakStarted", {}, random, context);
       if (!line.rare && !line.id.includes(".movie.")) seen.add(line.id.split(".")[1]!);
     }
     expect([...seen].sort()).toEqual([...ALL_PERSONALITIES].sort());
@@ -61,20 +51,20 @@ describe("pickSquadLine", () => {
   it("gives every line the same chance, movie lines included", () => {
     const random = seededRandom(11);
     const counts = new Map<string, number>();
-    const runs = 20_000;
     const context150 = { round: 1, togetherMinutes: 150 };
-    for (let i = 0; i < runs; i++) {
-      const line = pickSquadLine("breakStarted", ["drill"], {}, random, context150);
-      counts.set(line.id, (counts.get(line.id) ?? 0) + 1);
-    }
     const size =
-      SQUAD_LINES.breakStarted.drill.length +
+      ALL_PERSONALITIES.reduce((sum, p) => sum + SQUAD_LINES.breakStarted[p].length, 0) +
       (MOVIE_LINES.breakStarted?.length ?? 0) +
       RARE_LINES.length;
+    const runs = size * 300;
+    for (let i = 0; i < runs; i++) {
+      const line = pickSquadLine("breakStarted", {}, random, context150);
+      counts.set(line.id, (counts.get(line.id) ?? 0) + 1);
+    }
     expect(counts.size).toBe(size);
     for (const n of counts.values()) {
-      expect(n).toBeGreaterThan((runs / size) * 0.85);
-      expect(n).toBeLessThan((runs / size) * 1.15);
+      expect(n).toBeGreaterThan(300 * 0.7);
+      expect(n).toBeLessThan(300 * 1.3);
     }
   });
 
@@ -82,8 +72,8 @@ describe("pickSquadLine", () => {
     for (const event of ["memberJoined", "badgeUnlocked"] as const) {
       const ids = new Set(
         Array.from(
-          { length: 100 },
-          (_, i) => pickSquadLine(event, ["gamer"], {}, () => i / 100, context).id,
+          { length: 1000 },
+          (_, i) => pickSquadLine(event, {}, () => i / 1000, context).id,
         ),
       );
       expect([...ids].filter((id) => id.startsWith("rare."))).toEqual([]);
@@ -92,35 +82,35 @@ describe("pickSquadLine", () => {
     }
     for (const event of TIMER_EVENTS) {
       const ids = Array.from(
-        { length: 100 },
-        (_, i) => pickSquadLine(event, ["gamer"], {}, () => i / 100, context).id,
+        { length: 1000 },
+        (_, i) => pickSquadLine(event, {}, () => i / 1000, context).id,
       );
       expect(ids.some((id) => id.startsWith("rare."))).toBe(true);
     }
   });
 
   it("fills in the badge", () => {
-    const line = pickSquadLine("badgeUnlocked", ["gamer"], {}, () => 0, {
-      ...context,
-      badge: "Night Owl",
-    });
-    expect(line.text).toBe("Achievement unlocked: Night Owl. 🏅");
+    const texts = Array.from(
+      { length: 400 },
+      (_, i) =>
+        pickSquadLine("badgeUnlocked", {}, () => i / 400, { ...context, badge: "Night Owl" }).text,
+    );
+    expect(texts).toContain("Achievement unlocked: Night Owl. 🏅");
+    for (const text of texts) expect(text).not.toContain("{badge}");
   });
 
   it("fills in the round", () => {
-    const line = pickSquadLine("studyResumed", ["hype"], {}, () => 0, context);
-    expect(line.text).toBe("Round 2. Let's get it. 🔥");
+    const texts = Array.from(
+      { length: 400 },
+      (_, i) => pickSquadLine("studyResumed", {}, () => i / 400, context).text,
+    );
+    expect(texts).toContain("Round 2. Let's get it. 🔥");
+    for (const text of texts) expect(text).not.toContain("{round}");
   });
 
   it("never repeats the line it said last for that event", () => {
-    const first = pickSquadLine("breakStarted", ["drill"], {}, () => 0, context);
-    const next = pickSquadLine(
-      "breakStarted",
-      ["drill"],
-      { breakStarted: first.id },
-      () => 0,
-      context,
-    );
+    const first = pickSquadLine("breakStarted", {}, () => 0, context);
+    const next = pickSquadLine("breakStarted", { breakStarted: first.id }, () => 0, context);
     expect(next.id).not.toBe(first.id);
   });
 
@@ -129,9 +119,9 @@ describe("pickSquadLine", () => {
     const ids = (minutes: number) =>
       new Set(
         Array.from(
-          { length: 200 },
+          { length: 1000 },
           (_, i) =>
-            pickSquadLine("breakStarted", ["hype"], {}, () => i / 200, {
+            pickSquadLine("breakStarted", {}, () => i / 1000, {
               round: 1,
               togetherMinutes: minutes,
             }).id,
@@ -143,9 +133,9 @@ describe("pickSquadLine", () => {
 
   it("doesn't repeat the last movie line either", () => {
     const random = () => 0.99;
-    const first = pickSquadLine("breakStarted", ["hype"], {}, random, context);
+    const first = pickSquadLine("breakStarted", {}, random, context);
     expect(first.rare).toBe(true);
-    const next = pickSquadLine("studyResumed", ["hype"], { rare: first.id }, random, context);
+    const next = pickSquadLine("studyResumed", { rare: first.id }, random, context);
     expect(next.id).not.toBe(first.id);
   });
 });

@@ -7,6 +7,7 @@ export enum ErrorCode {
   NotFound = 1002,
   Conflict = 1003,
   RateLimited = 1004,
+  Forbidden = 1005,
   Internal = 1500,
 }
 

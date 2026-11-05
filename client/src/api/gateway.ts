@@ -9,6 +9,7 @@ import type {
   ProgressDto,
   RoomStateDto,
   SnapshotDto,
+  VoiceChannelChoiceDto,
 } from "@studyroom/core";
 
 export interface Profile {
@@ -59,6 +60,10 @@ export interface StudyRoomGateway {
   addGoal(text: string): Promise<MyStatusDto>;
   setGoalDone(goalId: string, done: boolean): Promise<MyStatusDto>;
   deleteGoal(goalId: string): Promise<MyStatusDto>;
+  editGoal(goalId: string, text: string): Promise<MyStatusDto>;
+  clearDoneGoals(): Promise<MyStatusDto>;
+  /** Open goals, top first. */
+  reorderGoals(goalIds: string[]): Promise<MyStatusDto>;
   setGoalsPrivate(goalsPrivate: boolean): Promise<MyStatusDto>;
   getProgress(): Promise<ProgressDto>;
   /** This week by focus minutes unless `by` and `period` say otherwise. */
@@ -80,6 +85,10 @@ export interface StudyRoomGateway {
   sendFeedback(text: string): Promise<void>;
   /** Another member's public game stats, for their profile card. */
   getMemberProfile(userId: string): Promise<MemberProfileDto>;
+  /** The community's voice channels for the Room settings dropdown, and the current pick. */
+  getVoiceChannels(): Promise<VoiceChannelChoiceDto>;
+  /** Admins only: saves the voice channel ("" clears the pick). */
+  setVoiceChannel(channelId: string): Promise<VoiceChannelChoiceDto>;
   getProfiles(userIds: string[]): Promise<Profile[]>;
   subscribe(handlers: GatewayHandlers): () => void;
 }

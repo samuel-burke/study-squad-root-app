@@ -6,6 +6,7 @@ const DAY_MS = 86_400_000;
 
 function daysLeft(boss: BossDto, now: number): string {
   const days = Math.max(0, Math.ceil((boss.endsAt - now) / DAY_MS));
+  if (boss.defeated) return days <= 1 ? "New boss tomorrow" : `New boss in ${days} days`;
   return days === 1 ? "1 day left" : `${days} days left`;
 }
 

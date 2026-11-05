@@ -1,4 +1,3 @@
-import { ALL_PERSONALITIES, type Personality } from "./squad/squadLines";
 import { isValidTimeZone } from "./time/calendar";
 import {
   customPreset,
@@ -30,15 +29,12 @@ export const SETTINGS = {
     busyPosts: "busyPosts",
     busyThreshold: "busyThreshold",
     squadBot: "squadBot",
-    squadPersonalities: "squadPersonalities",
   },
   game: {
     group: "game",
     xpEnabled: "xpEnabled",
-    dailyXpCap: "dailyXpCap",
     comboEnabled: "comboEnabled",
     bossEnabled: "bossEnabled",
-    bossName: "bossName",
     bossBaseHp: "bossBaseHpXp",
     streakFreezes: "streakFreezes",
     milestonePosts: "milestonePosts",
@@ -55,7 +51,6 @@ export const NUMBER_LIMITS = {
   customFocusMinutes: { min: 5, max: 120, step: 1, default: 25 },
   customBreakMinutes: { min: 1, max: 30, step: 1, default: 5 },
   busyThreshold: { min: 2, max: 100, step: 1, default: 5 },
-  dailyXpCap: { min: 50, max: 2000, step: 10, default: 300 },
   bossBaseHpXp: { min: 100, max: 1_000_000, step: 100, default: 10_000 },
 } as const;
 
@@ -88,21 +83,17 @@ export interface AppConfig {
   busyPosts: { enabled: boolean; threshold: number };
   /**
    * The squad bot: posts in the channel when the room timer starts, switches
-   * and finishes, and when someone joins, in the voices admins picked.
+   * and finishes, and when someone joins.
    */
   squadBot: {
     enabled: boolean;
-    personalities: Personality[];
     /** @mention (ping) people in its posts. Off = their names in plain text. */
     mentions: boolean;
   };
-  xp: { enabled: boolean; dailyCap: number };
+  xp: { enabled: boolean };
   comboEnabled: boolean;
-  /**
-   * name is the admin's custom boss name, or "" for a new built-in name each week.
-   * baseHpXp is a 1x boss's HP in XP; each boss multiplies it by its strength.
-   */
-  boss: { enabled: boolean; name: string; baseHpXp: number };
+  /** baseHpXp is a 1x boss's HP in XP; each boss multiplies it by its strength. */
+  boss: { enabled: boolean; baseHpXp: number };
   streakFreezesEnabled: boolean;
   milestonePostsEnabled: boolean;
 }
@@ -121,10 +112,10 @@ export const DEFAULT_CONFIG: AppConfig = {
   recapLeaderboardEnabled: true,
   goalsPublicByDefault: true,
   busyPosts: { enabled: true, threshold: NUMBER_LIMITS.busyThreshold.default },
-  squadBot: { enabled: true, personalities: [...ALL_PERSONALITIES], mentions: false },
-  xp: { enabled: true, dailyCap: NUMBER_LIMITS.dailyXpCap.default },
+  squadBot: { enabled: true, mentions: false },
+  xp: { enabled: true },
   comboEnabled: true,
-  boss: { enabled: true, name: "", baseHpXp: NUMBER_LIMITS.bossBaseHpXp.default },
+  boss: { enabled: true, baseHpXp: NUMBER_LIMITS.bossBaseHpXp.default },
   streakFreezesEnabled: true,
   milestonePostsEnabled: true,
 };
@@ -158,22 +149,15 @@ function int(value: unknown, fallback: number, min: number, max: number): number
  * runtime it hands over the protobuf DoubleValue wrapper ({ value: 300 }),
  * so unwrap that first. Bare numbers and old select keys still work.
  */
-function numberSetting(value: unknown, fallback: number, min: number, max: number): number {
-  if (value && typeof value === "object" && !Array.isArray(value) && "value" in value)
-    return int((value as { value: unknown }).value, fallback, min, max);
-  return int(value, fallback, min, max);
-}
-
 function text(value: unknown, fallback: string, maxLength: number): string {
   const trimmed = typeof value === "string" ? value.trim().slice(0, maxLength) : "";
   return trimmed.length > 0 ? trimmed : fallback;
 }
 
-/** A multi-select of personalities. Unknown keys are dropped; none picked means all. */
-function personalities(value: unknown): Personality[] {
-  const picked = Array.isArray(value) ? value : typeof value === "string" ? [value] : [];
-  const known = ALL_PERSONALITIES.filter((p) => picked.includes(p));
-  return known.length > 0 ? known : [...ALL_PERSONALITIES];
+function numberSetting(value: unknown, fallback: number, min: number, max: number): number {
+  if (value && typeof value === "object" && !Array.isArray(value) && "value" in value)
+    return int((value as { value: unknown }).value, fallback, min, max);
+  return int(value, fallback, min, max);
 }
 
 function timeOfDay(value: unknown, fallback: { hours: number; minutes: number }) {
@@ -234,17 +218,12 @@ export function parseSettings(raw: RawSettings): AppConfig {
     },
     squadBot: {
       enabled: bool(room[r.squadBot], d.squadBot.enabled),
-      personalities: personalities(room[r.squadPersonalities]),
       mentions: bool(room[r.squadMentions], d.squadBot.mentions),
     },
-    xp: {
-      enabled: bool(game[g.xpEnabled], d.xp.enabled),
-      dailyCap: limited(game[g.dailyXpCap], "dailyXpCap"),
-    },
+    xp: { enabled: bool(game[g.xpEnabled], d.xp.enabled) },
     comboEnabled: bool(game[g.comboEnabled], d.comboEnabled),
     boss: {
       enabled: bool(game[g.bossEnabled], d.boss.enabled),
-      name: text(game[g.bossName], "", 40),
       baseHpXp: limited(game[g.bossBaseHp], "bossBaseHpXp"),
     },
     streakFreezesEnabled: bool(game[g.streakFreezes], d.streakFreezesEnabled),

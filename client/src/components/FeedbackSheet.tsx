@@ -1,6 +1,7 @@
 import { LIMITS } from "@studyroom/core";
 import { useState } from "react";
 import { toGatewayError, type StudyRoomGateway } from "../api/gateway";
+import { SUPPORT } from "../lib/support";
 import { Sheet } from "./Sheet";
 
 /**
@@ -72,8 +73,11 @@ export function FeedbackSheet({
               {text.length} / {max}
             </span>
           </label>
+          <span className="tiny dim">
+            Want a reply? Email {SUPPORT.email} or message {SUPPORT.rootUsername} on Root instead.
+          </span>
           {error && (
-            <div role="alert" className="small" style={{ color: "var(--coral)" }}>
+            <div role="alert" className="small" style={{ color: "var(--coral-text)" }}>
               {error}
             </div>
           )}

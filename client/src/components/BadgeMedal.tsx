@@ -180,11 +180,14 @@ const METALS: Record<MedalLook, { rim: string[]; face: string; ink: string; stam
     ink: "#ecdfff",
     stampInk: "#1e1036",
   },
+  // Locked greys come from styles.css so they follow the light/dark theme.
+  // These are set as style properties below, since SVG attributes can't
+  // read CSS variables.
   locked: {
-    rim: ["#3d4658", "#2b3241", "#1e2430"],
-    face: "#151a24",
-    ink: "#566175",
-    stampInk: "#9aa4b5",
+    rim: ["var(--locked-rim-0)", "var(--locked-rim-1)", "var(--locked-rim-2)"],
+    face: "var(--locked-face)",
+    ink: "var(--locked-ink)",
+    stampInk: "var(--locked-stamp)",
   },
 };
 
@@ -311,12 +314,12 @@ export function BadgeMedal({
       <defs>
         <linearGradient id={`${id}-rim`} x1="0.15" y1="0" x2="0.85" y2="1">
           {metal.rim.map((color, i) => (
-            <stop key={color} offset={i / (metal.rim.length - 1)} stopColor={color} />
+            <stop key={color} offset={i / (metal.rim.length - 1)} style={{ stopColor: color }} />
           ))}
         </linearGradient>
         <radialGradient id={`${id}-face`} cx="0.35" cy="0.3" r="0.8">
-          <stop offset="0" stopColor={metal.rim[1]} stopOpacity={locked ? 0.08 : 0.3} />
-          <stop offset="0.65" stopColor={metal.face} />
+          <stop offset="0" style={{ stopColor: metal.rim[1] }} stopOpacity={locked ? 0.08 : 0.3} />
+          <stop offset="0.65" style={{ stopColor: metal.face }} />
         </radialGradient>
         <linearGradient id={`${id}-sheen`} x1="0" y1="0" x2="1" y2="0">
           <stop offset="0" stopColor="#fff" stopOpacity="0" />
@@ -364,7 +367,7 @@ export function BadgeMedal({
       <path
         d={frame}
         transform={inset}
-        fill={metal.face}
+        style={{ fill: metal.face }}
         stroke="#000"
         strokeOpacity="0.35"
         strokeWidth="2"
@@ -385,7 +388,7 @@ export function BadgeMedal({
           d={GEM_FACETS}
           transform={inset}
           fill="none"
-          stroke={metal.rim[0]}
+          style={{ stroke: metal.rim[0] }}
           strokeOpacity={locked ? 0.12 : 0.22}
           strokeWidth="1.2"
         />
@@ -407,7 +410,7 @@ export function BadgeMedal({
       <g
         transform={`translate(32 ${glyphY}) scale(${glyphScale}) translate(-12 -12)`}
         fill="none"
-        stroke={metal.ink}
+        style={{ stroke: metal.ink }}
         strokeWidth={small ? 2.4 : 2}
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -424,7 +427,7 @@ export function BadgeMedal({
             height="14"
             rx="7"
             fill={`url(#${id}-rim)`}
-            stroke={metal.face}
+            style={{ stroke: metal.face }}
             strokeWidth="1.5"
           />
           <text
@@ -433,8 +436,7 @@ export function BadgeMedal({
             textAnchor="middle"
             fontSize="10"
             fontWeight="800"
-            fill={metal.stampInk}
-            style={{ fontFamily: "var(--font-display, inherit)" }}
+            style={{ fill: metal.stampInk, fontFamily: "var(--font-display, inherit)" }}
           >
             {stamp}
           </text>

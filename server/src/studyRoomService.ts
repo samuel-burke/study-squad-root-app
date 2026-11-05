@@ -2,8 +2,10 @@ import { RootServerException, type Client } from "@rootsdk/server-app";
 import { StudyRoomServiceBase } from "@studyroom/gen-server";
 import type {
   AddGoalRequest,
+  ClearDoneGoalsRequest,
   DeleteGoalRequest,
   DeleteMyDataRequest,
+  EditGoalRequest,
   EndSoloRequest,
   FeedbackSent,
   GetLeaderboardRequest,
@@ -17,6 +19,7 @@ import type {
   MemberProfile,
   MyStatus,
   Progress,
+  ReorderGoalsRequest,
   RoomSnapshot,
   SetBadgeShowcaseRequest,
   SetCardStyleRequest,
@@ -24,7 +27,10 @@ import type {
   SetGoalsPrivateRequest,
   SendFeedbackRequest,
   SetLeaderboardHiddenRequest,
+  SetVoiceChannelRequest,
   StartSoloRequest,
+  GetVoiceChannelsRequest,
+  VoiceChannelChoice,
 } from "@studyroom/gen-shared";
 import { RequestFailure, type StudyRoomHandlers } from "./handlers";
 
@@ -72,6 +78,18 @@ export class StudyRoomService extends StudyRoomServiceBase {
     return this.call((h) => h.deleteGoal(client.userId, request));
   }
 
+  editGoal(request: EditGoalRequest, client: Client): Promise<MyStatus> {
+    return this.call((h) => h.editGoal(client.userId, request));
+  }
+
+  clearDoneGoals(_request: ClearDoneGoalsRequest, client: Client): Promise<MyStatus> {
+    return this.call((h) => h.clearDoneGoals(client.userId));
+  }
+
+  reorderGoals(request: ReorderGoalsRequest, client: Client): Promise<MyStatus> {
+    return this.call((h) => h.reorderGoals(client.userId, request));
+  }
+
   setGoalsPrivate(request: SetGoalsPrivateRequest, client: Client): Promise<MyStatus> {
     return this.call((h) => h.setGoalsPrivate(client.userId, request));
   }
@@ -102,6 +120,14 @@ export class StudyRoomService extends StudyRoomServiceBase {
 
   setBadgeShowcase(request: SetBadgeShowcaseRequest, client: Client): Promise<Progress> {
     return this.call((h) => h.setBadgeShowcase(client.userId, request));
+  }
+
+  getVoiceChannels(_request: GetVoiceChannelsRequest, client: Client): Promise<VoiceChannelChoice> {
+    return this.call((h) => h.getVoiceChannels(client.userId));
+  }
+
+  setVoiceChannel(request: SetVoiceChannelRequest, client: Client): Promise<VoiceChannelChoice> {
+    return this.call((h) => h.setVoiceChannel(client.userId, request));
   }
 
   deleteMyData(_request: DeleteMyDataRequest, client: Client): Promise<MyStatus> {

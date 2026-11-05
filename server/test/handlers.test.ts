@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { MemberStatus, Phase } from "@studyroom/gen-shared";
 import { RequestFailure, StudyRoomHandlers } from "../src/handlers";
 import { createHarness } from "../../core/test/helpers";
-import { ErrorCode as CoreErrorCode } from "@studyroom/core";
+import { DomainError, ErrorCode as CoreErrorCode } from "@studyroom/core";
 
 function setup(options: ConstructorParameters<typeof StudyRoomHandlers>[2] = {}) {
   const harness = createHarness();
@@ -23,6 +23,33 @@ async function failure(promise: Promise<unknown>): Promise<RequestFailure> {
 }
 
 describe("StudyRoomHandlers", () => {
+  it("passes voice channel picks through and reports refusals safely", async () => {
+    const choice = {
+      canEdit: true,
+      selectedId: "v1",
+      channels: [{ id: "v1", name: "Voice" }],
+      status: "#Voice",
+    };
+    const voicePicker = {
+      choice: vi.fn(async () => choice),
+      pick: vi.fn(async (userId: string) => {
+        if (userId !== "admin") throw new DomainError(CoreErrorCode.Forbidden, "Admins only.");
+        return choice;
+      }),
+    };
+    const { handlers } = setup({ voicePicker });
+    expect(await handlers.getVoiceChannels("ana")).toEqual(choice);
+    expect(await handlers.setVoiceChannel("admin", { channelId: "v1" })).toEqual(choice);
+    expect(voicePicker.pick).toHaveBeenCalledWith("admin", "v1");
+    const error = await failure(handlers.setVoiceChannel("ana", { channelId: "v1" }));
+    expect(error).toMatchObject({ code: CoreErrorCode.Forbidden, message: "Admins only." });
+  });
+
+  it("says voice settings aren't available without a picker", async () => {
+    const { handlers } = setup();
+    expect((await failure(handlers.getVoiceChannels("ana"))).code).toBe(CoreErrorCode.NotFound);
+  });
+
   it("returns Protobuf-shaped snapshots", async () => {
     const { handlers } = setup();
     const snap = await handlers.joinRoomTimer("ana", { goals: ["Read ch. 4"] });
@@ -104,8 +131,15 @@ describe("StudyRoomHandlers", () => {
     const me = await handlers.setGoalsPrivate("priya", { goalsPrivate: false });
     expect(me.goalsPrivate).toBe(false);
     const goalId = me.goals[0]!.id;
-    expect((await handlers.setGoalDone("priya", { goalId, done: true })).goals[0]!.done).toBe(true);
-    expect((await handlers.deleteGoal("priya", { goalId })).goals).toEqual([]);
+    expect((await handlers.editGoal("priya", { goalId, text: "Set C" })).goals[0]!.text).toBe(
+      "Set C",
+    );
+    const finished = (await handlers.setGoalDone("priya", { goalId, done: true })).goals[0]!;
+    expect(finished.done).toBe(true);
+    expect(finished.completedAtMs).toBeGreaterThanOrEqual(finished.createdAtMs);
+    expect((await handlers.clearDoneGoals("priya")).goals).toEqual([]);
+    const added = (await handlers.addGoal("priya", { text: "One more" })).goals[0]!;
+    expect((await handlers.deleteGoal("priya", { goalId: added.id })).goals).toEqual([]);
     expect((await handlers.getProgress("priya")).days).toHaveLength(35);
     expect((await handlers.getLeaderboard("priya", { by: 0, period: 0 })).startDay).toBe(
       "2026-10-26",

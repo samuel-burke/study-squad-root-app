@@ -8,6 +8,7 @@ import type {
   ProgressDto,
   RoomStateDto,
   SnapshotDto,
+  VoiceChannelChoiceDto,
 } from "@studyroom/core";
 import {
   Leaderboard,
@@ -20,6 +21,7 @@ import {
   PhaseCompletedEvent,
   Progress,
   RoomSnapshot,
+  VoiceChannelChoice,
 } from "@studyroom/gen-shared";
 import {
   leaderboardFromProto,
@@ -41,6 +43,8 @@ import {
   roomFromProto,
   snapshotFromProto,
   snapshotToProto,
+  voiceChannelChoiceFromProto,
+  voiceChannelChoiceToProto,
 } from "../src";
 
 const room: RoomStateDto = {
@@ -123,7 +127,6 @@ const room: RoomStateDto = {
     bossEnabled: true,
     streakFreezesEnabled: false,
     goalsPublicByDefault: true,
-    dailyXpCap: 300,
     postChannelName: "study-hall",
     voiceChannelStatus: "#Study voice",
     feedbackEnabled: true,
@@ -144,8 +147,20 @@ const me: MyStatusDto = {
   streak: 6,
   freezeAvailable: true,
   goals: [
-    { id: "g1", text: "Read ch. 4", done: true },
-    { id: "g2", text: "Make 20 flashcards", done: false },
+    {
+      id: "g1",
+      text: "Read ch. 4",
+      done: true,
+      createdAt: 1_793_140_000_000,
+      completedAt: 1_793_142_700_000,
+    },
+    {
+      id: "g2",
+      text: "Make 20 flashcards",
+      done: false,
+      createdAt: 1_793_140_000_001,
+      completedAt: null,
+    },
   ],
   goalsPrivate: false,
   keepGoingEndsAt: 1_793_150_200_000,
@@ -208,16 +223,26 @@ describe("contract round trip", () => {
       baseXp: 60,
       combo: 1,
       xpEarned: 60,
-      capped: false,
       streak: 6,
       streakExtended: true,
       finisherIds: ["u1"],
       roomDamageXp: 60,
-      goalPrompt: { id: "g2", text: "Make 20 flashcards", done: false },
+      bossOutcome: "finalBlow",
+      goalPrompt: {
+        id: "g2",
+        text: "Make 20 flashcards",
+        done: false,
+        createdAt: 1_793_140_000_001,
+        completedAt: null,
+      },
       breakEndsAt: 123,
       me,
     };
-    for (const event of [base, { ...base, source: "room" as const, goalPrompt: null }]) {
+    for (const event of [
+      base,
+      { ...base, source: "room" as const, goalPrompt: null, bossOutcome: "hit" as const },
+      { ...base, roomDamageXp: 0, bossOutcome: "alreadyDefeated" as const },
+    ]) {
       const bytes = PersonalResultEvent.toBinary(personalResultToProto(event));
       expect(personalResultFromProto(PersonalResultEvent.fromBinary(bytes))).toEqual(event);
     }
@@ -318,6 +343,26 @@ describe("contract round trip", () => {
     };
     const bytes = MemberProfile.toBinary(memberProfileToProto(profile));
     expect(memberProfileFromProto(MemberProfile.fromBinary(bytes))).toEqual(profile);
+  });
+
+  it("preserves the voice channel choices", () => {
+    const choice: VoiceChannelChoiceDto = {
+      canEdit: true,
+      selectedId: "voice-2",
+      channels: [
+        { id: "voice-1", name: "🔊 Study voice" },
+        { id: "voice-2", name: "Quiet library" },
+      ],
+      status: "#Quiet library",
+    };
+    const bytes = VoiceChannelChoice.toBinary(voiceChannelChoiceToProto(choice));
+    expect(voiceChannelChoiceFromProto(VoiceChannelChoice.fromBinary(bytes))).toEqual(choice);
+    expect(voiceChannelChoiceFromProto(VoiceChannelChoice.fromBinary(new Uint8Array()))).toEqual({
+      canEdit: false,
+      selectedId: "",
+      channels: [],
+      status: "",
+    });
   });
 });
 

@@ -125,14 +125,14 @@ export class MemoryStore implements Store {
             g.userId === userId &&
             (!g.done || (g.completedAt !== null && g.completedAt >= doneSince)),
         )
-        .sort((a, b) => a.createdAt - b.createdAt)
+        .sort(byListOrder)
         .map(copy),
     firstOpen: async (userIds: readonly string[]) => {
       const wanted = new Set(userIds);
       const result = new Map<string, GoalRecord>();
       const open = [...this.data.goals.values()]
         .filter((g) => !g.done && wanted.has(g.userId))
-        .sort((a, b) => a.createdAt - b.createdAt);
+        .sort(byListOrder);
       for (const goal of open) if (!result.has(goal.userId)) result.set(goal.userId, copy(goal));
       return result;
     },
@@ -371,3 +371,6 @@ function compareIds(a: string, b: string): number {
 function copyOrUndefined<T>(value: T | undefined): T | undefined {
   return value === undefined ? undefined : copy(value);
 }
+
+const byListOrder = (a: GoalRecord, b: GoalRecord) =>
+  a.sortKey - b.sortKey || a.createdAt - b.createdAt;

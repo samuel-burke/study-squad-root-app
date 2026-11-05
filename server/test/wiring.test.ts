@@ -1,6 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
 import { PushNotifier } from "../src/adapters/pushNotifier";
-import { createShutdown, findAttachedClient, loadConfig, presenceHandlers } from "../src/wiring";
+import {
+  canManageApps,
+  createShutdown,
+  findAttachedClient,
+  loadConfig,
+  presenceHandlers,
+} from "../src/wiring";
 
 const logger = () => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn() });
 
@@ -117,6 +123,104 @@ describe("loadConfig", () => {
     expect(config.voiceChannelStatus).toMatch(/Couldn't read the channel list/);
     expect(log.warn).toHaveBeenCalledWith("could not read post channel", { error: "Error: 403" });
     expect(log.warn).toHaveBeenCalledWith("could not read voice channel", { error: "Error: 403" });
+  });
+});
+
+describe("loadConfig with a voice channel picked in the app", () => {
+  const lookup = () => ({
+    name: vi.fn(async () => "study-hall"),
+    link: vi.fn(async (id: string) => `https://rootapp.com/${id}`),
+    channels: vi.fn(async () => [
+      { id: "text-1", name: "study-hall", voice: false },
+      { id: "voice-1", name: "Study voice", voice: true },
+      { id: "voice-2", name: "Gaming", voice: true },
+    ]),
+  });
+
+  it("uses the picked voice channel over the typed name", async () => {
+    const config = await loadConfig(
+      { room: { voiceChannelName: "study voice" } },
+      lookup(),
+      logger(),
+      "voice-2",
+    );
+    expect(config).toMatchObject({
+      voiceChannelId: "voice-2",
+      voiceChannelName: "Gaming",
+      voiceChannelUrl: "https://rootapp.com/voice-2",
+      voiceChannelStatus: "#Gaming",
+    });
+  });
+
+  it("never uses a text channel even if its id was saved", async () => {
+    const config = await loadConfig(undefined, lookup(), logger(), "text-1");
+    expect(config.voiceChannelId).toBeNull();
+    expect(config.voiceChannelStatus).toMatch(/picked voice channel is gone/);
+  });
+
+  it("falls back to the typed name when the picked channel is gone", async () => {
+    const log = logger();
+    const config = await loadConfig(
+      { room: { voiceChannelName: "study voice" } },
+      lookup(),
+      log,
+      "deleted",
+    );
+    expect(config.voiceChannelId).toBe("voice-1");
+    expect(log.warn).toHaveBeenCalledWith("picked voice channel is gone", { channelId: "deleted" });
+  });
+
+  it("says so when the channel list can't be read", async () => {
+    const channels = {
+      ...lookup(),
+      channels: vi.fn(async () => {
+        throw new Error("403");
+      }),
+    };
+    const config = await loadConfig(undefined, channels, logger(), "voice-1");
+    expect(config.voiceChannelId).toBeNull();
+    expect(config.voiceChannelStatus).toMatch(/Couldn't read the channel list/);
+  });
+});
+
+describe("canManageApps", () => {
+  const perms = (p: Partial<Record<string, boolean>> = {}) => ({
+    communityManageApps: false,
+    communityFullControl: false,
+    communityManageCommunity: false,
+    ...p,
+  });
+  const lookup = (memberRoles: string[], everyone = perms()) => ({
+    ownerUserId: vi.fn(async () => "owner"),
+    memberRoleIds: vi.fn(async () => memberRoles),
+    roles: vi.fn(async () => [
+      { id: "everyone", communityPermission: everyone },
+      { id: "mods", communityPermission: perms({ communityManageApps: true }) },
+      { id: "admins", communityPermission: perms({ communityFullControl: true }) },
+      { id: "members", communityPermission: perms() },
+    ]),
+    everyoneRoleId: "everyone",
+  });
+
+  it("lets the owner in without reading roles", async () => {
+    const l = lookup([]);
+    expect(await canManageApps("owner", l)).toBe(true);
+    expect(l.roles).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    [["mods"], true],
+    [["admins"], true],
+    [["members"], false],
+    [[], false],
+  ])("member with roles %j can manage: %s", async (roles, expected) => {
+    expect(await canManageApps("ana", lookup(roles))).toBe(expected);
+  });
+
+  it("counts the everyone role", async () => {
+    expect(await canManageApps("ana", lookup([], perms({ communityManageCommunity: true })))).toBe(
+      true,
+    );
   });
 });
 

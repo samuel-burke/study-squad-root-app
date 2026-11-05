@@ -23,7 +23,8 @@ const MAX_AVATARS = 6;
 /**
  * The moment the round ends: everyone who finished sees this at once, with
  * the XP math, the streak, the damage the room did, and a nudge to check off
- * the goal they were working on.
+ * the goal they were working on. Once the week's boss is down, sessions skip
+ * the boss panel until the next one spawns.
  */
 export function BreakMoment({
   result,
@@ -73,15 +74,13 @@ export function BreakMoment({
         {xpEnabled && (
           <div className="stat">
             <div className="stat-label">You earned</div>
-            <div className="stat-value" style={{ color: "var(--teal)" }}>
+            <div className="stat-value" style={{ color: "var(--teal-text)" }}>
               +{result.xpEarned} XP
             </div>
             <div className="stat-sub">
-              {result.capped
-                ? "Daily XP cap reached"
-                : result.combo > 1 && result.baseXp > 0
-                  ? `${result.baseXp} base × ${result.combo.toFixed(1)} combo`
-                  : `${Math.floor(result.focusedMinutes)} minutes focused`}
+              {result.combo > 1 && result.baseXp > 0
+                ? `${result.baseXp} base × ${result.combo.toFixed(1)} combo`
+                : `${Math.floor(result.focusedMinutes)} minutes focused`}
             </div>
           </div>
         )}
@@ -96,8 +95,20 @@ export function BreakMoment({
         </div>
       </div>
 
-      {boss.enabled && (
-        <div className="break-panel boss-hit">
+      {boss.enabled && result.bossOutcome === "finalBlow" && (
+        <div className="break-panel boss-hit" data-outcome="finalBlow">
+          <strong style={{ color: "var(--coral-text)", fontSize: 13 }}>
+            Final blow! {solo ? "You" : "The room"} defeated {boss.name}
+          </strong>
+          <div className="tiny" style={{ color: "var(--boss-muted)" }}>
+            {boss.lootXp > 0
+              ? `Everyone who pitched in earned +${formatXp(boss.lootXp)} XP. A new boss spawns Monday.`
+              : "A new boss spawns Monday."}
+          </div>
+        </div>
+      )}
+      {boss.enabled && result.bossOutcome === "hit" && !boss.defeated && (
+        <div className="break-panel boss-hit" data-outcome="hit">
           <strong style={{ color: "var(--coral-text)", fontSize: 13 }}>
             {solo ? "You" : "The room"} hit {boss.name} for {formatXp(result.roomDamageXp)} XP
           </strong>
@@ -108,9 +119,7 @@ export function BreakMoment({
             />
           </div>
           <div className="tiny tabular" style={{ color: "var(--boss-muted)" }}>
-            {boss.defeated
-              ? `${boss.name} is defeated!`
-              : `${hpText(boss)} HP left · ${percent(boss.damageXp, boss.maxHpXp)}% defeated`}
+            {`${hpText(boss)} HP left · ${percent(boss.damageXp, boss.maxHpXp)}% defeated`}
           </div>
         </div>
       )}
@@ -154,7 +163,7 @@ export function BreakMoment({
         <button
           type="button"
           className="btn btn-break"
-          style={{ color: "var(--teal)" }}
+          style={{ color: "var(--teal-text)" }}
           onClick={onClose}
         >
           Back to the room

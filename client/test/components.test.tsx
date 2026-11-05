@@ -1,10 +1,13 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { createHarness } from "../../core/test/helpers";
 import { Avatar } from "../src/components/Avatar";
+import type { BossDto, PersonalResultDto } from "@studyroom/core";
 import { strengthText } from "../src/components/BossCard";
+import { BreakMoment } from "../src/components/BreakMoment";
 import { ErrorBoundary } from "../src/components/ErrorBoundary";
+import type { GoalActions } from "../src/components/GoalList";
 import { GoalsSheet } from "../src/components/GoalsSheet";
 import { MemberBoard } from "../src/components/MemberBoard";
 import { Sheet } from "../src/components/Sheet";
@@ -55,28 +58,126 @@ describe("Sheet", () => {
 });
 
 describe("GoalsSheet", () => {
+  const goalActions = (): GoalActions => ({
+    toggle: vi.fn(),
+    remove: vi.fn(),
+    add: vi.fn(async () => true),
+    edit: vi.fn(async () => true),
+    clearDone: vi.fn(),
+    reorder: vi.fn(),
+  });
+
   it("lists goals, shows XP when enabled, and closes with Done", async () => {
     const { engine } = createHarness();
     const me = await engine.addGoal("ana", "Read ch. 4");
     const user = userEvent.setup();
     const onClose = vi.fn();
-    const onToggle = vi.fn();
-    render(
-      <GoalsSheet
-        me={me}
-        xpEnabled
-        busy={false}
-        onToggle={onToggle}
-        onDelete={vi.fn()}
-        onAdd={vi.fn(async () => true)}
-        onClose={onClose}
-      />,
-    );
+    const actions = goalActions();
+    render(<GoalsSheet me={me} xpEnabled busy={false} actions={actions} onClose={onClose} />);
     expect(screen.getByRole("dialog", { name: "Your goals" })).toHaveTextContent("Read ch. 4");
+    expect(screen.queryByRole("button", { name: /Clear completed/ })).not.toBeInTheDocument();
     await user.click(screen.getByRole("checkbox", { name: /Read ch. 4/ }));
-    expect(onToggle).toHaveBeenCalledWith(me.goals[0]!.id, true);
+    expect(actions.toggle).toHaveBeenCalledWith(me.goals[0]!.id, true);
     await user.click(screen.getByRole("button", { name: "Done" }));
     expect(onClose).toHaveBeenCalled();
+  });
+
+  it("folds finished goals away with how long they took, and clears them in one go", async () => {
+    const { engine, advance } = createHarness();
+    await engine.addGoal("ana", "Read ch. 4");
+    let me = await engine.addGoal("ana", "Flashcards");
+    await advance(95 * 60_000);
+    me = await engine.setGoalDone("ana", me.goals[0]!.id, true);
+    const user = userEvent.setup();
+    const actions = goalActions();
+    render(
+      <GoalsSheet me={me} xpEnabled={false} busy={false} actions={actions} onClose={vi.fn()} />,
+    );
+    const texts = (name: string) =>
+      within(screen.getByRole("list", { name }))
+        .getAllByRole("listitem")
+        .map((li) => li.textContent);
+    expect(texts("Open goals")).toEqual(["Flashcards"]);
+    expect(screen.queryByRole("list", { name: "Finished goals" })).not.toBeInTheDocument();
+    const fold = screen.getByRole("button", { name: "Finished (1)" });
+    expect(fold).toHaveAttribute("aria-expanded", "false");
+    await user.click(fold);
+    expect(texts("Finished goals")).toEqual(["Read ch. 4Took 1h 35m"]);
+    await user.click(screen.getByRole("button", { name: "Clear completed" }));
+    expect(actions.clearDone).toHaveBeenCalled();
+  });
+
+  it("reorders goals with the arrow keys on the handle and marks the one on the card", async () => {
+    const { engine } = createHarness();
+    await engine.joinRoomTimer("ana", { goals: ["A", "B", "C"] });
+    const me = (await engine.getSnapshot("ana")).me;
+    const [a, b, c] = me.goals.map((g) => g.id);
+    const user = userEvent.setup();
+    const actions = goalActions();
+    const sheet = (busy: boolean) => (
+      <GoalsSheet me={me} xpEnabled={false} busy={busy} actions={actions} onClose={vi.fn()} />
+    );
+    const { rerender } = render(sheet(false));
+    const items = within(screen.getByRole("list", { name: "Open goals" })).getAllByRole("listitem");
+    expect(items[0]).toHaveTextContent("On your card");
+    expect(items[1]).not.toHaveTextContent("On your card");
+    screen.getByRole("button", { name: /Reorder goal: A/ }).focus();
+    await user.keyboard("{ArrowDown}");
+    expect(actions.reorder).toHaveBeenCalledWith([b, a, c]);
+    // Shown in the new order while the request is out.
+    rerender(sheet(true));
+    expect(
+      within(screen.getByRole("list", { name: "Open goals" }))
+        .getAllByRole("checkbox")
+        .map((box) => box.getAttribute("aria-label")),
+    ).toEqual(["B", "A", "C"]);
+    expect(screen.getByText("A moved to 2 of 3.")).toBeInTheDocument();
+  });
+
+  it("drags a goal by its handle to a new place", async () => {
+    const { engine } = createHarness();
+    await engine.joinRoomTimer("ana", { goals: ["A", "B", "C"] });
+    const me = (await engine.getSnapshot("ana")).me;
+    const [a, b, c] = me.goals.map((g) => g.id);
+    const actions = goalActions();
+    render(
+      <GoalsSheet me={me} xpEnabled={false} busy={false} actions={actions} onClose={vi.fn()} />,
+    );
+    // jsdom has no layout, so give each row a 40px slot.
+    const rows = within(screen.getByRole("list", { name: "Open goals" })).getAllByRole("listitem");
+    rows.forEach((row, i) => {
+      const top = i * 40;
+      row.getBoundingClientRect = () =>
+        ({ top, bottom: top + 40, height: 40, left: 0, right: 300, width: 300 }) as DOMRect;
+      Object.defineProperty(row, "offsetHeight", { value: 40 });
+    });
+    const handle = screen.getByRole("button", { name: /Reorder goal: A/ });
+    handle.setPointerCapture = vi.fn();
+    fireEvent.pointerDown(handle, { pointerId: 1, button: 0, clientY: 20 });
+    fireEvent.pointerMove(handle, { pointerId: 1, clientY: 105 });
+    fireEvent.pointerUp(handle, { pointerId: 1, clientY: 105 });
+    expect(actions.reorder).toHaveBeenCalledWith([b, c, a]);
+  });
+
+  it("edits a goal in place", async () => {
+    const { engine } = createHarness();
+    const me = await engine.addGoal("ana", "Read ch. 4");
+    const user = userEvent.setup();
+    const actions = goalActions();
+    render(
+      <GoalsSheet me={me} xpEnabled={false} busy={false} actions={actions} onClose={vi.fn()} />,
+    );
+    await user.click(screen.getByRole("button", { name: "Edit goal: Read ch. 4" }));
+    const input = screen.getByRole("textbox", { name: "Edit goal" });
+    await user.clear(input);
+    await user.type(input, "Read ch. 5{Enter}");
+    expect(actions.edit).toHaveBeenCalledWith(me.goals[0]!.id, "Read ch. 5");
+    expect(screen.queryByRole("textbox", { name: "Edit goal" })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Edit goal: Read ch. 4" }));
+    await user.keyboard("{Escape}");
+    expect(screen.queryByRole("textbox", { name: "Edit goal" })).not.toBeInTheDocument();
+    expect(actions.edit).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -168,5 +269,70 @@ describe("MemberBoard", () => {
   it("says You until your profile loads", () => {
     render(<MemberBoard members={[me]} profiles={new Map()} youId="me" now={0} />);
     expect(screen.getByRole("listitem", { name: /^You, Room timer/ })).toBeInTheDocument();
+  });
+});
+
+describe("BreakMoment boss panel", () => {
+  const boss = (defeated: boolean): BossDto => ({
+    enabled: true,
+    name: "Deadline Dragon",
+    maxHpXp: 1500,
+    damageXp: defeated ? 1500 : 600,
+    strength: 1.5,
+    lootXp: 150,
+    endsAt: 0,
+    defeated,
+  });
+
+  async function renderBreak(outcome: PersonalResultDto["bossOutcome"], defeated: boolean) {
+    const { engine } = createHarness();
+    const { me } = await engine.getSnapshot("me");
+    const result: PersonalResultDto = {
+      source: "solo",
+      round: 0,
+      focusedMinutes: 25,
+      finished: true,
+      baseXp: 50,
+      combo: 1,
+      xpEarned: 50,
+      streak: 1,
+      streakExtended: true,
+      finisherIds: ["me"],
+      roomDamageXp: outcome === "alreadyDefeated" ? 0 : 50,
+      bossOutcome: outcome,
+      goalPrompt: null,
+      breakEndsAt: 0,
+      me,
+    };
+    render(
+      <BreakMoment
+        result={result}
+        boss={boss(defeated)}
+        profiles={new Map()}
+        youId="me"
+        xpEnabled
+        chatChannel=""
+        now={0}
+        busy={false}
+        onGoalDone={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    );
+  }
+
+  it("shows the hit while the boss is standing", async () => {
+    await renderBreak("hit", false);
+    expect(screen.getByText("You hit Deadline Dragon for 50 XP")).toBeInTheDocument();
+  });
+
+  it("celebrates the final blow instead of a damage number", async () => {
+    await renderBreak("finalBlow", true);
+    expect(screen.getByText("Final blow! You defeated Deadline Dragon")).toBeInTheDocument();
+    expect(screen.queryByText(/hit Deadline Dragon/)).toBeNull();
+  });
+
+  it("hides the boss once it was already defeated", async () => {
+    await renderBreak("alreadyDefeated", true);
+    expect(screen.queryByText(/Deadline Dragon/)).toBeNull();
   });
 });

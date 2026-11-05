@@ -42,6 +42,14 @@ enum ResultSource {
   RESULT_SOURCE_SOLO = 2;
 }
 
+// What a finished session did to the weekly boss. Unspecified reads as a hit.
+enum BossOutcome {
+  BOSS_OUTCOME_UNSPECIFIED = 0;
+  BOSS_OUTCOME_HIT = 1;
+  BOSS_OUTCOME_FINAL_BLOW = 2;
+  BOSS_OUTCOME_ALREADY_DEFEATED = 3;
+}
+
 message TimerPreset {
   double focus_minutes = 1;
   double break_minutes = 2;
@@ -96,7 +104,9 @@ message RoomFeatures {
   bool boss_enabled = 4;
   bool streak_freezes_enabled = 5;
   bool goals_public_by_default = 6;
-  int32 daily_xp_cap = 7;
+  // 7 was daily_xp_cap, removed.
+  reserved 7;
+  reserved "daily_xp_cap";
   // Where recaps and break chat happen. Empty when admins haven't picked one.
   string post_channel_name = 8;
   // The server can deliver feedback to the developer, so the box is shown.
@@ -131,6 +141,9 @@ message Goal {
   string id = 1;
   string text = 2;
   bool done = 3;
+  double created_at_ms = 4;
+  // 0 while the goal is open.
+  double completed_at_ms = 5;
 }
 
 message MyStatus {
@@ -295,6 +308,18 @@ message DeleteGoalRequest {
   string goal_id = 1;
 }
 
+message EditGoalRequest {
+  string goal_id = 1;
+  string text = 2;
+}
+
+message ClearDoneGoalsRequest {}
+
+// The member's open goals, top first.
+message ReorderGoalsRequest {
+  repeated string goal_ids = 1;
+}
+
 message SetGoalsPrivateRequest {
   bool goals_private = 1;
 }
@@ -365,7 +390,9 @@ message PersonalResultEvent {
   int32 base_xp = 5;
   double combo = 6;
   int32 xp_earned = 7;
-  bool capped = 8;
+  // 8 was capped (the daily XP cap), removed.
+  reserved 8;
+  reserved "capped";
   int32 streak = 9;
   bool streak_extended = 10;
   repeated string finisher_user_ids = 11;
@@ -374,6 +401,7 @@ message PersonalResultEvent {
   optional Goal goal_prompt = 13;
   double break_ends_at_ms = 14;
   MyStatus me = 15;
+  BossOutcome boss_outcome = 16;
 }
 
 message MyStatusEvent {
@@ -382,6 +410,33 @@ message MyStatusEvent {
 
 message BadgesEarnedEvent {
   repeated string badge_ids = 1;
+}
+
+// ---------------------------------------------------------------- voice channel picker
+
+message GetVoiceChannelsRequest {}
+
+message SetVoiceChannelRequest {
+  // Empty clears the pick, so the App settings name (if any) is used again.
+  string channel_id = 1;
+}
+
+// A community voice channel Study Squad can see.
+message VoiceChannelOption {
+  string id = 1;
+  string name = 2;
+}
+
+// The voice channels admins can pick from, and the current pick.
+message VoiceChannelChoice {
+  // The caller may change the pick (they can manage apps in this community).
+  bool can_edit = 1;
+  // The picked channel, or empty when none is picked in the app.
+  string selected_id = 2;
+  // Voice channels only (ChannelType.Voice), in sidebar order.
+  repeated VoiceChannelOption channels = 3;
+  // How the voice channel resolved, in words for admins. Empty when not set.
+  string status = 4;
 }
 
 // ---------------------------------------------------------------- service
@@ -395,6 +450,9 @@ service StudyRoomService {
   rpc AddGoal(AddGoalRequest) returns (MyStatus);
   rpc SetGoalDone(SetGoalDoneRequest) returns (MyStatus);
   rpc DeleteGoal(DeleteGoalRequest) returns (MyStatus);
+  rpc EditGoal(EditGoalRequest) returns (MyStatus);
+  rpc ClearDoneGoals(ClearDoneGoalsRequest) returns (MyStatus);
+  rpc ReorderGoals(ReorderGoalsRequest) returns (MyStatus);
   rpc SetGoalsPrivate(SetGoalsPrivateRequest) returns (MyStatus);
   rpc GetProgress(GetProgressRequest) returns (Progress);
   rpc DeleteMyData(DeleteMyDataRequest) returns (MyStatus);
@@ -405,6 +463,8 @@ service StudyRoomService {
   rpc SetBadgeShowcase(SetBadgeShowcaseRequest) returns (Progress);
   rpc GetMemberProfile(GetMemberProfileRequest) returns (MemberProfile);
   rpc SendFeedback(SendFeedbackRequest) returns (FeedbackSent);
+  rpc GetVoiceChannels(GetVoiceChannelsRequest) returns (VoiceChannelChoice);
+  rpc SetVoiceChannel(SetVoiceChannelRequest) returns (VoiceChannelChoice);
 
   // Server-to-client pushes.
   rpc BroadcastRoomUpdated(RoomUpdatedEvent) returns (rootsdk.Void);

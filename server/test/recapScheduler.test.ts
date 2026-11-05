@@ -65,6 +65,27 @@ describe("RecapScheduler", () => {
     expect(scheduled[0]!.at.getTime()).toBe(at.getTime() + 24 * 60 * 60 * 1000);
   });
 
+  it("posts when Root hands the job time over as epoch milliseconds", async () => {
+    // Root's scheduler reads job_time back from SQLite as a number, not a Date.
+    const { scheduler, target, scheduled, fire, setNow } = setup();
+    await scheduler.start();
+    const at = scheduled[0]!.at;
+    setNow(at.getTime());
+    expect(() => fire({ tag: RECAP_TAG, jobTime: at.getTime(), missed: false })).not.toThrow();
+    await flush();
+    expect(target.postDailyRecap).toHaveBeenCalledTimes(1);
+  });
+
+  it("still skips a recap missed by hours when the time is a number", async () => {
+    const { scheduler, target, scheduled, fire, setNow } = setup();
+    await scheduler.start();
+    const at = scheduled[0]!.at;
+    setNow(at.getTime() + 3 * 60 * 60 * 1000);
+    fire({ tag: RECAP_TAG, jobTime: at.getTime(), missed: true });
+    await flush();
+    expect(target.postDailyRecap).not.toHaveBeenCalled();
+  });
+
   it("ignores other jobs and skips recaps missed by hours", async () => {
     const { scheduler, target, scheduled, fire, setNow } = setup();
     await scheduler.start();

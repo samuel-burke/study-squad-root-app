@@ -164,6 +164,8 @@ message MyStatus {
   double keep_going_ends_at_ms = 14;
   // Badges earned by the operation that produced this status. Empty otherwise.
   repeated string new_badge_ids = 15;
+  // Goals the member can still finish today for XP. 0 when XP is off.
+  int32 goal_xp_left_today = 16;
 }
 
 message RoomSnapshot {

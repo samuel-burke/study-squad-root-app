@@ -4,13 +4,36 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ## [Unreleased]
 
+## [0.3.9] - 2026-11-05
+
+This week's top 3 on the room screen, fairer goal XP, a confirm step before joining voice, and phone layout fixes.
+
+### Added
+
+- "Race to the top" on the room screen: this week's top 3 by focus time, as a card above the boss on desktop and a one-line strip under the timer on phones. Tap it to open the full leaderboard.
+
+### Changed
+
+- The leaderboard is now at the top of the progress page instead of under the badges.
+- Join voice now asks first, so a stray tap doesn't drop someone into the call.
+- Goal XP: only the first 5 goals finished each day pay +25 XP. Later goals still tick and count for stats, quests and badges, but pay nothing, so goals can't be farmed for XP now that there's no daily cap. The hint under your goals and the break's Done button show this.
+
+### Removed
+
+- The "Voice channel name" App setting. Pick the voice channel in the app's Room settings instead (admins only).
+
+### Fixed
+
+- On phones the header shows only the logo, so the round pill no longer covers the "Study Squad" title. On phones up to 420px wide (most iPhones) the round pill moves below the buttons, so the settings button is no longer pushed off the right edge.
+- Avatars no longer get stuck on "?". Profile lookups that fail are retried, pictures Root can't load fall back to initials, and a member who hasn't loaded yet shows a blank bubble.
+
 ## [0.3.8] - 2026-11-05
 
 Fewer settings to think about: built-in boss names, no XP cap and a simpler squad bot. Voice stays, with a new channel dropdown.
 
 ### Added
 
-- Support contacts: Room settings and the feedback box now show how to reach the developer (hello@samuelburke.dev, or @5amuel on Root), and the website has a new support page.
+- Support contacts: the feedback box now shows how to reach the developer (hello@samuelburke.dev, or @5amuel on Root), and the website has a new support page.
 - Light mode. Study Squad now matches the light or dark theme picked in Root, and switches live when it changes. Outside Root (the demo) it follows the device setting. The full-screen badge unlock keeps its dark spotlight in both themes.
 - Goals: a "Clear completed" button removes every finished goal at once. XP, stats and badges already earned stay.
 - Goals: edit a goal's text with the pencil button. Enter saves, Escape cancels.

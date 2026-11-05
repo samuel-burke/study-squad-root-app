@@ -1,4 +1,5 @@
 import type { MyStatusDto, RoomStateDto } from "@studyroom/core";
+import type { ReactNode } from "react";
 import type { Profile } from "../api/gateway";
 import { phasePill } from "../lib/view";
 import { BossCard, MobileBoss } from "./BossCard";
@@ -27,6 +28,8 @@ export interface RoomScreenProps {
   onOpenProgress(): void;
   onOpenSettings(): void;
   onOpenMember(userId: string): void;
+  /** This week's top three, which opens the full leaderboard. */
+  podium?: ReactNode;
 }
 
 function Header({
@@ -43,17 +46,24 @@ function Header({
   const channel = room.features.postChannelName;
   return (
     <header className="app-header">
-      <div className="brand">
-        {!compact && (
+      {compact ? (
+        // Phones only have room for the logo next to the round pill.
+        <div className="brand brand-compact">
+          <div className="brand-mark" role="img" aria-label="Study Squad">
+            <AppLogo size={32} />
+          </div>
+        </div>
+      ) : (
+        <div className="brand">
           <div className="brand-mark" aria-hidden="true">
             <AppLogo size={32} />
           </div>
-        )}
-        <div style={{ minWidth: 0 }}>
-          <div className="brand-name">Study Squad</div>
-          {channel && <div className="brand-sub">Posts in #{channel}</div>}
+          <div style={{ minWidth: 0 }}>
+            <div className="brand-name">Study Squad</div>
+            {channel && <div className="brand-sub">Posts in #{channel}</div>}
+          </div>
         </div>
-      </div>
+      )}
       <div className="phase-pill" data-phase={room.timer.phase}>
         <span className="dot" />
         {compact && room.timer.phase !== "idle" && room.timer.phase !== "longBreak"
@@ -133,6 +143,7 @@ export function RoomScreen(props: RoomScreenProps) {
         <Header {...props} />
         {room.boss.enabled && <MobileBoss boss={room.boss} />}
         {timer}
+        {props.podium}
         {room.features.comboEnabled && (
           <div style={{ display: "flex", justifyContent: "center", marginBottom: 12 }}>
             <ComboPill combo={room.combo} participants={room.roomParticipantCount} />
@@ -175,6 +186,7 @@ export function RoomScreen(props: RoomScreenProps) {
           {board}
         </main>
         <aside className="room-aside">
+          {props.podium}
           {room.boss.enabled && <BossCard boss={room.boss} combo={room.combo} now={now} />}
           {room.features.comboEnabled && (
             <ComboCard combo={room.combo} participants={room.roomParticipantCount} />

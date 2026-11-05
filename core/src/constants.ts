@@ -4,6 +4,11 @@ export const GAME = {
   xpPerFocusMinute: 2,
   /** XP for finishing a goal. Awarded once per goal. */
   xpPerGoal: 25,
+  /**
+   * Goals that pay XP each day. Later goals still tick and count for stats,
+   * quests and badges, but pay nothing, so goals can't be farmed for XP.
+   */
+  goalsWithXpPerDay: 5,
   /** Bonus XP each contributor gets when a 1x boss is defeated, scaled by its strength. */
   bossLootXp: 100,
   /** Combo grows by this much per extra person who finishes a room round. */

@@ -8,6 +8,7 @@ import { Celebration } from "./components/Celebration";
 import { FeedbackSheet } from "./components/FeedbackSheet";
 import type { GoalActions } from "./components/GoalList";
 import { GoalsSheet } from "./components/GoalsSheet";
+import { LeaderboardPodium } from "./components/LeaderboardPodium";
 import { ProgressScreen } from "./components/ProgressScreen";
 import { RoomScreen } from "./components/RoomScreen";
 import { SettingsSheet } from "./components/SettingsSheet";
@@ -151,6 +152,15 @@ export function App({ gateway }: { gateway: StudyRoomGateway }) {
             onOpenProgress={() => setScreen("progress")}
             onOpenSettings={() => setOverlay({ kind: "settings" })}
             onOpenMember={(userId) => setOverlay({ kind: "member", userId })}
+            podium={
+              <LeaderboardPodium
+                gateway={gateway}
+                compact={compact}
+                onOpenLeaderboard={() => setScreen("progress")}
+                onOpenMember={(userId) => setOverlay({ kind: "member", userId })}
+                refreshKey={room}
+              />
+            }
           />
         )}
       </div>

@@ -45,6 +45,10 @@
   --amber-you: #6a5a2c;
   --amber-soft: #c9b27a;
   --level-bg: #262014;
+  --podium-1: #f5b83d;
+  --podium-2: #c9d1dc;
+  --podium-3: #d08a4f;
+  --podium-ink: #1a1408;
 
   --teal: #46c7ae;
   --teal-text: #46c7ae;
@@ -149,6 +153,10 @@
   --amber-you: #e2b85a;
   --amber-soft: #7a6326;
   --level-bg: #fbefd2;
+  --podium-1: #f5b83d;
+  --podium-2: #c3cad6;
+  --podium-3: #d9925a;
+  --podium-ink: #1a1408;
 
   --teal: #46c7ae;
   --teal-text: #0e7a66;
@@ -1784,6 +1792,26 @@ textarea.input {
     flex: 1 1 auto;
   }
 
+  .brand.brand-compact {
+    flex: none;
+  }
+}
+
+/* Phones up to 420px wide (iPhone SE to iPhone 16): logo and buttons on top,
+   the round pill below. With the voice count the row needs about 410px. */
+@media (max-width: 420px) {
+  .app-header {
+    flex-wrap: wrap;
+  }
+
+  .header-meta {
+    margin-left: auto;
+  }
+
+  .phase-pill {
+    order: 3;
+  }
+
   .header-meta {
     gap: 6px;
   }
@@ -2816,4 +2844,90 @@ textarea.input {
 
 .progress-stack[hidden] {
   display: none;
+}
+
+/* The week's top three on the room screen: a card on desktop, a one-line strip on phones. */
+.podium-title {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--amber-text);
+}
+
+.podium-place {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  color: var(--podium-ink);
+  font-size: 12px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  flex: none;
+}
+
+.podium-place[data-place="1"] {
+  background: var(--podium-1);
+}
+
+.podium-place[data-place="2"] {
+  background: var(--podium-2);
+}
+
+.podium-place[data-place="3"] {
+  background: var(--podium-3);
+}
+
+.podium-strip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 16px 12px;
+  padding: 10px 14px;
+  min-height: 56px;
+  border-radius: var(--radius);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.podium-strip:focus-visible {
+  outline: 2px solid var(--amber-strong);
+  outline-offset: 2px;
+}
+
+.podium-strip .podium-avatar {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+}
+
+.podium-strip .podium-place {
+  position: absolute;
+  right: -6px;
+  bottom: -4px;
+  width: 16px;
+  height: 16px;
+  font-size: 10px;
+}
+
+.podium-you {
+  font-weight: 800;
+  font-size: 14px;
+  margin-left: 4px;
+  white-space: nowrap;
+}
+
+.podium-go {
+  margin-left: auto;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-muted);
+  white-space: nowrap;
 }

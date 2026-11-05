@@ -1,6 +1,6 @@
 {
   "id": "ADIjs4fHiQmWa4Qi7Kaa4w",
-  "version": "0.3.8",
+  "version": "0.3.9",
   "package": {
     "client": {
       "deploy": "client/dist"
@@ -90,15 +90,6 @@
               "maxValue": 30,
               "step": 1,
               "defaultValue": 5
-            }
-          },
-          {
-            "key": "voiceChannelName",
-            "title": "Voice channel name",
-            "description": "Easier: pick the voice channel in the app's own Room settings. Or type its name here to show a Join voice button and a headphones icon on members in it. Case, spaces, dashes and emoji don't matter. A channel picked in the app wins over this name.",
-            "text": {
-              "defaultValue": "",
-              "regex": "^.{0,100}$"
             }
           },
           {

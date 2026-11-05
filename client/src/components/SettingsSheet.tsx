@@ -1,7 +1,6 @@
 import { presetLabel, type RoomStateDto, type VoiceChannelChoiceDto } from "@studyroom/core";
 import { useEffect, useState } from "react";
 import { toGatewayError, type StudyRoomGateway } from "../api/gateway";
-import { SUPPORT } from "../lib/support";
 import { Sheet } from "./Sheet";
 
 /**
@@ -33,7 +32,7 @@ export function SettingsSheet({
         ? "Shown by default. You can make yours private."
         : "Private by default.",
     ],
-    ["XP and levels", f.xpEnabled ? "On · 2 XP per focus minute, +25 per goal" : "Off"],
+    ["XP and levels", f.xpEnabled ? "On · 2 XP per focus minute, +25 per goal (5 a day)" : "Off"],
     ["Combo multiplier", f.comboEnabled ? "On · +0.1x per extra person, up to 2.0x" : "Off"],
     ["Weekly boss", f.bossEnabled ? `On · ${room.boss.name}` : "Off"],
     ["Streak freezes", f.streakFreezesEnabled ? "One free missed day per week" : "Off"],
@@ -59,18 +58,6 @@ export function SettingsSheet({
       </dl>
       <div className="tiny dim">
         Community admins can change these in App settings for Study Squad.
-      </div>
-      <div className="small muted">
-        Need help? Email{" "}
-        <a
-          href={`mailto:${SUPPORT.email}`}
-          target="_blank"
-          rel="noreferrer"
-          style={{ color: "var(--text)" }}
-        >
-          {SUPPORT.email}
-        </a>{" "}
-        or message <strong>{SUPPORT.rootUsername}</strong> on Root.
       </div>
       {f.feedbackEnabled && (
         <button type="button" className="btn btn-quiet" onClick={onSendFeedback}>

@@ -1,8 +1,8 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { createHarness } from "../../core/test/helpers";
-import { Avatar } from "../src/components/Avatar";
+import { AVATAR_RETRY_MS, Avatar } from "../src/components/Avatar";
 import type { BossDto, PersonalResultDto } from "@studyroom/core";
 import { strengthText } from "../src/components/BossCard";
 import { BreakMoment } from "../src/components/BreakMoment";
@@ -234,6 +234,38 @@ describe("Avatar", () => {
     );
     expect(container.querySelector("img")).toBeNull();
     expect(container).toHaveTextContent("YOU");
+  });
+
+  it("shows a blank bubble, not a question mark, while the name is loading", () => {
+    const { container } = render(<Avatar userId="ana" />);
+    expect(container.querySelector(".avatar")).toHaveTextContent(/^$/);
+  });
+
+  it("falls back to initials when the picture fails, then tries it once more", () => {
+    vi.useFakeTimers();
+    try {
+      const { container } = render(
+        <Avatar
+          userId="ana"
+          profile={{ userId: "ana", name: "Ana Lee", avatarUrl: "https://cdn.test/ana.png" }}
+        />,
+      );
+      fireEvent.error(container.querySelector("img")!);
+      expect(container.querySelector("img")).toBeNull();
+      expect(container).toHaveTextContent("AL");
+
+      act(() => vi.advanceTimersByTime(AVATAR_RETRY_MS));
+      const retried = container.querySelector("img");
+      expect(retried).toHaveAttribute("src", "https://cdn.test/ana.png");
+
+      // A second failure stays on initials for good.
+      fireEvent.error(retried!);
+      act(() => vi.advanceTimersByTime(AVATAR_RETRY_MS * 3));
+      expect(container.querySelector("img")).toBeNull();
+      expect(container).toHaveTextContent("AL");
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 

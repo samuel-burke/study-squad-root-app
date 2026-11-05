@@ -4,24 +4,42 @@
 
 Study Squad is a group study timer for [Root](https://www.rootapp.com) communities: a pomodoro-style focus timer you study together with, like a quiet library where you can see everyone else working. Join the room's shared timer, put a goal on the board, and when the round ends every screen celebrates and flips to break at the same moment.
 
-![Study Squad focus room on desktop](docs/screenshots/room-desktop.png)
+<picture>
+  <source media="(prefers-color-scheme: light)" srcset="docs/screenshots/room-desktop-light.png">
+  <img src="docs/screenshots/room-desktop.png" alt="Study Squad focus room on desktop: the room timer, everyone focusing, the weekly boss, the combo and your goals">
+</picture>
 
 <p>
-  <img src="docs/screenshots/room-mobile.png" alt="Focus room on a phone" width="240">
-  <img src="docs/screenshots/start-session-mobile.png" alt="Start a session sheet" width="240">
-  <img src="docs/screenshots/break-moment-mobile.png" alt="The break moment" width="240">
+  <img src="docs/screenshots/room-mobile.png" alt="Focus room on a phone, dark theme" width="200">
+  <img src="docs/screenshots/room-mobile-light.png" alt="Focus room on a phone, light theme" width="200">
+  <img src="docs/screenshots/start-session-mobile.png" alt="Start a session: goals, private toggle, room or solo timer" width="200">
+  <img src="docs/screenshots/break-moment-mobile.png" alt="The break moment: XP earned, streak, boss damage and did you finish your goal" width="200">
 </p>
 
-## Features (v0.1)
+<p>
+  <img src="docs/screenshots/goals-mobile.png" alt="Your goals: edit, drag to reorder, finished goals folded with how long they took" width="200">
+  <img src="docs/screenshots/progress-mobile-light.png" alt="Your progress: level, streak calendar, weekly quests and badges" width="200">
+  <img src="docs/screenshots/settings-mobile.png" alt="Room settings: the room's rules, the voice channel dropdown for admins and Send feedback" width="200">
+  <img src="docs/screenshots/break-moment-mobile-light.png" alt="The break moment in the light theme" width="200">
+</p>
 
-- **Shared room timer** (25/5 or 50/10, rounds of 4 with a long break) and **solo timers** that still show on the board
-- **Live focus board**: who's focusing, on what, and how long is left. Goals can be private ("Focusing")
-- **No drift**: the server stores when a cycle started; every client derives the countdown from that and a measured clock offset
+## Features (v0.3.8)
+
+- **Shared room timer** (25/5, 50/10 or custom, rounds of 4 with a long break) and **solo timers** that still show on the board
+- **Live focus board**: who's focusing, on what, how long is left, their rank and who's in voice. Goals can be private ("Focusing")
+- **No drift**: the server stores when a cycle started; every client derives the countdown (and the countdown chirps) from that and a measured clock offset
+- **Goals list**: add, edit, drag to reorder (the top goal is the one on your card), and clear finished goals in one tap. Finished goals fold into one row and show how long they took. The first 5 goals finished each day pay +25 XP
 - **Break moment**: XP earned, streak, damage dealt to the boss, and "did you finish your goal?"
-- **Game layer**: XP and levels, a combo multiplier for focusing together, a weekly community boss
-- **Streaks without guilt**: one finished session counts the day, one free freeze per week
-- **Channel posts**: daily recap, "room is busy", streak milestone posts, and a squad bot that cheers on (and mentions) the people studying
-- **Admin settings** through Root's Global Settings (no custom admin UI to secure)
+- **Game layer**: XP and levels with no daily cap, a combo multiplier for focusing together, a weekly built-in boss with its own strength, weekly quests, 49 medals to collect (some secret) and card styles that unlock with level
+- **Leaderboard** by focus minutes or XP, for this week, month, year or all time. Members can hide themselves
+- **Streaks without guilt**: one finished session counts the day, one free freeze per week, and days start at 4am so late nights count
+- **Keep going?** at the end of each cycle, so a forgotten timer can't farm XP all day
+- **Voice**: admins pick the community's voice channel from a dropdown in Room settings. The room shows a Join voice button (it asks first) and headphones next to whoever is in the call
+- **Channel posts**: daily recap, "room is busy", streak milestones, boss defeats, and a squad bot that cheers on the people studying. Bot @mentions are off by default, so names are plain text unless an admin turns pings on
+- **Light and dark**: follows the theme picked in Root and switches live (the demo follows your device)
+- **Send feedback** straight to the developer, anonymously, from Room settings
+- **Admin settings** through Root's App settings (no custom admin UI to secure), plus the voice channel dropdown in Room settings
+- **Delete my data** on the progress screen erases everything the app stores about you
 
 See [DESIGN.md](DESIGN.md) for the reasoning behind each rule and [docs/API.md](docs/API.md) for the client/server contract.
 
@@ -43,7 +61,7 @@ npm run demo
 
 Open the printed URL. Add `?focus=0.2&break=0.2` to make rounds 12 seconds long and see the break moment quickly.
 
-More URL settings for testing (boss nearly beaten, a long streak, replaying badge unlocks) are in [docs/TESTING.md](docs/TESTING.md). Merges to `main` deploy to Root on their own: see [docs/DEPLOYING.md](docs/DEPLOYING.md).
+The demo follows your device's light or dark setting. More URL settings for testing (boss nearly beaten, a long streak, replaying badge unlocks) are in [docs/TESTING.md](docs/TESTING.md). Merges to `main` deploy to Root on their own: see [docs/DEPLOYING.md](docs/DEPLOYING.md).
 
 ## Run it inside Root
 
@@ -78,6 +96,8 @@ Requests route through Root's servers, so a valid `DEV_TOKEN` is required even l
 | `npm run server`        | Server through Root's dev host (needs `server/.env`)                  |
 | `npm run client`        | Client dev server for use inside Root                                 |
 
+The screenshots above come from the demo build. To retake them, run `npm run demo`, then `node scripts/readme-screenshots/capture.mjs` (it writes `docs/screenshots/`, dark and light). The App Store images have their own script in `scripts/store-screenshots/`.
+
 ## Architecture
 
 ```mermaid
@@ -102,13 +122,13 @@ flowchart LR
   CA -- posts --> CH[[Root channel]]
 ```
 
-| Workspace     | Purpose                                                                                                                    |
-| ------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| `core/`       | Pure TypeScript domain: timer math, XP, streaks, boss, settings, and the `StudyRoomEngine` use cases behind ports. No I/O. |
-| `networking/` | Protobuf contract. `rootsdk build proto` generates `networking/gen/{client,server,shared}`.                                |
-| `contract/`   | Maps engine DTOs to the generated messages and back. One place, round-trip tested.                                         |
-| `server/`     | Root adapters: SQLite store, request handlers, broadcasts, channel posts, recap job.                                       |
-| `client/`     | React UI. Talks to a `StudyRoomGateway`, implemented for Root and for the in-browser demo.                                 |
+| Workspace     | Purpose                                                                                                                                    |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `core/`       | Pure TypeScript domain: timer math, XP, streaks, boss, quests, badges, settings, and the `StudyRoomEngine` use cases behind ports. No I/O. |
+| `networking/` | Protobuf contract. `rootsdk build proto` generates `networking/gen/{client,server,shared}`.                                                |
+| `contract/`   | Maps engine DTOs to the generated messages and back. One place, round-trip tested.                                                         |
+| `server/`     | Root adapters: SQLite store, request handlers, broadcasts, channel posts, recap job.                                                       |
+| `client/`     | React UI. Talks to a `StudyRoomGateway`, implemented for Root and for the in-browser demo.                                                 |
 
 The layout follows Root's official `@rootsdk/create-root` template, with `core` and `contract` added so the rules can be tested without Root.
 

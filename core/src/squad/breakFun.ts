@@ -23,10 +23,8 @@ export const BREAK_CHALLENGES: readonly BreakChallenge[] = [
   { id: "jacks", text: "Do 10 jumping jacks" },
   { id: "hands", text: "Shake out your hands and wrists" },
   { id: "air", text: "Open a window or step outside for fresh air" },
-  { id: "kind", text: "Send someone a kind message" },
   { id: "toes", text: "Touch your toes, or try to" },
   { id: "posture", text: "Fix your posture: feet flat, shoulders back" },
-  { id: "learned", text: "Write down one thing you just learned" },
   { id: "squats", text: "Do 5 squats" },
   { id: "refill", text: "Refill your drink" },
 ];

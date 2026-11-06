@@ -4,6 +4,11 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ## [Unreleased]
 
+### Testing
+
+- CI builds the real Root package on every push and starts its server against a fake Root host before anything is uploaded. It fails if any copy of the networking code in the package is stale, which is what crashed 0.3.0 and 0.3.1. Run it yourself with `npm run smoke:package`.
+- A second end-to-end suite, `npm run test:e2e:root`, runs the real server, database and Root client code on a fake Root host, with several members open at once. It covers live joins and the combo, settings saved in Root, personal round results and the daily recap job. Each test fails if its old Root bug comes back.
+
 ## [0.3.10] - 2026-11-06
 
 High-fives and a shared challenge on breaks, and busy rooms that run lighter.

@@ -4,6 +4,10 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ## [Unreleased]
 
+## [0.3.12] - 2026-11-06
+
+No changes for players. The developer self-test now only opens in the staging community.
+
 ### Security
 
 - The self-test panel only opens in the communities in the new `SELF_TEST_COMMUNITY_IDS` secret (your staging community), as well as only for the user ids in `SELF_TEST_USER_IDS`. With either secret empty it opens nowhere.

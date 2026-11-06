@@ -80,7 +80,8 @@ socket.addEventListener("message", (event) => {
   if (msg.t === "push") {
     const def = definitions.get(msg.path);
     if (!def) {
-      console.warn(`fake-root: push for unknown path ${msg.path}`);
+      // An unknown push means the client and server were built from different protos.
+      console.warn("fake-root: push for a path this client doesn't know");
       return;
     }
     def.funct(def.responseDeserialize(fromBase64(msg.b)));

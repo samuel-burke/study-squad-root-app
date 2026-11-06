@@ -281,6 +281,7 @@ describe("MemberBoard", () => {
     badges: [],
     cardStyle: "default",
     weeklyRank: 0,
+    challenge: "",
     challengeDone: false,
     highFives: 0,
   };

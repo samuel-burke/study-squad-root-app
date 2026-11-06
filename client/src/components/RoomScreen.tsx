@@ -1,5 +1,5 @@
 import type { MyStatusDto, RoomStateDto } from "@studyroom/core";
-import { useState, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import type { Profile } from "../api/gateway";
 import { phasePill } from "../lib/view";
 import { BossCard, MobileBoss } from "./BossCard";
@@ -114,26 +114,15 @@ function Header({
 export function RoomScreen(props: RoomScreenProps) {
   const { room, me, profiles, now, busy, compact } = props;
   const inSession = me.status !== "idle";
-  const breakKey = myBreakKey(room, me);
-  // Who you high-fived, for the break you're on. A new break starts it fresh.
-  const [sent, setSent] = useState<{ key: string | null; ids: ReadonlySet<string> }>({
-    key: null,
-    ids: new Set(),
-  });
-  const sentIds = sent.key === breakKey ? sent.ids : new Set<string>();
+  const breakKey = myBreakKey(room, me.userId, now);
   const highFive = breakKey
     ? {
-        sent: sentIds,
         busy,
-        onSend: (userId: string, emoji: string) => {
-          void props.onHighFive(userId, emoji).then((ok) => {
-            if (ok) setSent({ key: breakKey, ids: new Set([...sentIds, userId]) });
-          });
-        },
+        onSend: (userId: string, emoji: string) => void props.onHighFive(userId, emoji),
       }
     : undefined;
   const challenge = (
-    <BreakChallengeCard room={room} me={me} busy={busy} onDone={props.onChallengeDone} />
+    <BreakChallengeCard room={room} me={me} now={now} busy={busy} onDone={props.onChallengeDone} />
   );
   const timer = (
     <TimerCard

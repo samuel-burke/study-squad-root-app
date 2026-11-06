@@ -85,6 +85,9 @@ message MemberCard {
   bool challenge_done = 11;
   // High-fives received this break. 0 when not on a break.
   int32 high_fives = 12;
+  // This break's challenge, picked by the server so it never repeats the
+  // last one. Empty when not on a break.
+  string challenge = 13;
 }
 
 message Boss {

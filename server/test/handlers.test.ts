@@ -63,6 +63,30 @@ describe("StudyRoomHandlers", () => {
     expect(done.room?.members.find((m) => m.userId === "ana")?.challengeDone).toBe(true);
   });
 
+  it("rate limits a burst of high-fives", async () => {
+    const { handlers, advance } = setup({
+      writeLimit: { capacity: 5, perSecond: 1 },
+      now: () => 0,
+    });
+    await handlers.joinRoomTimer("ana", { goals: [] });
+    await handlers.joinRoomTimer("kai", { goals: [] });
+    await advance(26 * 60_000);
+    const results = [];
+    for (let i = 0; i < 6; i++) {
+      results.push(
+        await handlers.sendHighFive("ana", { toUserId: "kai", emoji: "🔥" }).then(
+          () => "sent",
+          (e: RequestFailure) => e.code,
+        ),
+      );
+    }
+    // Ana's join used 1 of her 5; four go through, then the limit kicks in.
+    expect(results).toEqual([
+      ...Array(4).fill("sent"),
+      ...Array(2).fill(CoreErrorCode.RateLimited),
+    ]);
+  });
+
   it("returns Protobuf-shaped snapshots", async () => {
     const { handlers } = setup();
     const snap = await handlers.joinRoomTimer("ana", { goals: ["Read ch. 4"] });

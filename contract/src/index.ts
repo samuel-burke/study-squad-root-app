@@ -197,6 +197,7 @@ const memberToProto = (m: MemberCardDto): MemberCard => ({
   badges: m.badges,
   cardStyle: m.cardStyle,
   weeklyRank: m.weeklyRank,
+  challenge: m.challenge,
   challengeDone: m.challengeDone,
   highFives: m.highFives,
 });
@@ -402,6 +403,7 @@ const memberFromProto = (m: MemberCard): MemberCardDto => ({
   badges: m.badges ?? [],
   cardStyle: m.cardStyle || "classic",
   weeklyRank: m.weeklyRank ?? 0,
+  challenge: m.challenge ?? "",
   challengeDone: m.challengeDone ?? false,
   highFives: m.highFives ?? 0,
 });

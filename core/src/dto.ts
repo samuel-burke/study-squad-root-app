@@ -39,6 +39,8 @@ export interface MemberCardDto {
   cardStyle: string;
   /** Place on this week's leaderboard. 0 when unranked or hidden from it. */
   weeklyRank: number;
+  /** This break's challenge. Empty when not on a break. */
+  challenge: string;
   /** On a break and has done this break's challenge. */
   challengeDone: boolean;
   /** High-fives received this break. 0 when not on a break. */
@@ -53,7 +55,7 @@ export interface HighFiveDto {
 
 /** What happened on the room's last break, for the squad bot's back-to-study post. */
 export interface BreakRecapDto {
-  /** The challenge, with its emoji: "💧 Drink a glass of water". */
+  /** The challenge: "Drink a glass of water". */
   challenge: string;
   challengeDone: number;
   /** Most high-fives first, at most three. */

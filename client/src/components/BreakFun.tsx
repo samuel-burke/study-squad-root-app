@@ -1,5 +1,4 @@
 import {
-  breakChallengeFor,
   HIGH_FIVE_EMOJI,
   roomBreakKey,
   soloBreakKey,
@@ -14,10 +13,23 @@ export function onBreak(status: MemberCardDto["status"]): boolean {
   return status === "roomBreak" || status === "soloBreak";
 }
 
-/** The break you're on, named the same way the server names it. Null while focusing or idle. */
-export function myBreakKey(room: RoomStateDto, me: MyStatusDto): string | null {
-  if (me.status === "roomBreak") return roomBreakKey(room.timer.phaseStartedAt);
-  if (me.status === "soloBreak") return soloBreakKey(me.userId, me.endsAt);
+/**
+ * The break you're on, named the same way the server names it. Null while
+ * focusing or idle. It goes by your card on the board, which the server sends
+ * every time the timer switches, and by the clock, so it never lingers into
+ * study time while a push is on its way.
+ */
+export function myBreakKey(room: RoomStateDto, userId: string, now: number): string | null {
+  const mine = room.members.find((m) => m.userId === userId);
+  if (!mine) return null;
+  if (mine.status === "roomBreak") {
+    const { phase, phaseStartedAt, phaseEndsAt } = room.timer;
+    if (phase !== "break" && phase !== "longBreak") return null;
+    return now < phaseEndsAt ? roomBreakKey(phaseStartedAt) : null;
+  }
+  if (mine.status === "soloBreak") {
+    return now < mine.endsAt ? soloBreakKey(userId, mine.endsAt) : null;
+  }
   return null;
 }
 
@@ -28,22 +40,23 @@ export function myBreakKey(room: RoomStateDto, me: MyStatusDto): string | null {
 export function BreakChallengeCard({
   room,
   me,
+  now,
   busy,
   onDone,
 }: {
   room: RoomStateDto;
   me: MyStatusDto;
+  now: number;
   busy: boolean;
   onDone(): void;
 }) {
-  const key = myBreakKey(room, me);
-  if (!key) return null;
-  const challenge = breakChallengeFor(key);
   const mine = room.members.find((m) => m.userId === me.userId);
+  // The server picks each break's challenge, so it never repeats the last one.
+  if (!myBreakKey(room, me.userId, now) || !mine?.challenge) return null;
   const done = mine?.challengeDone ?? false;
   // Everyone on your break: the whole room timer, or just you on a solo break.
   const together =
-    me.status === "roomBreak"
+    mine?.status === "roomBreak"
       ? room.members.filter((m) => m.status === "roomBreak")
       : mine
         ? [mine]
@@ -55,10 +68,7 @@ export function BreakChallengeCard({
     <section className="break-challenge" aria-label="Break challenge" data-done={done}>
       <div className="eyebrow break-challenge-eyebrow">Break challenge</div>
       <div className="break-challenge-body">
-        <span className="break-challenge-emoji" aria-hidden="true">
-          {challenge.emoji}
-        </span>
-        <div className="break-challenge-text">{challenge.text}</div>
+        <div className="break-challenge-text">{mine.challenge}</div>
         {done ? (
           <span className="break-challenge-done" role="status">
             ✓ Done
@@ -83,29 +93,17 @@ export function BreakChallengeCard({
 
 /**
  * High-five buttons on a teammate's card. Shown only when you're both on a
- * break, and each sends once per break.
+ * break. Send as many as you like; the app's rate limit stops spam.
  */
 export function HighFiveButtons({
   name,
-  sent,
   busy,
-  compact,
   onSend,
 }: {
   name: string;
-  sent: boolean;
   busy: boolean;
-  /** A phone row, with room for a short word only. */
-  compact?: boolean;
   onSend(emoji: string): void;
 }) {
-  if (sent) {
-    return (
-      <span className="high-five-sent" role="status" aria-label={`High-fived ${name}`}>
-        {compact ? "Sent" : "High-fived"}
-      </span>
-    );
-  }
   return (
     <span className="high-five-buttons">
       {HIGH_FIVE_EMOJI.map((emoji) => (

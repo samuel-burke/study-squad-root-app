@@ -72,7 +72,13 @@ import {
 } from "../timer/roomCycle";
 import { squadHeading } from "../posts";
 import { SECRET_BADGE_NAME, type SquadEvent } from "../squad/squadLines";
-import { breakChallengeFor, isHighFiveEmoji, roomBreakKey, soloBreakKey } from "../squad/breakFun";
+import {
+  breakChallengeById,
+  isHighFiveEmoji,
+  pickBreakChallenge,
+  roomBreakKey,
+  soloBreakKey,
+} from "../squad/breakFun";
 import { pickSquadLine, type LastSquadLines } from "../squad/squadVoice";
 import {
   validateFeedbackText,
@@ -143,6 +149,8 @@ const SQUAD_JOIN_COOLDOWN_MS = 2 * 60 * MINUTE_MS;
 const SQUAD_STALE_MS = 2 * MINUTE_MS;
 /** How long to wait before retrying a wake-up whose tick failed. */
 const TICK_RETRY_MS = 30_000;
+/** Break challenge picks remembered at once; far more than are ever live. */
+const MAX_REMEMBERED_CHALLENGES = 500;
 /** Break logs are forgotten this long after their break ends. */
 const BREAK_LOG_TTL_MS = 30 * MINUTE_MS;
 
@@ -157,8 +165,15 @@ interface BreakLog {
   room: boolean;
   recapped: boolean;
   challengeDone: Set<string>;
-  /** Recipient to the members who high-fived them. One high-five per pair per break. */
-  highFives: Map<string, Set<string>>;
+  /** Recipient to sender to how many high-fives they sent this break. */
+  highFives: Map<string, Map<string, number>>;
+}
+
+/** High-fives a member received from everyone, in one break. */
+function highFiveTotal(from: ReadonlyMap<string, number> | undefined): number {
+  let total = 0;
+  for (const count of from?.values() ?? []) total += count;
+  return total;
 }
 
 /** The break a member is on right now. */
@@ -242,6 +257,10 @@ export class StudyRoomEngine {
   private readonly present = new Set<string>();
   private readonly inVoice = new Set<string>();
   private readonly breaks = new Map<string, BreakLog>();
+  /** Each break's challenge id, by break key. */
+  private readonly challenges = new Map<string, string>();
+  /** The last challenge picked for the room ("room") or for each member's solo breaks. */
+  private readonly lastChallenge = new Map<string, string>();
   private config: AppConfig;
   private stopped = false;
   private feedbackPass: Promise<void> | null = null;
@@ -683,7 +702,7 @@ export class StudyRoomEngine {
 
   /**
    * Sends a high-five from one member on a break to another member on a
-   * break. Each pair gets one per break, so tapping again does nothing.
+   * break, as many as they like (the write rate limit stops spam).
    * Members who are focusing can't get one, so nobody is interrupted.
    */
   async sendHighFive(userId: string, toInput: unknown, emojiInput: unknown): Promise<SnapshotDto> {
@@ -698,13 +717,12 @@ export class StudyRoomEngine {
       const theirs = await this.currentBreak(tx, to, now);
       if (!theirs) throw conflictError("They're focusing right now. Try on their next break.");
       const log = this.breakLog(theirs, now);
-      const from = log.highFives.get(to) ?? new Set<string>();
-      if (!from.has(userId)) {
-        from.add(userId);
-        log.highFives.set(to, from);
-        effects.roomChanged = true;
-        effects.notifications.push((n) => n.highFive(to, { fromUserId: userId, emoji }));
-      }
+      const from = log.highFives.get(to) ?? new Map<string, number>();
+      // No cap per teammate: the per-member write rate limit keeps it sane.
+      from.set(userId, (from.get(userId) ?? 0) + 1);
+      log.highFives.set(to, from);
+      effects.roomChanged = true;
+      effects.notifications.push((n) => n.highFive(to, { fromUserId: userId, emoji }));
       return this.snapshot(tx, userId, now);
     });
   }
@@ -721,6 +739,25 @@ export class StudyRoomEngine {
     const solo = await tx.solos.get(userId);
     if (!solo || solo.phase === "focus") return null;
     return { key: soloBreakKey(userId, solo.breakEndsAt), endsAt: solo.breakEndsAt, room: false };
+  }
+
+  /**
+   * The challenge for a break, picked the first time the break is shown.
+   * `scope` is "room" for the room timer or the member for a solo break, so
+   * the next break there never repeats the last one. Kept in memory: after a
+   * restart a running break may get a new pick.
+   */
+  private breakChallenge(key: string, scope: string): string {
+    const known = breakChallengeById(this.challenges.get(key) ?? "");
+    if (known) return known.text;
+    const picked = pickBreakChallenge(this.lastChallenge.get(scope), this.deps.random);
+    this.challenges.set(key, picked.id);
+    this.lastChallenge.set(scope, picked.id);
+    // Old breaks are long over; keep the record small.
+    while (this.challenges.size > MAX_REMEMBERED_CHALLENGES) {
+      this.challenges.delete(this.challenges.keys().next().value!);
+    }
+    return picked.text;
   }
 
   /** The log for a break, made on first use. Old logs are dropped on the way. */
@@ -757,13 +794,12 @@ export class StudyRoomEngine {
     if (!found) return undefined;
     const [key, log] = found;
     const highFives = [...log.highFives]
-      .map(([userId, from]) => ({ userId, count: from.size }))
+      .map(([userId, from]) => ({ userId, count: highFiveTotal(from) }))
       .sort((a, b) => b.count - a.count)
       .slice(0, 3);
     if (log.challengeDone.size === 0 && highFives.length === 0) return undefined;
-    const challenge = breakChallengeFor(key);
     return {
-      challenge: `${challenge.emoji} ${challenge.text}`,
+      challenge: breakChallengeById(this.challenges.get(key) ?? "")?.text ?? "",
       challengeDone: log.challengeDone.size,
       highFives,
     };
@@ -1882,13 +1918,16 @@ export class StudyRoomEngine {
       ]),
     );
 
-    const roomBreak =
-      phase && phase.kind !== "focus" ? this.breaks.get(roomBreakKey(phase.startsAt)) : undefined;
+    const roomKey = phase && phase.kind !== "focus" ? roomBreakKey(phase.startsAt) : undefined;
+    const roomBreak = roomKey ? this.breaks.get(roomKey) : undefined;
+    const roomChallenge =
+      roomKey && participants.length > 0 ? this.breakChallenge(roomKey, "room") : "";
     const card = (
       userId: string,
       status: MemberCardDto["status"],
       endsAt: number,
       breakLog?: BreakLog,
+      challenge = "",
     ): MemberCardDto => {
       const member = members.get(userId);
       const isPrivate = this.goalsArePrivate(member);
@@ -1903,8 +1942,9 @@ export class StudyRoomEngine {
         badges: looks.get(userId)?.showcase ?? [],
         cardStyle: looks.get(userId)?.style ?? "classic",
         weeklyRank: ranks.get(userId) ?? 0,
+        challenge,
         challengeDone: breakLog?.challengeDone.has(userId) ?? false,
-        highFives: breakLog?.highFives.get(userId)?.size ?? 0,
+        highFives: highFiveTotal(breakLog?.highFives.get(userId)),
       };
     };
 
@@ -1915,6 +1955,7 @@ export class StudyRoomEngine {
           phase?.kind === "focus" ? "roomFocus" : "roomBreak",
           phase?.endsAt ?? now,
           roomBreak,
+          roomChallenge,
         ),
       ),
       ...solos.map((s) =>
@@ -1925,6 +1966,7 @@ export class StudyRoomEngine {
               "soloBreak",
               s.breakEndsAt,
               this.breaks.get(soloBreakKey(s.userId, s.breakEndsAt)),
+              this.breakChallenge(soloBreakKey(s.userId, s.breakEndsAt), s.userId),
             ),
       ),
     ];

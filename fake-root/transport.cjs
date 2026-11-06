@@ -92,7 +92,16 @@ async function handle(req, res) {
     try {
       return send(res, 200, await control(await readBody(req)));
     } catch (error) {
-      return send(res, 500, { error: String(error?.stack ?? error) });
+      // The stack goes to the server log, not over HTTP.
+      console.error(
+        JSON.stringify({
+          level: "error",
+          message: "fake-root: control failed",
+          route,
+          error: String(error?.stack ?? error),
+        }),
+      );
+      return send(res, 500, { error: "control failed, see the server log" });
     }
   }
   if (req.method === "GET") return serveStatic(req, res);

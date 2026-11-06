@@ -4,6 +4,15 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ## [Unreleased]
 
+## [0.3.10] - 2026-11-06
+
+High-fives and a shared challenge on breaks, and busy rooms that run lighter.
+
+### Added
+
+- **Break high-fives.** On a break, tap a teammate who's also on a break to send them a 👋 or 🔥. Each person can high-five each teammate once per break, and it floats up on their screen only.
+- **Break challenge.** Each break shows one shared screen-free challenge with a Done button that ticks your card. When the break ends, the squad bot's back-to-study post says how many did the challenge and who got the most high-fives. Neither gives XP.
+
 ### Fixed
 
 - Squad bot: when several people unlock badges at the same moment, such as the end of a round in a busy room, the bot now sends one "New badges" post listing them (the first 10 by name, then a count) instead of a post each. In a 50-person test that was 50 posts at once. One person on their own still gets their own post.

@@ -1,10 +1,13 @@
 node_modules
 dist
 dist-demo
+dist-fakeroot
 _site
 coverage
 networking/gen
 package-lock.json
 client/test-results
+client/test-results-root
+client/playwright-report-root
 client/playwright-report
 docs/design/*.html

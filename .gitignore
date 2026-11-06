@@ -4,6 +4,7 @@ node_modules/
 # build output
 dist/
 dist-demo/
+dist-fakeroot/
 _site/
 *.tsbuildinfo
 networking/gen/
@@ -19,6 +20,8 @@ networking/gen/
 # test output
 coverage/
 client/test-results/
+client/test-results-root/
+client/playwright-report-root/
 client/playwright-report/
 client/blob-report/
 

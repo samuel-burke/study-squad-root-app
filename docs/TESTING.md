@@ -30,6 +30,45 @@ Useful combinations:
 - Comeback and Phoenix: `?focus=1&break=0.5&streak=30&missed=3`, finish a round.
 - Every medal tier's animation and sound: `?unlock=all`.
 
+## The self-test panel, inside Root
+
+Room settings has a **Self-test** section that only the developer can see. It runs live checks against the real Root and shows each one as passed, to look at, or failed:
+
+| Check                                   | What it looks at                                                                                               | Old bug it would have caught                       |
+| --------------------------------------- | -------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
+| Versions match                          | The app, server and networking versions, and the networking code the server actually loaded                    | The stale cached networking package (0.3.0, 0.3.1) |
+| Settings arrive in the shapes we expect | The raw shape of every App setting, compared with what the fake Root host sends                                | Number settings as `{ value: n }` (0.3.6)          |
+| Database                                | Migration level, and a test row written, read back and deleted                                                 |                                                    |
+| Push to your screen only                | A ping to your device alone, which your app confirms. Also says whether `clients.getClient` still finds no one | Personal pushes that never arrived (PR #51)        |
+| Job scheduler                           | A one-time job 30 seconds out. It reports what type `jobTime` arrived as                                       | `jobTime` as a number (PR #98)                     |
+| Channels                                | Text and voice channels it can see, the bot channel, and an optional test post                                 |                                                    |
+| Members and presence                    | Who has the app open, and whether you count as an admin                                                        |                                                    |
+| What your app sees of Root              | Your user id from both sides, the theme, and the profile fields                                                |                                                    |
+
+The job check takes up to two minutes, because Root looks for due jobs about once a minute. The panel keeps updating until it's done. **Copy report** copies everything, including the raw shapes, as JSON. Paste it into a chat or an issue, and the fake Root host can be updated to match.
+
+Nothing it does touches members' data. The test row and the test job are its own, and the test post only goes out when you tick the box.
+
+**Who can open it.** The server checks the caller's Root user id against `SELF_TEST_USER_IDS` on every call, so hiding the section isn't the only protection. The ids are baked in at build time (`server/dist/build-info.json`), like the feedback relay settings:
+
+1. Open Room settings in Root as a community admin. While no ids are set, it shows "Your Root user id is …". Copy it.
+2. In GitHub, add an Actions secret `SELF_TEST_USER_IDS` with that id (separate several with commas). For Docker builds, add `SELF_TEST_USER_IDS=…` to `server/.env`.
+3. Ship the next version. The line with your id goes away and the Self-test section appears, for you only.
+
+## Before each release: staging check
+
+Merging into `main` only uploads the package to Root. Nothing reaches communities until you press prerelease or release in the Root portal. So between the two:
+
+1. Wait for the main CI run to pass. That includes the package smoke check, the demo e2e tests and the full-stack e2e tests.
+2. In the Root portal, prerelease the new version to the staging community.
+3. Open Study Squad there. Close and reopen it once, so you know you're on the new version.
+4. Room settings → Self-test → tick "Also send a test post", then **Run self-test**. Wait for "all 8 passed". If anything says "to look at" or failed, press **Copy report** and share it before you release.
+5. Two-minute look by hand: join the room timer with a goal, tick it off, open Your progress and the leaderboard, and switch Root between light and dark.
+6. If you can, open it on a phone too, as a second member, and check that you each see the other's card.
+7. All good: release it in the portal and paste the release notes.
+
+If something fails, don't release. Fix it, bump the version, and ship again: Root never takes the same version twice.
+
 ## In a Root test community
 
 - **Boss base HP** goes down to 100 XP. This week's boss is 0.5x to 2x that, so a 25 minute solo timer or two defeats it. Set it back before the community uses the app for real.
@@ -58,10 +97,43 @@ docker run --rm -it --platform linux/amd64 --ipc=host -v "$PWD":/app -w /app mcr
 
 Keep the image tag in step with the `@playwright/test` version in `client/package.json`. Afterwards, rerun `npm ci && npm run generate` natively before testing on the Mac, since the container installs Linux packages.
 
+### Full stack, on the fake Root host
+
+`npm run test:e2e:root` runs `client/e2e-root/` against the real server, the real SQLite database, the generated networking code and the real `RootGateway`. Only Root itself is faked: `fake-root/` stands in for both halves of the Root SDK and relays protobuf bytes between them over a WebSocket, the way Root's servers do. Each test opens members in their own browsers, so it covers what the demo can't:
+
+- Two members see each other join live, and the combo rises for both
+- App settings saved in Root apply live, in the shapes Root sends them (numbers as `{ value: n }`)
+- When a round ends, each member gets their own result (fails if the server uses `clients.getClient`)
+- The daily recap posts when Root runs its job, the job finishes, and tomorrow's is booked (fails if `jobTime` is treated as a Date)
+- Closing the app takes a member out of the room count
+
+Each of those was checked by putting the old bug back and watching the test fail.
+
+To poke at it by hand, run `npm run build && npm run build:fakeroot -w @studyroom/client`, then `node scripts/fake-root-host.mjs`, and open `http://localhost:4174/?user=u-ana` and `?user=u-ben` in two windows. The members are u-owner (community owner), u-ana, u-ben, u-cy, u-dee, u-eli and u-fay. Test controls live under `/__fake/`: `GET state`, `GET posts`, `POST settings`, `POST clock/advance` (`{ "ms": 60000 }`), `POST jobs/run`, and `POST voice/join` or `voice/leave`.
+
+What the fake can't tell us is whether Root really behaves the way it copies. The self-test panel inside Root (below) checks that against the real thing.
+
+### The package Root runs
+
+`npm run smoke:package` checks `rootapp.pkg` the way Root will see it, before upload. CI builds a package and runs it on every push, and the deploy job runs it again just before uploading. It fails when:
+
+- the package's version isn't the one in `root-manifest.json`, or the client bundle is missing
+- any copy of the generated networking code in the package doesn't carry the version of the current `.proto` files (the stale copy that crashed 0.3.0 and 0.3.1)
+- the packaged server, using only the package's own files, doesn't start, doesn't answer the read-only requests in protobuf, or doesn't start again on the same database
+
+The server runs against a fake Root host in `fake-root/`, which copies the ways the real SDK has surprised us: number settings arrive as `{ value: n }`, job times arrive as numbers, a job whose handler throws fires again, and `clients.getClient` finds no one. The package leaves out `sqlite3` because Root's host supplies it, so the repo's copy stands in.
+
+To run it on a Mac, add it to the end of the Docker build:
+
+```sh
+rm -f rootapp.pkg && rm -rf networking/gen && docker run --rm -it --platform linux/amd64 -v "$PWD":/app -w /app node:22 \
+  bash -c "set -e; npm ci; npm run generate; npm run build; npx rootsdk build package --output-file ./rootapp.pkg --project-folder .; npm run smoke:package"
+```
+
 Still manual, in a Root test community:
 
 - Sound: that each tier's fanfare plays and that mute silences it (browsers in tests have no speakers)
 - How the unlock animations look on a real phone and desktop
 - Anything Root does: settings changes reaching the server, channel posts, the daily recap, phones with the screen locked
-- More than one real person: combo with real accounts, leaderboard badges, "Keep going?" taps from several people
+- More than one real person on real Root accounts. The fake Root host covers joining, the combo and personal results with several members, but not leaderboard badges or "Keep going?" taps from several people
 - Data surviving a server restart

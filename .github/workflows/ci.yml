@@ -67,7 +67,7 @@ jobs:
         run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
       - name: Cache Playwright browser
         id: playwright-cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}-headless-shell
@@ -80,17 +80,47 @@ jobs:
         run: npx playwright install-deps chromium-headless-shell
         working-directory: client
       - run: npm run test:e2e
+      # The real server, database and RootGateway, on the fake Root host
+      # (fake-root/), with several members open at once. See docs/TESTING.md.
+      - name: Full-stack e2e on the fake Root host
+        run: npm run test:e2e:root
       - name: Upload Playwright report
         if: failure()
         uses: actions/upload-artifact@v7
         with:
           name: playwright-report
-          path: client/playwright-report/
+          path: |
+            client/playwright-report/
+            client/playwright-report-root/
           retention-days: 14
+
+  package:
+    name: Package boots like on Root
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      # The same clean build the deploy job uploads.
+      - name: Build
+        run: |
+          rm -rf networking/gen
+          npm run generate
+          npm run build
+      - name: Package
+        run: npx rootsdk build package --output-file ./rootapp.pkg --project-folder .
+      # Checks the networking versions inside the package and starts its server
+      # against the fake Root host (fake-root/). See docs/TESTING.md.
+      - name: Smoke check the package
+        run: npm run smoke:package
 
   deploy:
     name: Deploy to Root
-    needs: [verify, e2e]
+    needs: [verify, e2e, package]
     # Only main ships. Run it again by hand from the Actions tab if an upload failed.
     if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
@@ -130,6 +160,8 @@ jobs:
         env:
           FEEDBACK_RELAY_URL: ${{ secrets.FEEDBACK_RELAY_URL }}
           FEEDBACK_RELAY_KEY: ${{ secrets.FEEDBACK_RELAY_KEY }}
+          # Optional: who may open the self-test panel (see docs/TESTING.md).
+          SELF_TEST_USER_IDS: ${{ secrets.SELF_TEST_USER_IDS }}
         # A clean generate: stale networking/gen output once crashed the app on Root.
         run: |
           rm -rf networking/gen
@@ -138,6 +170,9 @@ jobs:
       - name: Package
         if: steps.check.outputs.upload == 'true'
         run: npx rootsdk build package --output-file ./rootapp.pkg --project-folder .
+      - name: Smoke check the package
+        if: steps.check.outputs.upload == 'true'
+        run: npm run smoke:package
       - name: Upload to Root
         if: steps.check.outputs.upload == 'true'
         run: npx rootsdk upload package --file ./rootapp.pkg --authToken "$ROOT_AUTH_TOKEN"

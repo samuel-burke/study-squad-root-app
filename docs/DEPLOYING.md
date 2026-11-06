@@ -33,6 +33,10 @@ The relay accepts up to 50 notes a day from all communities together (`DAILY_CAP
 
 When the GitHub token expires, the relay answers with an error and notes wait in each community. Put a fresh token in Vercel and they're sent with the next note or server restart. No app release is needed.
 
+## Self-test panel (optional)
+
+Add an Actions secret `SELF_TEST_USER_IDS` with your Root user id to get the owner-only Self-test section in Room settings. Before each release, run it in your staging community. See [TESTING.md](TESTING.md#the-self-test-panel-inside-root).
+
 ## Versions uploaded by hand
 
 If you upload a version yourself, tag it so the job won't try it again:

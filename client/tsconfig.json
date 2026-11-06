@@ -15,5 +15,13 @@
       "@studyroom/contract": ["../contract/src/index.ts"]
     }
   },
-  "include": ["src/**/*", "test/**/*", "e2e/**/*", "vite.config.ts", "playwright.config.ts"]
+  "include": [
+    "src/**/*",
+    "test/**/*",
+    "e2e/**/*",
+    "e2e-root/**/*",
+    "vite.config.ts",
+    "playwright.config.ts",
+    "playwright.root.config.ts"
+  ]
 }

@@ -1,9 +1,9 @@
 {
   "name": "@studyroom/server",
-  "version": "0.3.10",
+  "version": "0.3.11",
   "private": true,
   "scripts": {
-    "build": "tsc -p tsconfig.build.json && node ../scripts/feedback-config.mjs",
+    "build": "tsc -p tsconfig.build.json && node ../scripts/feedback-config.mjs && node ../scripts/build-info.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "server": "rootsdk start devhost --project-folder=../"
   },

@@ -9,9 +9,12 @@ export default tseslint.config(
       "**/node_modules/**",
       "**/dist/**",
       "**/dist-demo/**",
+      "**/dist-fakeroot/**",
       "networking/gen/**",
       "coverage/**",
       "client/test-results/**",
+      "client/test-results-root/**",
+      "client/playwright-report-root/**",
       "client/playwright-report/**",
     ],
   },
@@ -36,6 +39,11 @@ export default tseslint.config(
     files: ["fake-root/**/*.cjs"],
     languageOptions: { sourceType: "commonjs" },
     rules: { "@typescript-eslint/no-require-imports": "off" },
+  },
+  {
+    // The fake Root SDK's browser half.
+    files: ["fake-root/client-app.js"],
+    languageOptions: { globals: { ...globals.browser } },
   },
   {
     // The domain package must stay free of host APIs so it runs in Node and the browser.

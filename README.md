@@ -92,6 +92,7 @@ Requests route through Root's servers, so a valid `DEV_TOKEN` is required even l
 | `npm test`              | Vitest across `core`, `contract`, `server`, `client`                    |
 | `npm run test:coverage` | Same, with a coverage report in `coverage/`                             |
 | `npm run test:e2e`      | Playwright against the demo build, desktop and phone profiles           |
+| `npm run test:e2e:root` | Playwright against the real server on a fake Root host, several members |
 | `npm run smoke:package` | Checks a built `rootapp.pkg` starts and carries current networking code |
 | `npm run demo`          | Client with the in-browser engine and simulated members                 |
 | `npm run server`        | Server through Root's dev host (needs `server/.env`)                    |

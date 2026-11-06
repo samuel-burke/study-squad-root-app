@@ -65,6 +65,9 @@ function defaultConfig() {
       { userId: "u-ana", nickname: "Ana", roleIds: [] },
       { userId: "u-ben", nickname: "Ben", roleIds: [] },
       { userId: "u-cy", nickname: "Cy", roleIds: [] },
+      { userId: "u-dee", nickname: "Dee", roleIds: [] },
+      { userId: "u-eli", nickname: "Eli", roleIds: [] },
+      { userId: "u-fay", nickname: "Fay", roleIds: [] },
     ],
     roles: [{ id: EVERYONE_ROLE, name: "everyone", permissions: {} }],
     channelGroups: [{ id: "g-main", name: "Main" }],
@@ -125,6 +128,12 @@ function toRootSettings(plain, manifestPath) {
 }
 
 const config = readConfig();
+
+// Root's clock, which tests can move forward (fake.advanceClock). The server
+// reads Date.now for its engine clock, so this must run before main.js does.
+const realNow = Date.now;
+let clockOffset = 0;
+Date.now = () => realNow() + clockOffset;
 const log = (message, meta = {}) =>
   console.log(JSON.stringify({ level: "info", message: `fake-root: ${message}`, ...meta }));
 
@@ -405,6 +414,11 @@ const fake = {
       clientsEmitter.emit(ClientEvent.UserDetached, entry.client);
     }
   },
+  /** Moves the clock forward. The next request the server handles catches up. */
+  advanceClock(ms) {
+    clockOffset += ms;
+    return Date.now();
+  },
   /** Changes settings the way an admin saving the App settings page would. */
   updateSettings(plain) {
     const previous = rootServer.globalSettings;
@@ -425,6 +439,7 @@ const fake = {
     webRtcEmitter.emit(ChannelWebRtcEvent.ChannelWebRtcUserDetach, { channelId, userId });
   },
   nickname: (userId) => members.get(userId)?.nickname,
+  attachedUsers: () => [...attached.keys()],
 };
 
 module.exports = {

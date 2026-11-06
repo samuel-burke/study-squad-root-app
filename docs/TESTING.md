@@ -58,6 +58,22 @@ docker run --rm -it --platform linux/amd64 --ipc=host -v "$PWD":/app -w /app mcr
 
 Keep the image tag in step with the `@playwright/test` version in `client/package.json`. Afterwards, rerun `npm ci && npm run generate` natively before testing on the Mac, since the container installs Linux packages.
 
+### Full stack, on the fake Root host
+
+`npm run test:e2e:root` runs `client/e2e-root/` against the real server, the real SQLite database, the generated networking code and the real `RootGateway`. Only Root itself is faked: `fake-root/` stands in for both halves of the Root SDK and relays protobuf bytes between them over a WebSocket, the way Root's servers do. Each test opens members in their own browsers, so it covers what the demo can't:
+
+- Two members see each other join live, and the combo rises for both
+- App settings saved in Root apply live, in the shapes Root sends them (numbers as `{ value: n }`)
+- When a round ends, each member gets their own result (fails if the server uses `clients.getClient`)
+- The daily recap posts when Root runs its job, the job finishes, and tomorrow's is booked (fails if `jobTime` is treated as a Date)
+- Closing the app takes a member out of the room count
+
+Each of those was checked by putting the old bug back and watching the test fail.
+
+To poke at it by hand, run `npm run build && npm run build:fakeroot -w @studyroom/client`, then `node scripts/fake-root-host.mjs`, and open `http://localhost:4174/?user=u-ana` and `?user=u-ben` in two windows. The members are u-owner (community owner), u-ana, u-ben, u-cy, u-dee, u-eli and u-fay. Test controls live under `/__fake/`: `GET state`, `GET posts`, `POST settings`, `POST clock/advance` (`{ "ms": 60000 }`), `POST jobs/run`, and `POST voice/join` or `voice/leave`.
+
+What the fake can't tell us is whether Root really behaves the way it copies. The self-test panel inside Root (coming next) checks that against the real thing.
+
 ### The package Root runs
 
 `npm run smoke:package` checks `rootapp.pkg` the way Root will see it, before upload. CI builds a package and runs it on every push, and the deploy job runs it again just before uploading. It fails when:
@@ -80,5 +96,5 @@ Still manual, in a Root test community:
 - Sound: that each tier's fanfare plays and that mute silences it (browsers in tests have no speakers)
 - How the unlock animations look on a real phone and desktop
 - Anything Root does: settings changes reaching the server, channel posts, the daily recap, phones with the screen locked
-- More than one real person: combo with real accounts, leaderboard badges, "Keep going?" taps from several people
+- More than one real person on real Root accounts. The fake Root host covers joining, the combo and personal results with several members, but not leaderboard badges or "Keep going?" taps from several people
 - Data surviving a server restart

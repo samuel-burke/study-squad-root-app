@@ -32,7 +32,8 @@
     "prettier": "^3.9.10",
     "typescript": "~5.8.3",
     "typescript-eslint": "^8.72.1",
-    "vitest": "^5.0.5"
+    "vitest": "^5.0.5",
+    "ws": "^8.22.1"
   },
   "scripts": {
     "generate": "node -e \"require('node:fs').rmSync('networking/gen',{recursive:true,force:true})\" && npm run build -w @studyroom/networking && node scripts/stamp-gen-version.mjs",
@@ -45,6 +46,7 @@
     "test:coverage": "vitest run --coverage",
     "smoke:package": "node scripts/package-smoke.mjs rootapp.pkg",
     "test:e2e": "npm run e2e -w @studyroom/client",
+    "test:e2e:root": "npm run e2e:root -w @studyroom/client",
     "verify": "node scripts/stamp-gen-version.mjs --check && npm run format:check && npm run lint && npm run typecheck && npm test && npm run build",
     "server": "npm run server -w @studyroom/server",
     "client": "npm run client -w @studyroom/client",

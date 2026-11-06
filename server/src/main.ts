@@ -26,7 +26,9 @@ import { StudyRoomHandlers } from "./handlers";
 import { RecapScheduler } from "./jobs/recapScheduler";
 import { openDatabase } from "./persistence/database";
 import { KnexStore } from "./persistence/knexStore";
-import { migrateToLatest } from "./persistence/migrations";
+import { migrateToLatest, migratorConfig } from "./persistence/migrations";
+import { loadBuildInfo, loadedGenVersion } from "./buildInfo";
+import { SelfTest } from "./selfTest";
 import { studyRoomService } from "./studyRoomService";
 import {
   canManageApps,
@@ -142,7 +144,71 @@ async function onStarting(state: RootAppStartState): Promise<void> {
     newId: randomUUID,
     random: Math.random,
   });
-  studyRoomService.bind(new StudyRoomHandlers(engine, logger, { voicePicker }));
+  // Read live by the self-test; kept current by the settings listener below.
+  let currentSettings = state.globalSettings ?? rootServer.globalSettings;
+  const selfTest = new SelfTest({
+    build: loadBuildInfo(__dirname),
+    loadedGenVersion: () => loadedGenVersion(__dirname),
+    rawSettings: () => currentSettings,
+    config: () => engine.getConfig(),
+    db: {
+      migrations: async () => {
+        const [done, pending] = (await db.migrate.list(migratorConfig)) as [unknown[], unknown[]];
+        return {
+          current: await db.migrate.currentVersion(migratorConfig),
+          done: done.length,
+          pending: pending.length,
+        };
+      },
+      roundTrip: async (value) => {
+        const key = "self-test:probe";
+        await db("kv")
+          .insert({ key, value: JSON.stringify(value) })
+          .onConflict("key")
+          .merge();
+        const row = await db("kv").where({ key }).first();
+        await db("kv").where({ key }).delete();
+        return row ? (JSON.parse(row.value) as string) : undefined;
+      },
+    },
+    jobs: {
+      schedule: async (tag, at) => {
+        await rootServer.jobScheduler.create({
+          resourceId: tag,
+          tag,
+          start: at,
+          jobInterval: JobInterval.OneTime,
+        });
+      },
+      cancel: (tag) => rootServer.jobScheduler.deleteByTag(tag),
+    },
+    ping: (userId, nonce) => {
+      const client = findAttachedClient(() => rootServer.clients.getClients(), userId);
+      if (client) studyRoomService.broadcastSelfTestPing({ nonce }, [client]);
+      return client !== undefined;
+    },
+    getClientFinds: (userId) => {
+      try {
+        return rootServer.clients.getClient(userId as UserGuid) !== undefined;
+      } catch {
+        return false;
+      }
+    },
+    channels: listChannels,
+    post: async (channelId, content) => {
+      await rootServer.community.channelMessages.create({
+        channelId: channelId as ChannelGuid,
+        content,
+      });
+    },
+    attachedUserIds: () => rootServer.clients.getClients().map((c) => c.userId),
+    nickname: async (userId) =>
+      (await rootServer.community.communityMembers.get({ userId: userId as UserGuid })).nickname,
+    isAdmin: isRootAdmin,
+    now: Date.now,
+    logger,
+  });
+  studyRoomService.bind(new StudyRoomHandlers(engine, logger, { voicePicker, selfTest }));
   rootServer.lifecycle.addService(studyRoomService);
   await engine.start();
 
@@ -192,6 +258,13 @@ async function onStarting(state: RootAppStartState): Promise<void> {
           handler({ tag: job.tag, jobTime: job.jobTime, missed });
         rootServer.jobScheduler.on(JobScheduleEvent.Job, relay(false));
         rootServer.jobScheduler.on(JobScheduleEvent.JobMissed, relay(true));
+        // The self-test's own job (it ignores every other tag).
+        rootServer.jobScheduler.on(JobScheduleEvent.Job, (job: JobData) =>
+          selfTest.onJob({ tag: job.tag, jobTime: job.jobTime, missed: false }),
+        );
+        rootServer.jobScheduler.on(JobScheduleEvent.JobMissed, (job: JobData) =>
+          selfTest.onJob({ tag: job.tag, jobTime: job.jobTime, missed: true }),
+        );
       },
     },
     engine,
@@ -201,7 +274,6 @@ async function onStarting(state: RootAppStartState): Promise<void> {
 
   // Admins edit settings in Root's App settings (and pick the voice channel
   // in the app's Room settings); apply them live.
-  let currentSettings = state.globalSettings ?? rootServer.globalSettings;
   const applySettings = async () => {
     const config = await loadRootConfig(currentSettings, await voicePicker.picked());
     await engine.setConfig(config);

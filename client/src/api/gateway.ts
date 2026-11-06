@@ -35,6 +35,41 @@ export interface GatewayHandlers {
   highFive(event: HighFiveDto): void;
 }
 
+/** One live check from the self-test panel (server/src/selfTest.ts). */
+export interface SelfTestCheck {
+  id: string;
+  title: string;
+  status: "pass" | "warn" | "fail" | "pending";
+  detail: string;
+  raw?: unknown;
+}
+
+export interface SelfTestReport {
+  app: { version: string; genVersion: string };
+  startedAt: string;
+  done: boolean;
+  checks: SelfTestCheck[];
+  /** Added by the client when the report is copied. */
+  client?: unknown;
+}
+
+export interface SelfTestState {
+  /** The current member may run it (their Root user id is on the build's list). */
+  allowed: boolean;
+  yourUserId: string;
+  /** Nobody is on the list yet. */
+  unconfigured: boolean;
+  report: SelfTestReport | null;
+}
+
+/** The owner-only self-test panel. Only the Root gateway has one. */
+export interface SelfTestApi {
+  get(): Promise<SelfTestState>;
+  run(testPost: boolean): Promise<SelfTestState>;
+  /** What this app saw of Root, sent with each run and added to copied reports. */
+  clientInfo(): Promise<Record<string, unknown>>;
+}
+
 /** An error the UI can show as-is. */
 export class GatewayError extends Error {
   constructor(
@@ -52,6 +87,7 @@ export class GatewayError extends Error {
  */
 export interface StudyRoomGateway {
   readonly kind: "root" | "demo";
+  readonly selfTest?: SelfTestApi;
   currentUserId(): string;
   /** Server time, corrected for this device's clock offset. */
   now(): number;

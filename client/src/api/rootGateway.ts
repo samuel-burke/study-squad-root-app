@@ -19,11 +19,14 @@ import {
   type SnapshotDto,
 } from "@studyroom/core";
 import { studyRoomServiceClient, StudyRoomServiceClientEvent } from "@studyroom/gen-client";
-import type { RoomSnapshot } from "@studyroom/gen-shared";
+import type { RoomSnapshot, SelfTest } from "@studyroom/gen-shared";
 import {
   toGatewayError,
   type GatewayHandlers,
   type Profile,
+  type SelfTestApi,
+  type SelfTestReport,
+  type SelfTestState,
   type StudyRoomGateway,
 } from "./gateway";
 
@@ -37,9 +40,77 @@ async function call<T>(work: () => Promise<T>): Promise<T> {
   }
 }
 
+function selfTestState(message: SelfTest): SelfTestState {
+  let report: SelfTestReport | null;
+  try {
+    report = message.reportJson ? (JSON.parse(message.reportJson) as SelfTestReport) : null;
+  } catch {
+    report = null;
+  }
+  return {
+    allowed: message.allowed,
+    yourUserId: message.yourUserId,
+    unconfigured: message.unconfigured,
+    report,
+  };
+}
+
+/** The self-test panel's half on the client: runs it, and answers the server's ping. */
+class RootSelfTest implements SelfTestApi {
+  private listening = false;
+
+  async get() {
+    return selfTestState(await call(() => client.getSelfTest({})));
+  }
+
+  async run(testPost: boolean) {
+    if (!this.listening) {
+      this.listening = true;
+      client.on(StudyRoomServiceClientEvent.SelfTestPing, (event: { nonce: string }) => {
+        void client.confirmSelfTestPing({ nonce: event.nonce }).catch(() => {});
+      });
+    }
+    const info = await this.clientInfo();
+    return selfTestState(
+      await call(() => client.runSelfTest({ testPost, clientJson: JSON.stringify(info) })),
+    );
+  }
+
+  async clientInfo() {
+    const read = async (work: () => unknown) => {
+      try {
+        return await work();
+      } catch (error) {
+        return { threw: String(error) };
+      }
+    };
+    const userId = rootClient.users.getCurrentUserId();
+    const [theme, profiles] = await Promise.all([
+      read(() => rootClient.theme.getTheme()),
+      read(() => rootClient.users.getUserProfiles([userId])),
+    ]);
+    const profile = Array.isArray(profiles) ? profiles[0] : profiles;
+    return {
+      version: __BUILD_INFO__.version,
+      genVersion: __BUILD_INFO__.genVersion,
+      userId,
+      theme,
+      // Field names and types only: no nickname or picture in the report.
+      profile:
+        profile && typeof profile === "object"
+          ? Object.fromEntries(
+              Object.entries(profile as Record<string, unknown>).map(([k, v]) => [k, typeof v]),
+            )
+          : profile,
+      userAgent: navigator.userAgent,
+    };
+  }
+}
+
 /** Talks to the Study Squad server through Root's generated client. */
 export class RootGateway implements StudyRoomGateway {
   readonly kind = "root" as const;
+  readonly selfTest: SelfTestApi = new RootSelfTest();
   private readonly clock = new ClockSync();
 
   currentUserId(): string {

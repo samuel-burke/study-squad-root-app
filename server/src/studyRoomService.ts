@@ -33,6 +33,10 @@ import type {
   StartSoloRequest,
   GetVoiceChannelsRequest,
   VoiceChannelChoice,
+  ConfirmSelfTestPingRequest,
+  GetSelfTestRequest,
+  RunSelfTestRequest,
+  SelfTest,
 } from "@studyroom/gen-shared";
 import { RequestFailure, type StudyRoomHandlers } from "./handlers";
 
@@ -149,6 +153,18 @@ export class StudyRoomService extends StudyRoomServiceBase {
 
   sendHighFive(request: SendHighFiveRequest, client: Client): Promise<RoomSnapshot> {
     return this.call((h) => h.sendHighFive(client.userId, request));
+  }
+
+  getSelfTest(_request: GetSelfTestRequest, client: Client): Promise<SelfTest> {
+    return this.call((h) => h.getSelfTest(client.userId));
+  }
+
+  runSelfTest(request: RunSelfTestRequest, client: Client): Promise<SelfTest> {
+    return this.call((h) => h.runSelfTest(client.userId, request));
+  }
+
+  confirmSelfTestPing(request: ConfirmSelfTestPingRequest, client: Client): Promise<SelfTest> {
+    return this.call((h) => h.confirmSelfTestPing(client.userId, request));
   }
 
   private async call<T>(work: (handlers: StudyRoomHandlers) => Promise<T>): Promise<T> {

@@ -1,6 +1,7 @@
 import { presetLabel, type RoomStateDto, type VoiceChannelChoiceDto } from "@studyroom/core";
 import { useEffect, useState } from "react";
 import { toGatewayError, type StudyRoomGateway } from "../api/gateway";
+import { SelfTestPanel } from "./SelfTestPanel";
 import { Sheet } from "./Sheet";
 
 /**
@@ -64,6 +65,7 @@ export function SettingsSheet({
           Send feedback
         </button>
       )}
+      {gateway.selfTest && <SelfTestPanel selfTest={gateway.selfTest} />}
       <button type="button" className="btn" onClick={onClose} data-autofocus>
         Close
       </button>

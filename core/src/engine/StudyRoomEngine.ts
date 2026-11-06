@@ -74,7 +74,6 @@ import { squadHeading } from "../posts";
 import { SECRET_BADGE_NAME, type SquadEvent } from "../squad/squadLines";
 import {
   breakChallengeById,
-  HIGH_FIVES_PER_TEAMMATE,
   isHighFiveEmoji,
   pickBreakChallenge,
   roomBreakKey,
@@ -166,7 +165,7 @@ interface BreakLog {
   room: boolean;
   recapped: boolean;
   challengeDone: Set<string>;
-  /** Recipient to sender to how many high-fives, up to HIGH_FIVES_PER_TEAMMATE per pair. */
+  /** Recipient to sender to how many high-fives they sent this break. */
   highFives: Map<string, Map<string, number>>;
 }
 
@@ -703,7 +702,7 @@ export class StudyRoomEngine {
 
   /**
    * Sends a high-five from one member on a break to another member on a
-   * break. Each pair gets one per break, so tapping again does nothing.
+   * break, as many as they like (the write rate limit stops spam).
    * Members who are focusing can't get one, so nobody is interrupted.
    */
   async sendHighFive(userId: string, toInput: unknown, emojiInput: unknown): Promise<SnapshotDto> {
@@ -719,13 +718,11 @@ export class StudyRoomEngine {
       if (!theirs) throw conflictError("They're focusing right now. Try on their next break.");
       const log = this.breakLog(theirs, now);
       const from = log.highFives.get(to) ?? new Map<string, number>();
-      const sent = from.get(userId) ?? 0;
-      if (sent < HIGH_FIVES_PER_TEAMMATE) {
-        from.set(userId, sent + 1);
-        log.highFives.set(to, from);
-        effects.roomChanged = true;
-        effects.notifications.push((n) => n.highFive(to, { fromUserId: userId, emoji }));
-      }
+      // No cap per teammate: the per-member write rate limit keeps it sane.
+      from.set(userId, (from.get(userId) ?? 0) + 1);
+      log.highFives.set(to, from);
+      effects.roomChanged = true;
+      effects.notifications.push((n) => n.highFive(to, { fromUserId: userId, emoji }));
       return this.snapshot(tx, userId, now);
     });
   }

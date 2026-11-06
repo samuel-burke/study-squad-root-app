@@ -119,7 +119,7 @@ describe("high-fives on the board", () => {
         now={0}
         compact={compact}
         onOpenMember={onOpen}
-        highFive={{ sent: new Map(), busy: false, onSend }}
+        highFive={{ busy: false, onSend }}
       />,
     );
     // Only on Kai's card, never your own.
@@ -131,45 +131,47 @@ describe("high-fives on the board", () => {
     expect(onOpen).not.toHaveBeenCalled();
   });
 
-  it("keeps the buttons until you've sent a teammate 5", () => {
-    render(
+  it("keeps the buttons after sending, and hides them for someone focusing", async () => {
+    const onSend = vi.fn();
+    const { rerender } = render(
       <MemberBoard
         members={[card("me"), card("kai")]}
         profiles={profiles}
         youId="me"
         now={0}
-        highFive={{ sent: new Map([["kai", 4]]), busy: false, onSend: vi.fn() }}
+        highFive={{ busy: false, onSend }}
       />,
     );
-    expect(screen.getAllByRole("button", { name: /^Send Kai/ })).toHaveLength(2);
-  });
-
-  it("hides the buttons for someone focusing or already high-fived 5 times", () => {
-    const { rerender } = render(
+    // No cap: tap as often as you like.
+    for (let i = 0; i < 7; i++) {
+      await userEvent.click(screen.getByRole("button", { name: "Send Kai a high-five" }));
+    }
+    expect(onSend).toHaveBeenCalledTimes(7);
+    rerender(
       <MemberBoard
         members={[card("me"), card("kai", { status: "soloFocus" })]}
         profiles={profiles}
         youId="me"
         now={0}
-        highFive={{ sent: new Map(), busy: false, onSend: vi.fn() }}
+        highFive={{ busy: false, onSend }}
       />,
     );
-    expect(screen.queryByRole("button", { name: /high-five/ })).not.toBeInTheDocument();
-    rerender(
-      <MemberBoard
-        members={[card("me"), card("kai")]}
-        profiles={profiles}
-        youId="me"
-        now={0}
-        highFive={{ sent: new Map([["kai", 5]]), busy: false, onSend: vi.fn() }}
-      />,
-    );
-    expect(screen.queryByRole("button", { name: /high-five/ })).not.toBeInTheDocument();
-    expect(screen.getByText("High-fived")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^Send Kai/ })).not.toBeInTheDocument();
   });
 });
 
 describe("received high-fives", () => {
+  it("shows a fire as a fire", () => {
+    const state = roomReducer(initialRoomViewState, {
+      type: "highFive",
+      event: { fromUserId: "kai", emoji: "🔥" },
+      id: 1,
+    });
+    render(<HighFiveFloats highFives={state.highFives} profiles={profiles} />);
+    expect(screen.getByText("🔥")).toBeInTheDocument();
+    expect(screen.getByText(/sent you a fire/)).toBeInTheDocument();
+  });
+
   it("float up with the sender's name and fade out of state", () => {
     let state = roomReducer(initialRoomViewState, {
       type: "highFive",

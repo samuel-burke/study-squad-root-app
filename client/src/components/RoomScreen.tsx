@@ -1,5 +1,5 @@
 import type { MyStatusDto, RoomStateDto } from "@studyroom/core";
-import { useState, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import type { Profile } from "../api/gateway";
 import { phasePill } from "../lib/view";
 import { BossCard, MobileBoss } from "./BossCard";
@@ -115,26 +115,10 @@ export function RoomScreen(props: RoomScreenProps) {
   const { room, me, profiles, now, busy, compact } = props;
   const inSession = me.status !== "idle";
   const breakKey = myBreakKey(room, me.userId, now);
-  // How many high-fives you sent each teammate this break. A new break starts it fresh.
-  const [sent, setSent] = useState<{ key: string | null; counts: ReadonlyMap<string, number> }>({
-    key: null,
-    counts: new Map(),
-  });
-  const sentCounts = sent.key === breakKey ? sent.counts : new Map<string, number>();
   const highFive = breakKey
     ? {
-        sent: sentCounts,
         busy,
-        onSend: (userId: string, emoji: string) => {
-          void props.onHighFive(userId, emoji).then((ok) => {
-            if (!ok) return;
-            setSent((prev) => {
-              const counts = new Map(prev.key === breakKey ? prev.counts : []);
-              counts.set(userId, (counts.get(userId) ?? 0) + 1);
-              return { key: breakKey, counts };
-            });
-          });
-        },
+        onSend: (userId: string, emoji: string) => void props.onHighFive(userId, emoji),
       }
     : undefined;
   const challenge = (

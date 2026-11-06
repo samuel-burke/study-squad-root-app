@@ -191,9 +191,12 @@ describe("room timer sync across clients (engine + SQLite + push adapter)", () =
     await engine.joinRoomTimer("marcus");
     await advanceTo(T0 + 26 * MINUTE);
     await engine.sendHighFive("ana", "marcus", "👋");
+    await engine.sendHighFive("ana", "marcus", "🔥");
     await engine.completeBreakChallenge("marcus");
+    // Both emojis survive encoding to bytes and back.
     expect(fanOut.of("marcus", "highFive").map((m) => m.payload)).toEqual([
       { fromUserId: "ana", emoji: "👋" },
+      { fromUserId: "ana", emoji: "🔥" },
     ]);
     expect(fanOut.of("ana", "highFive")).toHaveLength(0);
     expect(fanOut.of("viewer", "highFive")).toHaveLength(0);
@@ -201,7 +204,7 @@ describe("room timer sync across clients (engine + SQLite + push adapter)", () =
     const marcusCard = (await engine.getSnapshot("viewer")).room.members.find(
       (m) => m.userId === "marcus",
     );
-    expect(marcusCard).toMatchObject({ highFives: 1, challengeDone: true });
+    expect(marcusCard).toMatchObject({ highFives: 2, challengeDone: true });
   });
 
   it("keeps each member's status private to their own devices", async () => {

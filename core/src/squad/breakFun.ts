@@ -29,12 +29,6 @@ export const BREAK_CHALLENGES: readonly BreakChallenge[] = [
   { id: "refill", text: "Refill your drink" },
 ];
 
-/**
- * High-fives one member can send the same teammate in one break. Beyond
- * this, taps do nothing, so nobody can flood a teammate's screen.
- */
-export const HIGH_FIVES_PER_TEAMMATE = 5;
-
 /** What members can send each other. */
 export const HIGH_FIVE_EMOJI = ["👋", "🔥"] as const;
 export type HighFiveEmoji = (typeof HIGH_FIVE_EMOJI)[number];

@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
   BREAK_CHALLENGES,
-  HIGH_FIVES_PER_TEAMMATE,
   pickBreakChallenge,
   breakRecapLines,
   ErrorCode,
@@ -123,16 +122,15 @@ describe("high-fives", () => {
     ]);
   });
 
-  it("allows up to 5 per teammate per break, then ignores more taps", async () => {
+  it("counts every high-five, 👋 and 🔥 alike, with no cap per teammate", async () => {
     const { engine, notifier } = await onBreakTogether();
     for (let i = 0; i < 8; i++) await engine.sendHighFive("ana", "kai", i % 2 ? "🔥" : "👋");
-    await engine.sendHighFive("kai", "ana", "👋");
+    await engine.sendHighFive("kai", "ana", "🔥");
     const room = (await engine.getSnapshot("kai")).room;
-    expect(room.members.find((m) => m.userId === "kai")?.highFives).toBe(HIGH_FIVES_PER_TEAMMATE);
+    expect(room.members.find((m) => m.userId === "kai")?.highFives).toBe(8);
     expect(room.members.find((m) => m.userId === "ana")?.highFives).toBe(1);
-    expect(notifier.highFives.filter((h) => h.toUserId === "kai")).toHaveLength(
-      HIGH_FIVES_PER_TEAMMATE,
-    );
+    const toKai = notifier.highFives.filter((h) => h.toUserId === "kai").map((h) => h.event.emoji);
+    expect(toKai).toEqual(["👋", "🔥", "👋", "🔥", "👋", "🔥", "👋", "🔥"]);
   });
 
   it("never interrupts someone focusing, and needs you on a break", async () => {

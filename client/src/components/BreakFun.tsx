@@ -93,29 +93,17 @@ export function BreakChallengeCard({
 
 /**
  * High-five buttons on a teammate's card. Shown only when you're both on a
- * break, and each sends once per break.
+ * break. Send as many as you like; the app's rate limit stops spam.
  */
 export function HighFiveButtons({
   name,
-  sent,
   busy,
-  compact,
   onSend,
 }: {
   name: string;
-  sent: boolean;
   busy: boolean;
-  /** A phone row, with room for a short word only. */
-  compact?: boolean;
   onSend(emoji: string): void;
 }) {
-  if (sent) {
-    return (
-      <span className="high-five-sent" role="status" aria-label={`High-fived ${name}`}>
-        {compact ? "Sent" : "High-fived"}
-      </span>
-    );
-  }
   return (
     <span className="high-five-buttons">
       {HIGH_FIVE_EMOJI.map((emoji) => (

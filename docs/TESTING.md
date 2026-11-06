@@ -51,9 +51,9 @@ Nothing it does touches members' data. The test row and the test job are its own
 
 **Who can open it.** Only a user in `SELF_TEST_USER_IDS`, and only in a community in `SELF_TEST_COMMUNITY_IDS` (your staging community). The server checks both on every call, using the ids Root attaches to the connection, so hiding the section isn't the only protection and a member can't fake either id. If either list is empty, nobody can open it anywhere. Runs are at least a minute apart. The ids are baked in at build time (`server/dist/build-info.json`), like the feedback relay settings:
 
-1. Open Room settings in Root as an admin of your staging community. While a list is empty, it shows "Your Root user id is … and this community's id is …". Copy both.
-2. In GitHub, add the Actions secrets `SELF_TEST_USER_IDS` and `SELF_TEST_COMMUNITY_IDS` with those ids (separate several with commas). For Docker builds, add both to `server/.env`.
-3. Ship the next version. The line with your ids goes away and the Self-test section appears, for you only, in staging only.
+1. In GitHub, add the Actions secrets `SELF_TEST_USER_IDS` (your Root user id) and `SELF_TEST_COMMUNITY_IDS` (your staging community's id). Separate several with commas. For Docker builds, add both to `server/.env`.
+2. Ship the next version. The Self-test section appears in Room settings, for you only, in staging only. The app never shows ids.
+3. If it doesn't appear, check Root's server log: opening Room settings as a listed user in a community that isn't listed logs "self-test: listed user in a community that isn't listed" with that community's id.
 
 ## Before each release: staging check
 

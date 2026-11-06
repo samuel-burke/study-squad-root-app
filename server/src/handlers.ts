@@ -65,7 +65,7 @@ export interface HandlerOptions {
   /** The in-app voice channel dropdown. Absent in tests that don't need it. */
   voicePicker?: Pick<VoiceChannelPicker, "choice" | "pick">;
   /** The owner-only self-test panel. Absent in tests that don't need it. */
-  selfTest?: Pick<SelfTest, "showIdTo" | "allowed" | "report" | "start" | "confirmPing">;
+  selfTest?: Pick<SelfTest, "listedElsewhere" | "allowed" | "report" | "start" | "confirmPing">;
 }
 
 /**
@@ -95,10 +95,16 @@ export class StudyRoomHandlers {
   }
 
   getSelfTest(userId: string, communityId: string): Promise<SelfTestMessage> {
-    return this.handle("getSelfTest", userId, "read", async () => ({
-      ...this.selfTestState(userId, communityId),
-      unconfigured: (await this.selfTest?.showIdTo(userId)) ?? false,
-    }));
+    return this.handle("getSelfTest", userId, "read", async () => {
+      if (this.selfTest?.listedElsewhere(userId, communityId)) {
+        // Only in the server log (Root's log viewer), so a wrong community id
+        // in the secret can be spotted without showing ids in the app.
+        this.logger.info("self-test: listed user in a community that isn't listed", {
+          communityId,
+        });
+      }
+      return this.selfTestState(userId, communityId);
+    });
   }
 
   runSelfTest(
@@ -146,9 +152,6 @@ export class StudyRoomHandlers {
     const report = allowed ? this.selfTest!.report() : null;
     return {
       allowed,
-      yourUserId: userId,
-      yourCommunityId: communityId,
-      unconfigured: false,
       reportJson: report ? JSON.stringify(report) : "",
     };
   }

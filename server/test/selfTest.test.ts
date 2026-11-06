@@ -170,23 +170,11 @@ describe("SelfTest", () => {
     expect(check(t, "members").status).toBe("pass");
   });
 
-  it("shows admins their ids only while a list is empty", async () => {
-    expect(await new SelfTest(deps().d).showIdTo("ana")).toBe(false);
-    const build = (users: string[], communities: string[]) =>
-      deps({
-        build: {
-          version: "1",
-          genVersion: "g",
-          selfTestUserIds: users,
-          selfTestCommunityIds: communities,
-        },
-      }).d;
-    const empty = build([], []);
-    expect(await new SelfTest(empty).showIdTo("ana")).toBe(true);
-    expect(await new SelfTest(build(["dev"], [])).showIdTo("ana")).toBe(true);
-    expect(await new SelfTest({ ...empty, isAdmin: async () => false }).showIdTo("ana")).toBe(
-      false,
-    );
+  it("spots a listed user in a community that isn't listed", () => {
+    const t = new SelfTest(deps().d);
+    expect(t.listedElsewhere("dev", "live")).toBe(true);
+    expect(t.listedElsewhere("dev", "staging")).toBe(false);
+    expect(t.listedElsewhere("ana", "live")).toBe(false);
   });
 
   it("is allowed only for a listed user in a listed community", () => {
@@ -234,9 +222,6 @@ describe("self-test handlers", () => {
     const state = await h.getSelfTest("ana", "staging");
     expect(state).toMatchObject({
       allowed: false,
-      yourUserId: "ana",
-      yourCommunityId: "staging",
-      unconfigured: false,
       reportJson: "",
     });
   });

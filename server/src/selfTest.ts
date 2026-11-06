@@ -126,18 +126,10 @@ export class SelfTest {
 
   constructor(private readonly deps: SelfTestDeps) {}
 
-  /**
-   * A list is still empty and this member is an admin, so show them their user
-   * and community ids to add. Once both lists are set, nobody sees the hint.
-   */
-  async showIdTo(userId: string): Promise<boolean> {
+  /** A listed user, but in a community that isn't listed (worth a log line). */
+  listedElsewhere(userId: string, communityId: string): boolean {
     const { selfTestUserIds, selfTestCommunityIds } = this.deps.build;
-    if (selfTestUserIds.length > 0 && selfTestCommunityIds.length > 0) return false;
-    try {
-      return await this.deps.isAdmin(userId);
-    } catch {
-      return false;
-    }
+    return selfTestUserIds.includes(userId) && !selfTestCommunityIds.includes(communityId);
   }
 
   /**

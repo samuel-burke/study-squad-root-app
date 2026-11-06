@@ -6,7 +6,16 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ## [0.3.12] - 2026-11-06
 
-No changes for players. Tighter locks on the developer self-test.
+Break challenge fixes, no cap on high-fives, and tighter locks on the developer self-test.
+
+### Changed
+
+- High-fives have no per-teammate cap any more: every 👋 and 🔥 counts. The usual rate limit on member actions still stops spam.
+- The break challenge never repeats the one from the last break, and challenges are plain words without emojis.
+
+### Fixed
+
+- The break challenge only shows on breaks. Before, it could stay on screen into study time.
 
 ### Security
 

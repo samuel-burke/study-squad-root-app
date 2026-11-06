@@ -1,7 +1,7 @@
 {
   "name": "@studyroom/app",
   "description": "Study Squad: a group study timer for Root communities. Pomodoro focus timer, study together with friends.",
-  "version": "0.3.10",
+  "version": "0.3.11",
   "private": true,
   "license": "MIT",
   "engines": {

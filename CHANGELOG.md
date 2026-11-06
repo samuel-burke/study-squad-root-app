@@ -4,6 +4,10 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ## [Unreleased]
 
+## [0.3.11] - 2026-11-06
+
+No changes for players. Behind the scenes, much better testing against the real Root before each release.
+
 ### Testing
 
 - CI builds the real Root package on every push and starts its server against a fake Root host before anything is uploaded. It fails if any copy of the networking code in the package is stale, which is what crashed 0.3.0 and 0.3.1. Run it yourself with `npm run smoke:package`.

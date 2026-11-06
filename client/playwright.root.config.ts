@@ -31,7 +31,8 @@ export default defineConfig({
     command:
       "npm run build -w @studyroom/core -w @studyroom/contract -w @studyroom/server --prefix .. && npm run build:fakeroot && node ../scripts/fake-root-host.mjs",
     url: `http://localhost:${PORT}/__fake/state`,
-    env: { FAKE_ROOT_PORT: String(PORT) },
+    // The community owner may run the self-test panel.
+    env: { FAKE_ROOT_PORT: String(PORT), SELF_TEST_USER_IDS: "u-owner" },
     reuseExistingServer: false,
     timeout: 180_000,
     stdout: "pipe",

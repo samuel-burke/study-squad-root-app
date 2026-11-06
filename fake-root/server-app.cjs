@@ -69,7 +69,17 @@ function defaultConfig() {
       { userId: "u-eli", nickname: "Eli", roleIds: [] },
       { userId: "u-fay", nickname: "Fay", roleIds: [] },
     ],
-    roles: [{ id: EVERYONE_ROLE, name: "everyone", permissions: {} }],
+    roles: [
+      {
+        id: EVERYONE_ROLE,
+        name: "everyone",
+        communityPermission: {
+          communityManageApps: false,
+          communityFullControl: false,
+          communityManageCommunity: false,
+        },
+      },
+    ],
     channelGroups: [{ id: "g-main", name: "Main" }],
     channels: [
       { id: "ch-general", name: "general", channelType: ChannelType.Text, groupId: "g-main" },

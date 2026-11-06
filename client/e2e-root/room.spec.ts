@@ -95,6 +95,42 @@ test("closing the app takes a member out of the room count", async ({ browser, r
   await owner.close();
 });
 
+test("the self-test panel opens only for the developer, and every check passes", async ({
+  browser,
+}) => {
+  const ana = await openAs(browser, "u-ana");
+  await ana.page.getByRole("button", { name: "Room settings" }).click();
+  await expect(ana.page.getByRole("heading", { name: "Room settings" })).toBeVisible();
+  await expect(ana.page.getByRole("region", { name: "Self-test" })).toHaveCount(0);
+
+  const owner = await openAs(browser, "u-owner");
+  await owner.page.getByRole("button", { name: "Room settings" }).click();
+  const panel = owner.page.getByRole("region", { name: "Self-test" });
+  await panel.getByRole("checkbox", { name: /test post/ }).check();
+  await panel.getByRole("button", { name: "Run self-test" }).click();
+  const results = panel.getByRole("list", { name: "Self-test results" });
+  await expect(results.getByRole("listitem")).toHaveCount(8);
+  // The ping comes back from this screen on its own.
+  await expect(
+    results.getByRole("listitem", { name: "Push to your screen only: pass" }),
+  ).toBeVisible();
+  for (const name of [
+    "Versions match",
+    "Settings arrive in the shapes we expect",
+    "Database",
+    "Channels",
+    "Members and presence",
+    "What your app sees of Root",
+  ]) {
+    await expect(results.getByRole("listitem", { name: `${name}: pass` })).toBeVisible();
+  }
+  await expect(results.getByRole("listitem", { name: "Job scheduler: pending" })).toBeVisible();
+
+  await ana.close();
+  await expectNoErrors(owner);
+  await owner.close();
+});
+
 // From here on the tests move Root's clock forward, so they come last.
 
 const HOUR = 3_600_000;
@@ -159,4 +195,21 @@ test("the daily recap posts when Root runs its job, and the job finishes", async
         (await state(request)).jobs.find((j) => j.tag === "daily-recap" && !j.done)?.start,
     )
     .toBe(recap!.start + 24 * HOUR);
+});
+
+test("the self-test's job check finishes when Root runs the job", async ({ browser, request }) => {
+  const owner = await openAs(browser, "u-owner");
+  await owner.page.getByRole("button", { name: "Room settings" }).click();
+  const panel = owner.page.getByRole("region", { name: "Self-test" });
+  await panel.getByRole("button", { name: /^(Run self-test|Run again)$/ }).click();
+  const results = panel.getByRole("list", { name: "Self-test results" });
+  await expect(results.getByRole("listitem", { name: "Job scheduler: pending" })).toBeVisible();
+
+  await advanceClock(request, 31_000);
+  await runJobs(request);
+  await expect(results.getByRole("listitem", { name: "Job scheduler: pass" })).toBeVisible();
+  await expect(panel).toContainText("all 8 passed");
+
+  await expectNoErrors(owner);
+  await owner.close();
 });

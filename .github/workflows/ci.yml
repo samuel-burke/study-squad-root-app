@@ -160,6 +160,8 @@ jobs:
         env:
           FEEDBACK_RELAY_URL: ${{ secrets.FEEDBACK_RELAY_URL }}
           FEEDBACK_RELAY_KEY: ${{ secrets.FEEDBACK_RELAY_KEY }}
+          # Optional: who may open the self-test panel (see docs/TESTING.md).
+          SELF_TEST_USER_IDS: ${{ secrets.SELF_TEST_USER_IDS }}
         # A clean generate: stale networking/gen output once crashed the app on Root.
         run: |
           rm -rf networking/gen

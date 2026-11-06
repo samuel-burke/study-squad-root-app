@@ -39,8 +39,12 @@ import type {
   SetVoiceChannelRequest,
   StartSoloRequest,
   VoiceChannelChoice,
+  SelfTest as SelfTestMessage,
+  RunSelfTestRequest,
+  ConfirmSelfTestPingRequest,
 } from "@studyroom/gen-shared";
 import type { VoiceChannelPicker } from "./adapters/voiceChannelPicker";
+import type { ClientInfo, SelfTest } from "./selfTest";
 
 /** An error that is safe to show the caller. */
 export class RequestFailure extends Error {
@@ -60,6 +64,8 @@ export interface HandlerOptions {
   now?: () => number;
   /** The in-app voice channel dropdown. Absent in tests that don't need it. */
   voicePicker?: Pick<VoiceChannelPicker, "choice" | "pick">;
+  /** The owner-only self-test panel. Absent in tests that don't need it. */
+  selfTest?: Pick<SelfTest, "showIdTo" | "allowed" | "report" | "start" | "confirmPing">;
 }
 
 /**
@@ -72,6 +78,7 @@ export class StudyRoomHandlers {
   private readonly writes: RateLimiter;
   private readonly reads: RateLimiter;
   private readonly voicePicker: HandlerOptions["voicePicker"];
+  private readonly selfTest: HandlerOptions["selfTest"];
 
   constructor(
     private readonly engine: StudyRoomEngine,
@@ -84,6 +91,57 @@ export class StudyRoomHandlers {
     this.writes = new RateLimiter(write.capacity, write.perSecond, now);
     this.reads = new RateLimiter(read.capacity, read.perSecond, now);
     this.voicePicker = options.voicePicker;
+    this.selfTest = options.selfTest;
+  }
+
+  getSelfTest(userId: string): Promise<SelfTestMessage> {
+    return this.handle("getSelfTest", userId, "read", async () => ({
+      ...this.selfTestState(userId),
+      unconfigured: (await this.selfTest?.showIdTo(userId)) ?? false,
+    }));
+  }
+
+  runSelfTest(userId: string, request: RunSelfTestRequest): Promise<SelfTestMessage> {
+    return this.handle("runSelfTest", userId, "write", async () => {
+      const selfTest = this.allowedSelfTest(userId);
+      let client: ClientInfo;
+      try {
+        client = request.clientJson ? (JSON.parse(request.clientJson) as ClientInfo) : {};
+      } catch {
+        client = {};
+      }
+      await selfTest.start(userId, { testPost: request.testPost, client });
+      return this.selfTestState(userId);
+    });
+  }
+
+  confirmSelfTestPing(
+    userId: string,
+    request: ConfirmSelfTestPingRequest,
+  ): Promise<SelfTestMessage> {
+    return this.handle("confirmSelfTestPing", userId, "read", async () => {
+      this.allowedSelfTest(userId).confirmPing(userId, request.nonce);
+      return this.selfTestState(userId);
+    });
+  }
+
+  private allowedSelfTest(userId: string) {
+    // Checked on every call: hiding the button is not the protection.
+    if (!this.selfTest?.allowed(userId)) {
+      throw new DomainError(ErrorCode.Forbidden, "The self-test is only for the app's developer.");
+    }
+    return this.selfTest;
+  }
+
+  private selfTestState(userId: string): SelfTestMessage {
+    const allowed = this.selfTest?.allowed(userId) ?? false;
+    const report = allowed ? this.selfTest!.report() : null;
+    return {
+      allowed,
+      yourUserId: userId,
+      unconfigured: false,
+      reportJson: report ? JSON.stringify(report) : "",
+    };
   }
 
   getVoiceChannels(userId: string): Promise<VoiceChannelChoice> {

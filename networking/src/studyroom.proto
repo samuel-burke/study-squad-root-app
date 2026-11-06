@@ -461,6 +461,40 @@ message VoiceChannelChoice {
   string status = 4;
 }
 
+// ---------------------------------------------------------------- self-test
+
+// The owner-only self-test panel. The report travels as JSON so new checks
+// don't need a wire change (see server/src/selfTest.ts).
+message GetSelfTestRequest {}
+
+message RunSelfTestRequest {
+  // Also post a test message in the bot messages channel.
+  bool test_post = 1;
+  // What the client saw of Root (versions, current user, theme), as JSON.
+  string client_json = 2;
+}
+
+message ConfirmSelfTestPingRequest {
+  string nonce = 1;
+}
+
+message SelfTest {
+  // The caller may run the self-test (their Root user id is on the build's list).
+  bool allowed = 1;
+  // The caller's own Root user id, to put on that list.
+  string your_user_id = 2;
+  // No user ids are on the list yet and the caller is an admin: show them
+  // their id to add. Only set by GetSelfTest.
+  bool unconfigured = 3;
+  // The latest report as JSON, or empty before the first run. Only when allowed.
+  string report_json = 4;
+}
+
+// Sent only to the member running the self-test, who answers with ConfirmSelfTestPing.
+message SelfTestPingEvent {
+  string nonce = 1;
+}
+
 // ---------------------------------------------------------------- service
 
 service StudyRoomService {
@@ -489,6 +523,9 @@ service StudyRoomService {
   rpc SetVoiceChannel(SetVoiceChannelRequest) returns (VoiceChannelChoice);
   rpc CompleteBreakChallenge(CompleteBreakChallengeRequest) returns (RoomSnapshot);
   rpc SendHighFive(SendHighFiveRequest) returns (RoomSnapshot);
+  rpc GetSelfTest(GetSelfTestRequest) returns (SelfTest);
+  rpc RunSelfTest(RunSelfTestRequest) returns (SelfTest);
+  rpc ConfirmSelfTestPing(ConfirmSelfTestPingRequest) returns (SelfTest);
 
   // Server-to-client pushes.
   rpc BroadcastRoomUpdated(RoomUpdatedEvent) returns (rootsdk.Void);
@@ -497,4 +534,5 @@ service StudyRoomService {
   rpc BroadcastMyStatus(MyStatusEvent) returns (rootsdk.Void);
   rpc BroadcastBadgesEarned(BadgesEarnedEvent) returns (rootsdk.Void);
   rpc BroadcastHighFive(HighFiveEvent) returns (rootsdk.Void);
+  rpc BroadcastSelfTestPing(SelfTestPingEvent) returns (rootsdk.Void);
 }

@@ -81,6 +81,10 @@ message MemberCard {
   string card_style = 9;
   // Place on this week's leaderboard. 0 when unranked or hidden from it.
   int32 weekly_rank = 10;
+  // On a break and has done this break's challenge.
+  bool challenge_done = 11;
+  // High-fives received this break. 0 when not on a break.
+  int32 high_fives = 12;
 }
 
 message Boss {
@@ -369,6 +373,16 @@ message DeleteMyDataRequest {}
 // into the next cycle. A tap at any other time changes nothing.
 message KeepGoingRequest {}
 
+// Marks this break's challenge done. Only works on a break, and gives no XP.
+message CompleteBreakChallengeRequest {}
+
+// High-fives another member. Both must be on a break; one per pair per break.
+message SendHighFiveRequest {
+  string to_user_id = 1;
+  // "👋" or "🔥".
+  string emoji = 2;
+}
+
 // ---------------------------------------------------------------- broadcasts
 
 message RoomUpdatedEvent {
@@ -412,6 +426,12 @@ message MyStatusEvent {
 
 message BadgesEarnedEvent {
   repeated string badge_ids = 1;
+}
+
+// Sent only to the member who was high-fived.
+message HighFiveEvent {
+  string from_user_id = 1;
+  string emoji = 2;
 }
 
 // ---------------------------------------------------------------- voice channel picker
@@ -467,6 +487,8 @@ service StudyRoomService {
   rpc SendFeedback(SendFeedbackRequest) returns (FeedbackSent);
   rpc GetVoiceChannels(GetVoiceChannelsRequest) returns (VoiceChannelChoice);
   rpc SetVoiceChannel(SetVoiceChannelRequest) returns (VoiceChannelChoice);
+  rpc CompleteBreakChallenge(CompleteBreakChallengeRequest) returns (RoomSnapshot);
+  rpc SendHighFive(SendHighFiveRequest) returns (RoomSnapshot);
 
   // Server-to-client pushes.
   rpc BroadcastRoomUpdated(RoomUpdatedEvent) returns (rootsdk.Void);
@@ -474,4 +496,5 @@ service StudyRoomService {
   rpc BroadcastPersonalResult(PersonalResultEvent) returns (rootsdk.Void);
   rpc BroadcastMyStatus(MyStatusEvent) returns (rootsdk.Void);
   rpc BroadcastBadgesEarned(BadgesEarnedEvent) returns (rootsdk.Void);
+  rpc BroadcastHighFive(HighFiveEvent) returns (rootsdk.Void);
 }

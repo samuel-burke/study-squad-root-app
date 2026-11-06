@@ -1,6 +1,7 @@
 import { BUSY_POST_COOLDOWN_MS, GAME, LIMITS, MINUTE_MS } from "../constants";
 import type {
   BossDto,
+  BreakRecapDto,
   CardLookDto,
   GoalDto,
   LeaderboardDto,
@@ -71,6 +72,7 @@ import {
 } from "../timer/roomCycle";
 import { squadHeading } from "../posts";
 import { SECRET_BADGE_NAME, type SquadEvent } from "../squad/squadLines";
+import { breakChallengeFor, isHighFiveEmoji, roomBreakKey, soloBreakKey } from "../squad/breakFun";
 import { pickSquadLine, type LastSquadLines } from "../squad/squadVoice";
 import {
   validateFeedbackText,
@@ -141,6 +143,31 @@ const SQUAD_JOIN_COOLDOWN_MS = 2 * 60 * MINUTE_MS;
 const SQUAD_STALE_MS = 2 * MINUTE_MS;
 /** How long to wait before retrying a wake-up whose tick failed. */
 const TICK_RETRY_MS = 30_000;
+/** Break logs are forgotten this long after their break ends. */
+const BREAK_LOG_TTL_MS = 30 * MINUTE_MS;
+
+/**
+ * What happened on one break: who did the challenge, and who high-fived whom.
+ * Kept in memory only. Nothing here is worth a database row, and a restart
+ * mid-break just starts the tally again.
+ */
+interface BreakLog {
+  endsAt: number;
+  /** Room breaks get a recap in the squad bot's next post. */
+  room: boolean;
+  recapped: boolean;
+  challengeDone: Set<string>;
+  /** Recipient to the members who high-fived them. One high-five per pair per break. */
+  highFives: Map<string, Set<string>>;
+}
+
+/** The break a member is on right now. */
+interface CurrentBreak {
+  key: string;
+  endsAt: number;
+  room: boolean;
+}
+
 /** Notes sent per delivery pass, so a long backlog can't hold the server up. */
 const FEEDBACK_BATCH = 20;
 
@@ -155,6 +182,19 @@ class Effects {
   readonly statusChanged = new Set<string>();
   /** Badges earned during the operation, per member, pushed once it commits. */
   readonly badges = new Map<string, string[]>();
+}
+
+/** Badge names for a post, secret ones hidden: "Night Owl, Squad Up and a secret badge". */
+function badgeNames(badgeIds: readonly string[]): string {
+  const names = [
+    ...new Set(
+      badgeIds.map((id) => {
+        const badge = badgeById(id);
+        return !badge || badge.secret ? SECRET_BADGE_NAME : badge.name;
+      }),
+    ),
+  ];
+  return names.length > 1 ? `${names.slice(0, -1).join(", ")} and ${names.at(-1)}` : names[0]!;
 }
 
 /** `me` with the badges its member earned in this operation, if any. */
@@ -201,6 +241,7 @@ export class StudyRoomEngine {
   private readonly pendingPosts = new Set<Promise<void>>();
   private readonly present = new Set<string>();
   private readonly inVoice = new Set<string>();
+  private readonly breaks = new Map<string, BreakLog>();
   private config: AppConfig;
   private stopped = false;
   private feedbackPass: Promise<void> | null = null;
@@ -621,6 +662,113 @@ export class StudyRoomEngine {
     });
   }
 
+  // ---------------------------------------------------------------- break fun
+
+  /**
+   * Marks this break's challenge done. Only on a break, once per break, and
+   * it never gives XP. Returns a fresh snapshot so the tick shows at once.
+   */
+  completeBreakChallenge(userId: string): Promise<SnapshotDto> {
+    return this.run(async (tx, now, effects) => {
+      const current = await this.currentBreak(tx, userId, now);
+      if (!current) throw conflictError("The break challenge is only open on a break.");
+      const log = this.breakLog(current, now);
+      if (!log.challengeDone.has(userId)) {
+        log.challengeDone.add(userId);
+        effects.roomChanged = true;
+      }
+      return this.snapshot(tx, userId, now);
+    });
+  }
+
+  /**
+   * Sends a high-five from one member on a break to another member on a
+   * break. Each pair gets one per break, so tapping again does nothing.
+   * Members who are focusing can't get one, so nobody is interrupted.
+   */
+  async sendHighFive(userId: string, toInput: unknown, emojiInput: unknown): Promise<SnapshotDto> {
+    const to = validateId(toInput, "member");
+    if (!isHighFiveEmoji(emojiInput)) throw validationError("Pick 👋 or 🔥.");
+    const emoji = emojiInput;
+    if (to === userId) throw validationError("High-five someone else.");
+    return this.run(async (tx, now, effects) => {
+      if (!(await this.currentBreak(tx, userId, now))) {
+        throw conflictError("High-fives are for breaks. Finish your focus first.");
+      }
+      const theirs = await this.currentBreak(tx, to, now);
+      if (!theirs) throw conflictError("They're focusing right now. Try on their next break.");
+      const log = this.breakLog(theirs, now);
+      const from = log.highFives.get(to) ?? new Set<string>();
+      if (!from.has(userId)) {
+        from.add(userId);
+        log.highFives.set(to, from);
+        effects.roomChanged = true;
+        effects.notifications.push((n) => n.highFive(to, { fromUserId: userId, emoji }));
+      }
+      return this.snapshot(tx, userId, now);
+    });
+  }
+
+  private async currentBreak(tx: Store, userId: string, now: number): Promise<CurrentBreak | null> {
+    if ((await tx.room.listParticipants()).some((p) => p.userId === userId)) {
+      const cycle = await tx.room.getCycle();
+      const phase = cycle
+        ? phaseAt(buildCycle(cycle.cycleStartedAt, cycle.preset), now)
+        : undefined;
+      if (!phase || phase.kind === "focus") return null;
+      return { key: roomBreakKey(phase.startsAt), endsAt: phase.endsAt, room: true };
+    }
+    const solo = await tx.solos.get(userId);
+    if (!solo || solo.phase === "focus") return null;
+    return { key: soloBreakKey(userId, solo.breakEndsAt), endsAt: solo.breakEndsAt, room: false };
+  }
+
+  /** The log for a break, made on first use. Old logs are dropped on the way. */
+  private breakLog(current: CurrentBreak, now: number): BreakLog {
+    for (const [key, log] of this.breaks) {
+      if (now - log.endsAt > BREAK_LOG_TTL_MS) this.breaks.delete(key);
+    }
+    let log = this.breaks.get(current.key);
+    if (!log) {
+      log = {
+        endsAt: current.endsAt,
+        room: current.room,
+        recapped: false,
+        challengeDone: new Set(),
+        highFives: new Map(),
+      };
+      this.breaks.set(current.key, log);
+    }
+    return log;
+  }
+
+  /**
+   * The room break that just ended, summed up for the squad bot, once. Null
+   * when nobody did the challenge or high-fived anyone.
+   */
+  private takeBreakRecap(now: number): BreakRecapDto | undefined {
+    let found: [string, BreakLog] | undefined;
+    for (const entry of this.breaks) {
+      const [, log] = entry;
+      if (!log.room || log.recapped || log.endsAt > now) continue;
+      log.recapped = true;
+      if (!found || log.endsAt > found[1].endsAt) found = entry;
+    }
+    if (!found) return undefined;
+    const [key, log] = found;
+    const highFives = [...log.highFives]
+      .map(([userId, from]) => ({ userId, count: from.size }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 3);
+    if (log.challengeDone.size === 0 && highFives.length === 0) return undefined;
+    const challenge = breakChallengeFor(key);
+    return {
+      challenge: `${challenge.emoji} ${challenge.text}`,
+      challengeDone: log.challengeDone.size,
+      highFives,
+    };
+  }
+
   // ---------------------------------------------------------------- goals
 
   async addGoal(userId: string, textInput: unknown): Promise<MyStatusDto> {
@@ -750,6 +898,11 @@ export class StudyRoomEngine {
       if (participants.length === 1 && participants[0]!.userId === userId)
         await tx.room.saveCycle(null);
       await tx.eraseUser(userId);
+      for (const log of this.breaks.values()) {
+        log.challengeDone.delete(userId);
+        log.highFives.delete(userId);
+        for (const from of log.highFives.values()) from.delete(userId);
+      }
       this.touch(effects, userId);
       this.deps.logger.info("member data erased", { userId });
       return this.buildMyStatus(tx, userId, now);
@@ -801,8 +954,8 @@ export class StudyRoomEngine {
         }
         for (const [userId, badgeIds] of effects.badges) {
           effects.notifications.push((n) => n.badgesEarned(userId, badgeIds));
-          await this.announceBadges(tx, effects, userId, badgeIds, now);
         }
+        await this.announceBadges(tx, effects, now);
         attachNewBadges(result, effects);
         return { result, nextWake: await this.nextWakeAt(tx, now) };
       });
@@ -1005,7 +1158,8 @@ export class StudyRoomEngine {
           ? "sessionCompleted"
           : "studyResumed";
     const userIds = (await tx.room.listParticipants()).map((p) => p.userId);
-    await this.squadMessage(tx, effects, event, userIds, phase.round, now);
+    const recap = event === "studyResumed" ? this.takeBreakRecap(now) : undefined;
+    await this.squadMessage(tx, effects, event, userIds, phase.round, now, undefined, recap);
   }
 
   /**
@@ -1020,6 +1174,7 @@ export class StudyRoomEngine {
     round: number,
     now: number,
     badge?: string,
+    recap?: BreakRecapDto,
   ): Promise<void> {
     const channelId = this.config.postChannelId;
     if (!this.config.squadBot.enabled || !channelId || userIds.length === 0) return;
@@ -1038,29 +1193,28 @@ export class StudyRoomEngine {
     const heading = squadHeading(event, round, rounds);
     const mention = this.config.squadBot.mentions;
     effects.posts.push((a) =>
-      a.squadMessage(channelId, event, line.text, userIds, heading, mention),
+      a.squadMessage(channelId, event, line.text, userIds, heading, mention, recap),
     );
   }
 
-  /** The squad bot congratulates a member on badges they just earned, in one post. */
-  private async announceBadges(
-    tx: Store,
-    effects: Effects,
-    userId: string,
-    badgeIds: readonly string[],
-    now: number,
-  ): Promise<void> {
-    const names = [
-      ...new Set(
-        badgeIds.map((id) => {
-          const badge = badgeById(id);
-          return !badge || badge.secret ? SECRET_BADGE_NAME : badge.name;
-        }),
-      ),
-    ];
-    const badge =
-      names.length > 1 ? `${names.slice(0, -1).join(", ")} and ${names.at(-1)}` : names[0];
-    await this.squadMessage(tx, effects, "badgeUnlocked", [userId], 0, now, badge);
+  /**
+   * The squad bot congratulates members on badges they just earned. One
+   * member gets a post of their own; several at once (say, a full room at the
+   * end of a round) share one roundup post, so the channel isn't flooded.
+   */
+  private async announceBadges(tx: Store, effects: Effects, now: number): Promise<void> {
+    const entries = [...effects.badges]
+      .filter(([, badgeIds]) => badgeIds.length > 0)
+      .map(([userId, badgeIds]) => ({ userId, badges: badgeNames(badgeIds) }));
+    if (entries.length === 1) {
+      const { userId, badges } = entries[0]!;
+      await this.squadMessage(tx, effects, "badgeUnlocked", [userId], 0, now, badges);
+      return;
+    }
+    const channelId = this.config.postChannelId;
+    if (entries.length === 0 || !this.config.squadBot.enabled || !channelId) return;
+    const mention = this.config.squadBot.mentions;
+    effects.posts.push((a) => a.badgeRoundup(channelId, entries, mention));
   }
 
   /**
@@ -1728,10 +1882,13 @@ export class StudyRoomEngine {
       ]),
     );
 
+    const roomBreak =
+      phase && phase.kind !== "focus" ? this.breaks.get(roomBreakKey(phase.startsAt)) : undefined;
     const card = (
       userId: string,
       status: MemberCardDto["status"],
       endsAt: number,
+      breakLog?: BreakLog,
     ): MemberCardDto => {
       const member = members.get(userId);
       const isPrivate = this.goalsArePrivate(member);
@@ -1746,17 +1903,29 @@ export class StudyRoomEngine {
         badges: looks.get(userId)?.showcase ?? [],
         cardStyle: looks.get(userId)?.style ?? "classic",
         weeklyRank: ranks.get(userId) ?? 0,
+        challengeDone: breakLog?.challengeDone.has(userId) ?? false,
+        highFives: breakLog?.highFives.get(userId)?.size ?? 0,
       };
     };
 
     const cards = [
       ...participants.map((p: ParticipantRecord) =>
-        card(p.userId, phase?.kind === "focus" ? "roomFocus" : "roomBreak", phase?.endsAt ?? now),
+        card(
+          p.userId,
+          phase?.kind === "focus" ? "roomFocus" : "roomBreak",
+          phase?.endsAt ?? now,
+          roomBreak,
+        ),
       ),
       ...solos.map((s) =>
         s.phase === "focus"
           ? card(s.userId, "soloFocus", s.endsAt)
-          : card(s.userId, "soloBreak", s.breakEndsAt),
+          : card(
+              s.userId,
+              "soloBreak",
+              s.breakEndsAt,
+              this.breaks.get(soloBreakKey(s.userId, s.breakEndsAt)),
+            ),
       ),
     ];
 

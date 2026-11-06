@@ -4,6 +4,8 @@ import type { DayKey } from "../time/calendar";
 import type { TimerPreset } from "../timer/presets";
 import type { SquadEvent } from "../squad/squadLines";
 import type {
+  BreakRecapDto,
+  HighFiveDto,
   MyStatusDto,
   PersonalResultDto,
   PhaseCompletedDto,
@@ -291,6 +293,8 @@ export interface Notifier {
   myStatusUpdated(userId: string, me: MyStatusDto): void;
   /** Sent only to the member, once per operation, with every badge it earned them. */
   badgesEarned(userId: string, badgeIds: string[]): void;
+  /** Sent only to the member who received the high-five. */
+  highFive(toUserId: string, event: HighFiveDto): void;
 }
 
 /** Posts to a Root text channel. Failures are logged, never surfaced to users. */
@@ -315,6 +319,18 @@ export interface Announcer {
     text: string,
     userIds: string[],
     heading?: string,
+    mention?: boolean,
+    /** What happened on the break that just ended, added under the line. */
+    recap?: BreakRecapDto,
+  ): Promise<void>;
+  /**
+   * One squad bot post for several members who unlocked badges in the same
+   * moment, each with their badge names already worded ("Night Owl and
+   * Squad Up"). With `mention` the people are pinged.
+   */
+  badgeRoundup(
+    channelId: string,
+    entries: readonly { userId: string; badges: string }[],
     mention?: boolean,
   ): Promise<void>;
 }

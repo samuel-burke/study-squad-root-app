@@ -34,6 +34,7 @@ import type {
   SetCardStyleRequest,
   SetGoalsPrivateRequest,
   SendFeedbackRequest,
+  SendHighFiveRequest,
   SetLeaderboardHiddenRequest,
   SetVoiceChannelRequest,
   StartSoloRequest,
@@ -245,6 +246,18 @@ export class StudyRoomHandlers {
   deleteMyData(userId: string): Promise<MyStatus> {
     return this.handle("deleteMyData", userId, "write", async () =>
       myStatusToProto(await this.engine.deleteMyData(userId)),
+    );
+  }
+
+  completeBreakChallenge(userId: string): Promise<RoomSnapshot> {
+    return this.handle("completeBreakChallenge", userId, "write", async () =>
+      snapshotToProto(await this.engine.completeBreakChallenge(userId)),
+    );
+  }
+
+  sendHighFive(userId: string, request: SendHighFiveRequest): Promise<RoomSnapshot> {
+    return this.handle("sendHighFive", userId, "write", async () =>
+      snapshotToProto(await this.engine.sendHighFive(userId, request.toUserId, request.emoji)),
     );
   }
 

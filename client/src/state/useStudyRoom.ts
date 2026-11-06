@@ -4,6 +4,9 @@ import { toGatewayError, type StartRequest, type StudyRoomGateway } from "../api
 import { initialRoomViewState, roomReducer } from "./roomState";
 
 const CELEBRATION_MS = 4_000;
+/** How long a received high-five floats on screen. */
+export const HIGH_FIVE_MS = 2_600;
+let nextHighFiveId = 1;
 
 export interface StudyRoomActions {
   joinRoomTimer(request: StartRequest): Promise<boolean>;
@@ -19,6 +22,8 @@ export interface StudyRoomActions {
   setGoalsPrivate(goalsPrivate: boolean): Promise<boolean>;
   deleteMyData(): Promise<boolean>;
   keepGoing(): Promise<boolean>;
+  completeBreakChallenge(): Promise<boolean>;
+  sendHighFive(userId: string, emoji: string): Promise<boolean>;
   reload(): Promise<void>;
   dismissBreak(): void;
   dismissBadge(): void;
@@ -44,6 +49,11 @@ export function useStudyRoom(gateway: StudyRoomGateway) {
       personalResult: (event) => dispatch({ type: "personalResult", event }),
       myStatus: (me) => dispatch({ type: "myStatus", me }),
       badgesEarned: (badgeIds) => dispatch({ type: "badgesEarned", badgeIds }),
+      highFive: (event) => {
+        const id = nextHighFiveId++;
+        dispatch({ type: "highFive", event, id });
+        setTimeout(() => dispatch({ type: "highFiveFaded", id }), HIGH_FIVE_MS);
+      },
     });
     void reload();
     return unsubscribe;
@@ -90,6 +100,8 @@ export function useStudyRoom(gateway: StudyRoomGateway) {
         return ok;
       },
       keepGoing: () => run(() => gateway.keepGoing()),
+      completeBreakChallenge: () => run(() => gateway.completeBreakChallenge()),
+      sendHighFive: (userId, emoji) => run(() => gateway.sendHighFive(userId, emoji)),
       reload,
       dismissBreak: () => dispatch({ type: "dismissBreak" }),
       dismissBadge: () => dispatch({ type: "dismissBadge" }),

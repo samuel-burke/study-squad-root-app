@@ -2,6 +2,7 @@ import { badgeById, type MemberCardDto } from "@studyroom/core";
 import type { Profile } from "../api/gateway";
 import { isFocusing, rowTime, statusChip } from "../lib/view";
 import { Avatar } from "./Avatar";
+import { BreakMarks, HighFiveButtons, onBreak } from "./BreakFun";
 import { BadgeMedal } from "./BadgeMedal";
 import { FlameIcon, LockIcon } from "./Icons";
 import { InVoiceMark } from "./VoiceButton";
@@ -16,6 +17,41 @@ interface BoardProps {
   compact?: boolean;
   /** Opens a member's profile. */
   onOpenMember?(userId: string): void;
+  /** Set while you're on a break, so you can high-five teammates on one too. */
+  highFive?: HighFiveProps;
+}
+
+export interface HighFiveProps {
+  /** Teammates you already high-fived this break. */
+  sent: ReadonlySet<string>;
+  busy: boolean;
+  onSend(userId: string, emoji: string): void;
+}
+
+/** High-five buttons for a teammate who is on a break, when you're on one too. */
+function HighFiveFor({
+  member,
+  name,
+  you,
+  highFive,
+  compact,
+}: {
+  member: MemberCardDto;
+  name: string;
+  you: boolean;
+  highFive?: HighFiveProps;
+  compact?: boolean;
+}) {
+  if (!highFive || you || !onBreak(member.status)) return null;
+  return (
+    <HighFiveButtons
+      name={name}
+      sent={highFive.sent.has(member.userId)}
+      busy={highFive.busy}
+      compact={compact}
+      onSend={(emoji) => highFive.onSend(member.userId, emoji)}
+    />
+  );
 }
 
 /** You first, then everyone else in the order they started. */
@@ -94,6 +130,7 @@ function MemberCard({
   voice,
   now,
   onOpen,
+  highFive,
 }: {
   member: MemberCardDto;
   profile?: Profile;
@@ -101,6 +138,7 @@ function MemberCard({
   voice: boolean;
   now: number;
   onOpen?(): void;
+  highFive?: HighFiveProps;
 }) {
   const chip = statusChip(member, now);
   const name = profile?.name ?? (you ? "You" : "Member");
@@ -141,6 +179,10 @@ function MemberCard({
           {chip.label}
         </div>
       </div>
+      <div className="member-break">
+        <BreakMarks member={member} />
+        <HighFiveFor member={member} name={name} you={you} highFive={highFive} />
+      </div>
     </li>
   );
 }
@@ -152,6 +194,7 @@ function MemberRow({
   voice,
   now,
   onOpen,
+  highFive,
 }: {
   member: MemberCardDto;
   profile?: Profile;
@@ -159,6 +202,7 @@ function MemberRow({
   voice: boolean;
   now: number;
   onOpen?(): void;
+  highFive?: HighFiveProps;
 }) {
   const chip = statusChip(member, now);
   const name = profile?.name ?? (you ? "You" : "Member");
@@ -178,8 +222,12 @@ function MemberRow({
           {voice && <InVoiceMark />}
           <FeaturedBadge ids={member.badges} />
         </div>
-        <div className="goal-line">{goal}</div>
+        <div className="goal-line">
+          <BreakMarks member={member} />
+          {goal}
+        </div>
       </div>
+      <HighFiveFor member={member} name={name} you={you} highFive={highFive} compact />
       <div className="time" data-tone={chip.tone}>
         {time}
       </div>
@@ -195,6 +243,7 @@ export function MemberBoard({
   now,
   compact,
   onOpenMember,
+  highFive,
 }: BoardProps) {
   const ordered = orderMembers(members, youId);
   const voice = new Set(inVoice);
@@ -215,6 +264,7 @@ export function MemberBoard({
               voice={voice.has(m.userId)}
               now={now}
               onOpen={onOpenMember && (() => onOpenMember(m.userId))}
+              highFive={highFive}
             />
           ))}
         </ul>
@@ -245,6 +295,7 @@ export function MemberBoard({
               voice={voice.has(m.userId)}
               now={now}
               onOpen={onOpenMember && (() => onOpenMember(m.userId))}
+              highFive={highFive}
             />
           ))}
         </ul>

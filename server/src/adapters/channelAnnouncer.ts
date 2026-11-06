@@ -1,4 +1,6 @@
 import {
+  badgeRoundupPost,
+  breakRecapLines,
   bossDefeatedPost,
   busyRoomPost,
   dailyRecapPost,
@@ -8,6 +10,7 @@ import {
   streakMilestonePost,
   type Announcer,
   type SquadEvent,
+  type BreakRecapDto,
   type RecapDto,
 } from "@studyroom/core";
 
@@ -74,16 +77,37 @@ export class ChannelAnnouncer implements Announcer {
     userIds: string[],
     heading?: string,
     mention = false,
+    recap?: BreakRecapDto,
   ): Promise<void> {
     // Only the people the post shows get looked up; the rest are counted.
     const mentions: string[] = [];
     for (const userId of userIds.slice(0, SQUAD_MAX_MENTIONS)) {
       mentions.push(mention ? await this.mention(userId) : await this.displayName(userId));
     }
+    // High-five names are plain text, so the recap never pings anyone.
+    const names = new Map<string, string>();
+    for (const { userId } of recap?.highFives ?? []) {
+      names.set(userId, await this.displayName(userId));
+    }
+    const recapLines = recap ? breakRecapLines(recap, names) : [];
     await this.channel.postMessage(
       channelId,
-      squadPost(event, text, mentions, userIds.length, heading),
+      squadPost(event, text, mentions, userIds.length, heading, recapLines),
     );
+  }
+
+  async badgeRoundup(
+    channelId: string,
+    entries: readonly { userId: string; badges: string }[],
+    mention = false,
+  ): Promise<void> {
+    // Only the people the post shows get looked up; the rest are counted.
+    const lines = [];
+    for (const { userId, badges } of entries.slice(0, SQUAD_MAX_MENTIONS)) {
+      const who = mention ? await this.mention(userId) : await this.displayName(userId);
+      lines.push({ who, badges });
+    }
+    await this.channel.postMessage(channelId, badgeRoundupPost(lines, entries.length));
   }
 
   /** Root's mention markup, which pings the member: [@Name](root://user/id). */

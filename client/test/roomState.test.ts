@@ -13,6 +13,7 @@ async function snapshot(): Promise<SnapshotDto> {
       personalResult() {},
       myStatusUpdated() {},
       badgesEarned() {},
+      highFive() {},
     },
     announcer: {
       async busyRoom() {},
@@ -20,6 +21,7 @@ async function snapshot(): Promise<SnapshotDto> {
       async bossDefeated() {},
       async dailyRecap() {},
       async squadMessage() {},
+      async badgeRoundup() {},
     },
     logger: console,
     config: DEFAULT_CONFIG,

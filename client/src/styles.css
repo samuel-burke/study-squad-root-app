@@ -2931,3 +2931,233 @@ textarea.input {
   color: var(--text-muted);
   white-space: nowrap;
 }
+
+/* ---------------------------------------------------------------- break fun */
+
+.break-challenge {
+  background: var(--break-surface);
+  border: 1px solid var(--break-border);
+  border-radius: var(--radius-lg);
+  padding: 14px 16px;
+  margin-bottom: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  animation: card-in 0.3s ease;
+}
+
+.break-challenge-eyebrow {
+  color: var(--teal-text);
+}
+
+.break-challenge-body {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.break-challenge-emoji {
+  font-size: 30px;
+  line-height: 1;
+  flex: none;
+}
+
+.break-challenge-text {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.break-challenge .btn {
+  flex: none;
+  min-width: 88px;
+}
+
+.break-challenge-done {
+  flex: none;
+  min-width: 88px;
+  text-align: center;
+  font-weight: 700;
+  color: var(--teal-text);
+  background: var(--teal-bg);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+}
+
+.break-challenge-foot {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 12px;
+  font-size: 13px;
+  color: var(--break-muted);
+}
+
+.break-challenge-foot:empty {
+  display: none;
+}
+
+.break-marks {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.break-mark {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--teal-text);
+  background: var(--teal-bg);
+  border-radius: var(--radius-sm);
+  padding: 2px 6px;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Above the card's open-profile cover, so tapping them sends instead of opening the profile. */
+.high-five-buttons,
+.high-five-sent {
+  position: relative;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  flex: none;
+}
+
+.high-five-btn {
+  width: 36px;
+  height: 36px;
+  min-height: 0;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid var(--break-border-strong);
+  background: var(--break-surface);
+  font-size: 17px;
+  line-height: 1;
+  display: inline-grid;
+  place-items: center;
+  transition: transform 0.12s ease;
+}
+
+.high-five-btn:hover:not(:disabled) {
+  transform: scale(1.1);
+}
+
+.high-five-btn:active:not(:disabled) {
+  transform: scale(0.92);
+}
+
+.high-five-sent {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--teal-text);
+}
+
+.member-row .high-five-buttons,
+.member-row .high-five-sent {
+  margin-left: 0;
+}
+
+.high-five-floats {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 46;
+  overflow: hidden;
+}
+
+.high-five-float {
+  position: absolute;
+  bottom: 12%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  transform: translateX(-50%);
+  animation: high-five-up 2.6s ease-out forwards;
+}
+
+.high-five-float-emoji {
+  font-size: 56px;
+  line-height: 1;
+}
+
+.high-five-float-name {
+  font-size: 13px;
+  font-weight: 700;
+  background: var(--surface);
+  border: 1px solid var(--break-border);
+  border-radius: 999px;
+  padding: 3px 10px;
+  box-shadow: var(--shadow-pop);
+  white-space: nowrap;
+}
+
+@keyframes high-five-up {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 30px) scale(0.6);
+  }
+  15% {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1.1);
+  }
+  25% {
+    transform: translate(-50%, -20px) scale(1);
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -260px) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .high-five-float {
+    animation: high-five-fade 2.6s ease forwards;
+  }
+}
+
+@keyframes high-five-fade {
+  0%,
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* A card's break row: the challenge tick, high-fives received, and buttons to send one. */
+.member-break {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+}
+
+.member-break:empty {
+  display: none;
+}
+
+/* Phones: line up with the other full-width strips, and keep rows on one line. */
+.app > .break-challenge {
+  margin: 0 16px 12px;
+}
+
+.member-row .break-marks {
+  margin-right: 6px;
+  vertical-align: 1px;
+}
+
+.member-row .high-five-btn {
+  width: 32px;
+  height: 32px;
+  font-size: 15px;
+}

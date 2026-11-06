@@ -5,6 +5,8 @@ import {
   type Announcer,
   type AppConfig,
   type EngineDeps,
+  type BreakRecapDto,
+  type HighFiveDto,
   type MyStatusDto,
   type Notifier,
   type PersonalResultDto,
@@ -54,6 +56,7 @@ export class RecordingNotifier implements Notifier {
   personal: { userId: string; event: PersonalResultDto }[] = [];
   statuses: { userId: string; me: MyStatusDto }[] = [];
   badges: { userId: string; badgeIds: string[] }[] = [];
+  highFives: { toUserId: string; event: HighFiveDto }[] = [];
   roomUpdated(room: RoomStateDto) {
     this.rooms.push(room);
   }
@@ -68,6 +71,9 @@ export class RecordingNotifier implements Notifier {
   }
   badgesEarned(userId: string, badgeIds: string[]) {
     this.badges.push({ userId, badgeIds });
+  }
+  highFive(toUserId: string, event: HighFiveDto) {
+    this.highFives.push({ toUserId, event });
   }
   /** Every badge pushed to a member so far. */
   badgesFor(userId: string) {
@@ -97,6 +103,13 @@ export class RecordingAnnouncer implements Announcer {
   async dailyRecap(channelId: string, recap: RecapDto) {
     this.posts.push({ kind: "recap", channelId, detail: recap });
   }
+  async badgeRoundup(
+    channelId: string,
+    entries: readonly { userId: string; badges: string }[],
+    mention?: boolean,
+  ) {
+    this.posts.push({ kind: "badgeRoundup", channelId, detail: { entries, mention } });
+  }
   async squadMessage(
     channelId: string,
     event: SquadEvent,
@@ -104,11 +117,12 @@ export class RecordingAnnouncer implements Announcer {
     userIds: string[],
     heading?: string,
     mention?: boolean,
+    recap?: BreakRecapDto,
   ) {
     this.posts.push({
       kind: "squad",
       channelId,
-      detail: { event, text, userIds, heading, mention },
+      detail: { event, text, userIds, heading, mention, ...(recap ? { recap } : {}) },
     });
   }
 }

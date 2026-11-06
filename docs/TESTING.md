@@ -47,6 +47,17 @@ Useful combinations:
 - The boss: strength and HP for built-in names, a defeat with loot and badges, and The Final Final Exam
 - Streaks: extending across a real day change, the freeze, and a broken streak with Comeback and Phoenix
 
+The first run needs a browser: `cd client && npx playwright install --only-shell chromium`. It is saved in Playwright's cache folder, so later runs reuse it. In CI the browser is cached between runs and only downloaded again when `@playwright/test` is bumped.
+
+To run the tests in Docker (for example on a Mac), use Playwright's own image, which already has the browser, so nothing is downloaded:
+
+```sh
+docker run --rm -it --platform linux/amd64 --ipc=host -v "$PWD":/app -w /app mcr.microsoft.com/playwright:v1.63.0-noble \
+  bash -c "set -e; npm ci; npm run generate; npm run test:e2e"
+```
+
+Keep the image tag in step with the `@playwright/test` version in `client/package.json`. Afterwards, rerun `npm ci && npm run generate` natively before testing on the Mac, since the container installs Linux packages.
+
 Still manual, in a Root test community:
 
 - Sound: that each tier's fanfare plays and that mute silences it (browsers in tests have no speakers)

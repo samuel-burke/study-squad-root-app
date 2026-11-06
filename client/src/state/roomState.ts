@@ -1,4 +1,5 @@
 import type {
+  HighFiveDto,
   MyStatusDto,
   PersonalResultDto,
   PhaseCompletedDto,
@@ -12,6 +13,11 @@ export interface Celebration {
   combo: number;
   /** Local time it started, so it can fade out on its own. */
   startedAt: number;
+}
+
+export interface ReceivedHighFive extends HighFiveDto {
+  /** Local id, so each one floats and fades on its own. */
+  id: number;
 }
 
 export interface RoomViewState {
@@ -30,6 +36,8 @@ export interface RoomViewState {
    * its unlock moment should play once.
    */
   shownBadges: string[];
+  /** High-fives you just received, floating up on screen until they fade. */
+  highFives: ReceivedHighFive[];
   error: string | null;
   /** Number of requests in flight. Buttons disable while > 0. */
   pending: number;
@@ -43,9 +51,13 @@ export const initialRoomViewState: RoomViewState = {
   celebration: null,
   newBadges: [],
   shownBadges: [],
+  highFives: [],
   error: null,
   pending: 0,
 };
+
+/** High-fives on screen at once. */
+const MAX_HIGH_FIVES = 4;
 
 /** Queues badges for their unlock moment, skipping any already queued or shown. */
 function queueBadges(state: RoomViewState, badgeIds: readonly string[] | undefined): RoomViewState {
@@ -67,6 +79,8 @@ export type RoomAction =
   | { type: "personalResult"; event: PersonalResultDto }
   | { type: "badgesEarned"; badgeIds: string[] }
   | { type: "dismissBadge" }
+  | { type: "highFive"; event: HighFiveDto; id: number }
+  | { type: "highFiveFaded"; id: number }
   /** After "Delete my data", every badge can be earned (and shown) again. */
   | { type: "badgesReset" }
   | { type: "requestStarted" }
@@ -127,6 +141,14 @@ export function roomReducer(state: RoomViewState, action: RoomAction): RoomViewS
       return queueBadges(state, action.badgeIds);
     case "badgesReset":
       return { ...state, newBadges: [], shownBadges: [] };
+    case "highFive":
+      // A few at once is plenty; the oldest makes way.
+      return {
+        ...state,
+        highFives: [...state.highFives, { ...action.event, id: action.id }].slice(-MAX_HIGH_FIVES),
+      };
+    case "highFiveFaded":
+      return { ...state, highFives: state.highFives.filter((h) => h.id !== action.id) };
     case "dismissBadge":
       return { ...state, newBadges: state.newBadges.slice(1) };
     case "requestStarted":

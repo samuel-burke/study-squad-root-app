@@ -58,8 +58,26 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run generate
-      - name: Install Chromium
-        run: npx playwright install --with-deps chromium
+      # The browser download is cached by Playwright version, so it only
+      # happens again when @playwright/test is bumped. Only the headless shell
+      # is installed: the tests never open a headed browser, and it is a much
+      # smaller download than full Chromium.
+      - name: Read Playwright version
+        id: playwright
+        run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
+      - name: Cache Playwright browser
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}-headless-shell
+      - name: Install Chromium headless shell
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps --only-shell chromium
+        working-directory: client
+      - name: Install Chromium system libraries
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium-headless-shell
         working-directory: client
       - run: npm run test:e2e
       - name: Upload Playwright report

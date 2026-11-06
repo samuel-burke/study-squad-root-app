@@ -8,6 +8,7 @@ import { StudyRoomEngine } from "@studyroom/core";
 import type { Knex } from "knex";
 import {
   BadgesEarnedEvent,
+  HighFiveEvent,
   MyStatusEvent,
   PersonalResultEvent,
   PhaseCompletedEvent,
@@ -88,6 +89,10 @@ class FanOut implements Broadcaster<FakeClient> {
     );
   }
 
+  broadcastHighFive(m: HighFiveEvent, t: BroadcastTarget<FakeClient>) {
+    this.deliver("highFive", HighFiveEvent.toBinary(m), (b) => HighFiveEvent.fromBinary(b), t);
+  }
+
   of(userId: string, type?: string) {
     return (this.inbox.get(userId) ?? []).filter((m) => !type || m.type === type);
   }
@@ -113,7 +118,12 @@ describe("room timer sync across clients (engine + SQLite + push adapter)", () =
       store: new KnexStore(db),
       clock,
       scheduler,
-      notifier: new PushNotifier(fanOut, (id) => clients.get(id)),
+      // Room pushes are bundled on the engine's (fake) clock, as on the server.
+      notifier: new PushNotifier(fanOut, (id) => clients.get(id), {
+        now: () => clock.now(),
+        setTimeout: () => null,
+        clearTimeout: () => {},
+      }),
       announcer: new RecordingAnnouncer(),
       logger: silentLogger,
       config: configWith(),
@@ -176,6 +186,24 @@ describe("room timer sync across clients (engine + SQLite + push adapter)", () =
     expect(fanOut.of("viewer", "personal")).toHaveLength(0);
   });
 
+  it("sends a high-five over the wire to the receiver only, and the count to everyone", async () => {
+    await engine.joinRoomTimer("ana");
+    await engine.joinRoomTimer("marcus");
+    await advanceTo(T0 + 26 * MINUTE);
+    await engine.sendHighFive("ana", "marcus", "👋");
+    await engine.completeBreakChallenge("marcus");
+    expect(fanOut.of("marcus", "highFive").map((m) => m.payload)).toEqual([
+      { fromUserId: "ana", emoji: "👋" },
+    ]);
+    expect(fanOut.of("ana", "highFive")).toHaveLength(0);
+    expect(fanOut.of("viewer", "highFive")).toHaveLength(0);
+    // Room pushes are bundled, so read the room fresh.
+    const marcusCard = (await engine.getSnapshot("viewer")).room.members.find(
+      (m) => m.userId === "marcus",
+    );
+    expect(marcusCard).toMatchObject({ highFives: 1, challengeDone: true });
+  });
+
   it("keeps each member's status private to their own devices", async () => {
     await engine.joinRoomTimer("ana");
     await engine.idle();
@@ -218,6 +246,10 @@ describe("room timer sync across clients (engine + SQLite + push adapter)", () =
     restarted.stop();
     expect(
       announcer.posts.map((p) => {
+        if (p.kind === "badgeRoundup") {
+          const { entries } = p.detail as { entries: { userId: string }[] };
+          return `badgeRoundup ${entries.map((e) => e.userId).join(",")}`;
+        }
         const { event, userIds } = p.detail as { event: string; userIds: string[] };
         return `${event} ${userIds.join(",")}`;
       }),
@@ -225,8 +257,7 @@ describe("room timer sync across clients (engine + SQLite + push adapter)", () =
       "sessionStarted ana",
       "memberJoined marcus",
       "breakStarted ana,marcus",
-      "badgeUnlocked ana",
-      "badgeUnlocked marcus",
+      "badgeRoundup ana,marcus",
       "studyResumed ana,marcus",
     ]);
   });

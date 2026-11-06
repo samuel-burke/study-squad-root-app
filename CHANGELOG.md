@@ -4,6 +4,25 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ## [Unreleased]
 
+## [0.3.12] - 2026-11-06
+
+Break challenge fixes, no cap on high-fives, and tighter locks on the developer self-test.
+
+### Changed
+
+- High-fives have no per-teammate cap any more: every 👋 and 🔥 counts. The usual rate limit on member actions still stops spam.
+- The break challenge never repeats the one from the last break, and challenges are plain words without emojis.
+
+### Fixed
+
+- The break challenge only shows on breaks. Before, it could stay on screen into study time.
+
+### Security
+
+- Room settings no longer shows anyone their Root user id. The self-test still opens only for the user ids in `SELF_TEST_USER_IDS`, in any community.
+- Self-test runs are at least a minute apart.
+- The fake Root host used by the tests only listens on your own machine, since its test controls have no login.
+
 ## [0.3.11] - 2026-11-06
 
 No changes for players. Behind the scenes, much better testing against the real Root before each release.

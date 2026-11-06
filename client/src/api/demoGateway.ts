@@ -297,7 +297,7 @@ export class DemoGateway implements StudyRoomGateway {
         },
         highFive: (toUserId: string, event: HighFiveDto) => {
           if (toUserId === DEMO_USER_ID) this.emit((h) => h.highFive(event));
-          else if (event.fromUserId === DEMO_USER_ID) this.highFiveBack(toUserId);
+          else if (event.fromUserId === DEMO_USER_ID) this.highFiveBack(toUserId, event.emoji);
         },
       },
       announcer: {
@@ -522,10 +522,10 @@ export class DemoGateway implements StudyRoomGateway {
     }
   }
 
-  /** A bot you high-fived sends one back. */
-  private highFiveBack(botId: string) {
+  /** A bot you high-fived sends the same one back. */
+  private highFiveBack(botId: string, emoji = "👋") {
     setTimeout(
-      () => this.engine.sendHighFive(botId, DEMO_USER_ID, "👋").catch(() => undefined),
+      () => this.engine.sendHighFive(botId, DEMO_USER_ID, emoji).catch(() => undefined),
       1_200,
     );
   }

@@ -6,30 +6,27 @@
 
 export interface BreakChallenge {
   id: string;
-  emoji: string;
   text: string;
 }
 
 /** Short, screen-free things to do in a 5 minute break. */
 export const BREAK_CHALLENGES: readonly BreakChallenge[] = [
-  { id: "water", emoji: "💧", text: "Drink a glass of water" },
-  { id: "stretch", emoji: "🧍", text: "Stand up and stretch for 30 seconds" },
-  { id: "window", emoji: "🪟", text: "Look out a window at something far away for 20 seconds" },
-  { id: "breaths", emoji: "🌬️", text: "Take five slow, deep breaths" },
-  { id: "walk", emoji: "🚶", text: "Walk around the room once" },
-  { id: "shoulders", emoji: "🙆", text: "Roll your shoulders back 10 times" },
-  { id: "eyes", emoji: "😌", text: "Close your eyes and rest them for 30 seconds" },
-  { id: "tidy", emoji: "🧹", text: "Tidy one thing on your desk" },
-  { id: "snack", emoji: "🍎", text: "Grab a healthy snack" },
-  { id: "jacks", emoji: "🤸", text: "Do 10 jumping jacks" },
-  { id: "hands", emoji: "✋", text: "Shake out your hands and wrists" },
-  { id: "air", emoji: "🌿", text: "Open a window or step outside for fresh air" },
-  { id: "kind", emoji: "💬", text: "Send someone a kind message" },
-  { id: "toes", emoji: "🦶", text: "Touch your toes, or try to" },
-  { id: "posture", emoji: "🪑", text: "Fix your posture: feet flat, shoulders back" },
-  { id: "learned", emoji: "📝", text: "Write down one thing you just learned" },
-  { id: "squats", emoji: "💪", text: "Do 5 squats" },
-  { id: "refill", emoji: "🫖", text: "Refill your drink" },
+  { id: "water", text: "Drink a glass of water" },
+  { id: "stretch", text: "Stand up and stretch for 30 seconds" },
+  { id: "window", text: "Look out a window at something far away for 20 seconds" },
+  { id: "breaths", text: "Take five slow, deep breaths" },
+  { id: "walk", text: "Walk around the room once" },
+  { id: "shoulders", text: "Roll your shoulders back 10 times" },
+  { id: "eyes", text: "Close your eyes and rest them for 30 seconds" },
+  { id: "tidy", text: "Tidy one thing on your desk" },
+  { id: "snack", text: "Grab a healthy snack" },
+  { id: "jacks", text: "Do 10 jumping jacks" },
+  { id: "hands", text: "Shake out your hands and wrists" },
+  { id: "air", text: "Open a window or step outside for fresh air" },
+  { id: "toes", text: "Touch your toes, or try to" },
+  { id: "posture", text: "Fix your posture: feet flat, shoulders back" },
+  { id: "squats", text: "Do 5 squats" },
+  { id: "refill", text: "Refill your drink" },
 ];
 
 /** What members can send each other. */
@@ -50,15 +47,19 @@ export function soloBreakKey(userId: string, breakEndsAt: number): string {
   return `solo:${userId}:${breakEndsAt}`;
 }
 
+/** A challenge by id, if it's still in the list. */
+export function breakChallengeById(id: string): BreakChallenge | undefined {
+  return BREAK_CHALLENGES.find((c) => c.id === id);
+}
+
 /**
- * The challenge for a break. It's worked out from the break's key, so the
- * server and every device agree on it without sending it anywhere.
+ * Picks a challenge at random, never the one the last break had, so the same
+ * challenge never comes up twice in a row.
  */
-export function breakChallengeFor(key: string): BreakChallenge {
-  let hash = 2166136261;
-  for (let i = 0; i < key.length; i++) {
-    hash ^= key.charCodeAt(i);
-    hash = Math.imul(hash, 16777619);
-  }
-  return BREAK_CHALLENGES[(hash >>> 0) % BREAK_CHALLENGES.length]!;
+export function pickBreakChallenge(
+  lastId: string | undefined,
+  random: () => number,
+): BreakChallenge {
+  const choices = BREAK_CHALLENGES.filter((c) => c.id !== lastId);
+  return choices[Math.min(choices.length - 1, Math.floor(random() * choices.length))]!;
 }

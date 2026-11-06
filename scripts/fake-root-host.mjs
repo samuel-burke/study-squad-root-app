@@ -3,7 +3,7 @@
 // hand. Each run starts on a fresh database.
 //
 //   npm run build && npm run build:fakeroot -w @studyroom/client
-//   node scripts/fake-root-host.mjs            # http://localhost:4174/?user=u-ana
+//   node scripts/fake-root-host.mjs            # http://127.0.0.1:4174/?user=u-ana
 //
 // FAKE_ROOT_PORT changes the port. Members are u-owner, u-ana, u-ben, u-cy.
 import { spawn } from "node:child_process";

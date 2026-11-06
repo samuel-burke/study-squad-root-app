@@ -121,6 +121,7 @@ describe("opening a profile from the board", () => {
     badges: [],
     cardStyle: "classic",
     weeklyRank: 0,
+    challenge: "",
     challengeDone: false,
     highFives: 0,
   });

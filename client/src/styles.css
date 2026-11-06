@@ -2956,12 +2956,6 @@ textarea.input {
   gap: 12px;
 }
 
-.break-challenge-emoji {
-  font-size: 30px;
-  line-height: 1;
-  flex: none;
-}
-
 .break-challenge-text {
   flex: 1;
   min-width: 0;
@@ -3017,8 +3011,7 @@ textarea.input {
 }
 
 /* Above the card's open-profile cover, so tapping them sends instead of opening the profile. */
-.high-five-buttons,
-.high-five-sent {
+.high-five-buttons {
   position: relative;
   z-index: 2;
   display: inline-flex;
@@ -3051,18 +3044,8 @@ textarea.input {
   transform: scale(0.92);
 }
 
-.high-five-sent {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--teal-text);
-}
-
 .member-row .high-five-buttons,
-.member-row .high-five-sent {
-  margin-left: 0;
-}
-
-.high-five-floats {
+.member-row .high-five-floats {
   position: fixed;
   inset: 0;
   pointer-events: none;

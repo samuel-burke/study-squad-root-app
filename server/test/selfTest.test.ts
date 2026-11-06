@@ -146,13 +146,14 @@ describe("SelfTest", () => {
 
   it("sends a test post only when asked, to the bot channel", async () => {
     const post = vi.fn(async () => {});
-    const { d } = deps({
+    const { d, tick } = deps({
       post,
       config: () => ({ ...DEFAULT_CONFIG, postChannelId: "t", postChannelName: "general" }),
     });
     const t = new SelfTest(d);
     await t.start("dev", { testPost: false, client: { userId: "dev" } });
     expect(post).not.toHaveBeenCalled();
+    tick(60_000);
     await t.start("dev", { testPost: true, client: { userId: "dev" } });
     expect(post).toHaveBeenCalledWith("t", expect.stringContaining("only a test"));
   });
@@ -168,13 +169,26 @@ describe("SelfTest", () => {
     expect(check(t, "members").status).toBe("pass");
   });
 
-  it("shows admins their id only while nobody is on the list", async () => {
-    expect(await new SelfTest(deps().d).showIdTo("ana")).toBe(false);
-    const empty = deps({ build: { version: "1", genVersion: "g", selfTestUserIds: [] } }).d;
-    expect(await new SelfTest(empty).showIdTo("ana")).toBe(true);
-    expect(await new SelfTest({ ...empty, isAdmin: async () => false }).showIdTo("ana")).toBe(
-      false,
+  it("is allowed only for a listed user", () => {
+    const t = new SelfTest(deps().d);
+    expect(t.allowed("dev")).toBe(true);
+    expect(t.allowed("ana")).toBe(false);
+    const nobody = new SelfTest(
+      deps({ build: { version: "1", genVersion: "g", selfTestUserIds: [] } }).d,
     );
+    expect(nobody.allowed("dev")).toBe(false);
+  });
+
+  it("makes you wait a minute between runs", async () => {
+    const { d, tick } = deps();
+    const t = new SelfTest(d);
+    await t.start("dev", { testPost: false, client: { userId: "dev" } });
+    tick(30_000);
+    await expect(
+      t.start("dev", { testPost: false, client: { userId: "dev" } }),
+    ).rejects.toMatchObject({ code: 1004, message: expect.stringContaining("30s") });
+    tick(30_000);
+    await t.start("dev", { testPost: false, client: { userId: "dev" } });
   });
 });
 
@@ -184,9 +198,7 @@ describe("self-test handlers", () => {
   it("refuses everyone not on the list, on every call", async () => {
     const h = new StudyRoomHandlers(engine, quiet, { selfTest: new SelfTest(deps().d) });
     await expect(h.runSelfTest("ana", { testPost: false, clientJson: "{}" })).rejects.toMatchObject(
-      {
-        code: 1005,
-      },
+      { code: 1005 },
     );
     await expect(h.confirmSelfTestPing("ana", { nonce: "x" })).rejects.toMatchObject({
       code: 1005,
@@ -194,15 +206,16 @@ describe("self-test handlers", () => {
     const state = await h.getSelfTest("ana");
     expect(state).toMatchObject({
       allowed: false,
-      yourUserId: "ana",
-      unconfigured: false,
       reportJson: "",
     });
   });
 
   it("runs for the developer and returns the report as JSON", async () => {
     const h = new StudyRoomHandlers(engine, quiet, { selfTest: new SelfTest(deps().d) });
-    const state = await h.runSelfTest("dev", { testPost: false, clientJson: "not json" });
+    const state = await h.runSelfTest("dev", {
+      testPost: false,
+      clientJson: "not json",
+    });
     expect(state.allowed).toBe(true);
     const report = JSON.parse(state.reportJson);
     expect(report.app.version).toBe("1.2.3");

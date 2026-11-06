@@ -1,7 +1,7 @@
 import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
-import { breakChallengeFor, roomBreakKey, type MemberCardDto } from "@studyroom/core";
+import type { MemberCardDto } from "@studyroom/core";
 import { createHarness, MINUTE } from "../../core/test/helpers";
 import { BreakChallengeCard, HighFiveFloats } from "../src/components/BreakFun";
 import { MemberBoard } from "../src/components/MemberBoard";
@@ -18,6 +18,7 @@ const card = (userId: string, overrides: Partial<MemberCardDto> = {}): MemberCar
   badges: [],
   cardStyle: "classic",
   weeklyRank: 0,
+  challenge: "",
   challengeDone: false,
   highFives: 0,
   ...overrides,
@@ -43,9 +44,12 @@ describe("BreakChallengeCard", () => {
     await engine.completeBreakChallenge("kai");
     const { room, me } = await engine.getSnapshot("me");
     const onDone = vi.fn();
-    render(<BreakChallengeCard room={room} me={me} busy={false} onDone={onDone} />);
-    const challenge = breakChallengeFor(roomBreakKey(room.timer.phaseStartedAt));
-    expect(screen.getByText(challenge.text)).toBeInTheDocument();
+    render(
+      <BreakChallengeCard room={room} me={me} now={room.serverNow} busy={false} onDone={onDone} />,
+    );
+    const challenge = room.members.find((m) => m.userId === "me")!.challenge;
+    expect(challenge).not.toBe("");
+    expect(screen.getByText(challenge)).toBeInTheDocument();
     expect(screen.getByText("1 of 2 done")).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Done" }));
     expect(onDone).toHaveBeenCalledTimes(1);
@@ -55,13 +59,46 @@ describe("BreakChallengeCard", () => {
     const engine = await roomOnBreak();
     const { room, me } = await engine.completeBreakChallenge("me");
     const { rerender } = render(
-      <BreakChallengeCard room={room} me={me} busy={false} onDone={vi.fn()} />,
+      <BreakChallengeCard room={room} me={me} now={room.serverNow} busy={false} onDone={vi.fn()} />,
     );
     expect(screen.getByRole("status")).toHaveTextContent("✓ Done");
     rerender(
       <BreakChallengeCard
-        room={room}
-        me={{ ...me, status: "roomFocus" }}
+        room={{ ...room, timer: { ...room.timer, phase: "focus" } }}
+        me={me}
+        now={room.serverNow}
+        busy={false}
+        onDone={vi.fn()}
+      />,
+    );
+    expect(screen.queryByLabelText("Break challenge")).not.toBeInTheDocument();
+  });
+
+  it("goes away when study starts, even if your own status hasn't caught up", async () => {
+    const { engine, advance } = createHarness();
+    await engine.joinRoomTimer("me");
+    await advance(26 * MINUTE);
+    const onBreak = await engine.getSnapshot("me");
+    await advance(5 * MINUTE);
+    const studying = await engine.getSnapshot("me");
+    expect(studying.room.timer.phase).toBe("focus");
+    // Your status still says break (its push is late), but the board says focus.
+    const { rerender } = render(
+      <BreakChallengeCard
+        room={studying.room}
+        me={onBreak.me}
+        now={studying.room.serverNow}
+        busy={false}
+        onDone={vi.fn()}
+      />,
+    );
+    expect(screen.queryByLabelText("Break challenge")).not.toBeInTheDocument();
+    // Nor does it outlast the break while the room push is on its way.
+    rerender(
+      <BreakChallengeCard
+        room={onBreak.room}
+        me={onBreak.me}
+        now={onBreak.room.timer.phaseEndsAt}
         busy={false}
         onDone={vi.fn()}
       />,
@@ -82,7 +119,7 @@ describe("high-fives on the board", () => {
         now={0}
         compact={compact}
         onOpenMember={onOpen}
-        highFive={{ sent: new Set(), busy: false, onSend }}
+        highFive={{ busy: false, onSend }}
       />,
     );
     // Only on Kai's card, never your own.
@@ -94,32 +131,47 @@ describe("high-fives on the board", () => {
     expect(onOpen).not.toHaveBeenCalled();
   });
 
-  it("hides the buttons for someone focusing or already high-fived", () => {
+  it("keeps the buttons after sending, and hides them for someone focusing", async () => {
+    const onSend = vi.fn();
     const { rerender } = render(
-      <MemberBoard
-        members={[card("me"), card("kai", { status: "soloFocus" })]}
-        profiles={profiles}
-        youId="me"
-        now={0}
-        highFive={{ sent: new Set(), busy: false, onSend: vi.fn() }}
-      />,
-    );
-    expect(screen.queryByRole("button", { name: /high-five/ })).not.toBeInTheDocument();
-    rerender(
       <MemberBoard
         members={[card("me"), card("kai")]}
         profiles={profiles}
         youId="me"
         now={0}
-        highFive={{ sent: new Set(["kai"]), busy: false, onSend: vi.fn() }}
+        highFive={{ busy: false, onSend }}
       />,
     );
-    expect(screen.queryByRole("button", { name: /high-five/ })).not.toBeInTheDocument();
-    expect(screen.getByText("High-fived")).toBeInTheDocument();
+    // No cap: tap as often as you like.
+    for (let i = 0; i < 7; i++) {
+      await userEvent.click(screen.getByRole("button", { name: "Send Kai a high-five" }));
+    }
+    expect(onSend).toHaveBeenCalledTimes(7);
+    rerender(
+      <MemberBoard
+        members={[card("me"), card("kai", { status: "soloFocus" })]}
+        profiles={profiles}
+        youId="me"
+        now={0}
+        highFive={{ busy: false, onSend }}
+      />,
+    );
+    expect(screen.queryByRole("button", { name: /^Send Kai/ })).not.toBeInTheDocument();
   });
 });
 
 describe("received high-fives", () => {
+  it("shows a fire as a fire", () => {
+    const state = roomReducer(initialRoomViewState, {
+      type: "highFive",
+      event: { fromUserId: "kai", emoji: "🔥" },
+      id: 1,
+    });
+    render(<HighFiveFloats highFives={state.highFives} profiles={profiles} />);
+    expect(screen.getByText("🔥")).toBeInTheDocument();
+    expect(screen.getByText(/sent you a fire/)).toBeInTheDocument();
+  });
+
   it("float up with the sender's name and fade out of state", () => {
     let state = roomReducer(initialRoomViewState, {
       type: "highFive",

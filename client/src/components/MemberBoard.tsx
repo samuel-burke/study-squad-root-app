@@ -22,8 +22,6 @@ interface BoardProps {
 }
 
 export interface HighFiveProps {
-  /** Teammates you already high-fived this break. */
-  sent: ReadonlySet<string>;
   busy: boolean;
   onSend(userId: string, emoji: string): void;
 }
@@ -34,21 +32,17 @@ function HighFiveFor({
   name,
   you,
   highFive,
-  compact,
 }: {
   member: MemberCardDto;
   name: string;
   you: boolean;
   highFive?: HighFiveProps;
-  compact?: boolean;
 }) {
   if (!highFive || you || !onBreak(member.status)) return null;
   return (
     <HighFiveButtons
       name={name}
-      sent={highFive.sent.has(member.userId)}
       busy={highFive.busy}
-      compact={compact}
       onSend={(emoji) => highFive.onSend(member.userId, emoji)}
     />
   );
@@ -227,7 +221,7 @@ function MemberRow({
           {goal}
         </div>
       </div>
-      <HighFiveFor member={member} name={name} you={you} highFive={highFive} compact />
+      <HighFiveFor member={member} name={name} you={you} highFive={highFive} />
       <div className="time" data-tone={chip.tone}>
         {time}
       </div>

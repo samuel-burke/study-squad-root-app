@@ -65,7 +65,7 @@ export interface HandlerOptions {
   /** The in-app voice channel dropdown. Absent in tests that don't need it. */
   voicePicker?: Pick<VoiceChannelPicker, "choice" | "pick">;
   /** The owner-only self-test panel. Absent in tests that don't need it. */
-  selfTest?: Pick<SelfTest, "showIdTo" | "allowed" | "report" | "start" | "confirmPing">;
+  selfTest?: Pick<SelfTest, "allowed" | "report" | "start" | "confirmPing">;
 }
 
 /**
@@ -95,10 +95,7 @@ export class StudyRoomHandlers {
   }
 
   getSelfTest(userId: string): Promise<SelfTestMessage> {
-    return this.handle("getSelfTest", userId, "read", async () => ({
-      ...this.selfTestState(userId),
-      unconfigured: (await this.selfTest?.showIdTo(userId)) ?? false,
-    }));
+    return this.handle("getSelfTest", userId, "read", async () => this.selfTestState(userId));
   }
 
   runSelfTest(userId: string, request: RunSelfTestRequest): Promise<SelfTestMessage> {
@@ -138,8 +135,6 @@ export class StudyRoomHandlers {
     const report = allowed ? this.selfTest!.report() : null;
     return {
       allowed,
-      yourUserId: userId,
-      unconfigured: false,
       reportJson: report ? JSON.stringify(report) : "",
     };
   }

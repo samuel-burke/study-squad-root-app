@@ -3,22 +3,12 @@
 // picks up, so every build ships the same stale version for @studyroom/gen-*. Root's host
 // can then keep serving an old copy of the generated code. A content hash changes exactly
 // when the wire format does. Run with --check to fail when package-lock.json is out of date.
-import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
+import { protoVersion } from "./proto-version.mjs";
 
-const protoDir = "networking/src";
 const genPackages = ["client", "server", "shared"].map((name) => `networking/gen/${name}`);
-
-const hash = createHash("sha256");
-for (const file of fs
-  .readdirSync(protoDir)
-  .filter((f) => f.endsWith(".proto"))
-  .sort()) {
-  hash.update(file);
-  hash.update(fs.readFileSync(path.join(protoDir, file)));
-}
-const version = `1.0.0-proto.${hash.digest("hex").slice(0, 12)}`;
+const version = protoVersion();
 
 const lockPath = "package-lock.json";
 const lock = JSON.parse(fs.readFileSync(lockPath, "utf8"));

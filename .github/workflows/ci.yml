@@ -88,9 +88,33 @@ jobs:
           path: client/playwright-report/
           retention-days: 14
 
+  package:
+    name: Package boots like on Root
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      # The same clean build the deploy job uploads.
+      - name: Build
+        run: |
+          rm -rf networking/gen
+          npm run generate
+          npm run build
+      - name: Package
+        run: npx rootsdk build package --output-file ./rootapp.pkg --project-folder .
+      # Checks the networking versions inside the package and starts its server
+      # against the fake Root host (fake-root/). See docs/TESTING.md.
+      - name: Smoke check the package
+        run: npm run smoke:package
+
   deploy:
     name: Deploy to Root
-    needs: [verify, e2e]
+    needs: [verify, e2e, package]
     # Only main ships. Run it again by hand from the Actions tab if an upload failed.
     if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
@@ -138,6 +162,9 @@ jobs:
       - name: Package
         if: steps.check.outputs.upload == 'true'
         run: npx rootsdk build package --output-file ./rootapp.pkg --project-folder .
+      - name: Smoke check the package
+        if: steps.check.outputs.upload == 'true'
+        run: npm run smoke:package
       - name: Upload to Root
         if: steps.check.outputs.upload == 'true'
         run: npx rootsdk upload package --file ./rootapp.pkg --authToken "$ROOT_AUTH_TOKEN"

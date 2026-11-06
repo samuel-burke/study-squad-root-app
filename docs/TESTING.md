@@ -58,6 +58,23 @@ docker run --rm -it --platform linux/amd64 --ipc=host -v "$PWD":/app -w /app mcr
 
 Keep the image tag in step with the `@playwright/test` version in `client/package.json`. Afterwards, rerun `npm ci && npm run generate` natively before testing on the Mac, since the container installs Linux packages.
 
+### The package Root runs
+
+`npm run smoke:package` checks `rootapp.pkg` the way Root will see it, before upload. CI builds a package and runs it on every push, and the deploy job runs it again just before uploading. It fails when:
+
+- the package's version isn't the one in `root-manifest.json`, or the client bundle is missing
+- any copy of the generated networking code in the package doesn't carry the version of the current `.proto` files (the stale copy that crashed 0.3.0 and 0.3.1)
+- the packaged server, using only the package's own files, doesn't start, doesn't answer the read-only requests in protobuf, or doesn't start again on the same database
+
+The server runs against a fake Root host in `fake-root/`, which copies the ways the real SDK has surprised us: number settings arrive as `{ value: n }`, job times arrive as numbers, a job whose handler throws fires again, and `clients.getClient` finds no one. The package leaves out `sqlite3` because Root's host supplies it, so the repo's copy stands in.
+
+To run it on a Mac, add it to the end of the Docker build:
+
+```sh
+rm -f rootapp.pkg && rm -rf networking/gen && docker run --rm -it --platform linux/amd64 -v "$PWD":/app -w /app node:22 \
+  bash -c "set -e; npm ci; npm run generate; npm run build; npx rootsdk build package --output-file ./rootapp.pkg --project-folder .; npm run smoke:package"
+```
+
 Still manual, in a Root test community:
 
 - Sound: that each tier's fanfare plays and that mute silences it (browsers in tests have no speakers)

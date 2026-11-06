@@ -10,7 +10,7 @@ import type { ChannelInfo } from "./wiring";
  * own row, and the job check its own tag.
  */
 
-export type CheckStatus = "pass" | "warn" | "fail" | "pending";
+export type CheckStatus = "pass" | "warn" | "fail" | "pending" | "skip";
 
 export interface Check {
   id: string;
@@ -79,6 +79,8 @@ const JOB_DELAY_MS = 30_000;
 /** Root checks for due jobs about once a minute, so allow a few. */
 const JOB_TIMEOUT_MS = 4 * 60_000;
 const PING_TIMEOUT_MS = 20_000;
+/** How long `!smoke` waits for the ping before its first summary. */
+const CHAT_PING_WAIT_MS = 3_000;
 /** Each run can make a test post and books a job, so runs are spaced out. */
 export const RUN_COOLDOWN_MS = 60_000;
 
@@ -117,6 +119,15 @@ interface Run {
   pingSentAt: number;
   jobTag: string;
   jobDueAt: number;
+  /** Started with !smoke: the channel to post the final summary in, until posted. */
+  chatChannelId?: string;
+}
+
+/** The chat command that runs the smoke test (developer only). */
+export const SMOKE_COMMAND = "!smoke";
+
+export function isSmokeCommand(content: string | undefined): boolean {
+  return (content ?? "").trim().toLowerCase() === SMOKE_COMMAND;
 }
 
 export class SelfTest {
@@ -159,7 +170,11 @@ export class SelfTest {
     return report;
   }
 
-  async start(userId: string, options: { testPost: boolean; client: ClientInfo }): Promise<void> {
+  async start(
+    userId: string,
+    options: { testPost: boolean; client: ClientInfo; fromChat?: boolean },
+  ): Promise<void> {
+    const chat = options.fromChat ?? false;
     const now = this.deps.now();
     if (this.run && now - this.run.startedAt < RUN_COOLDOWN_MS) {
       const wait = Math.ceil((RUN_COOLDOWN_MS - (now - this.run.startedAt)) / 1000);
@@ -187,14 +202,17 @@ export class SelfTest {
       ["versions", "Versions match", async () => this.versions(options.client)],
       ["settings", "Settings arrive in the shapes we expect", async () => this.settings()],
       ["database", "Database", () => this.database()],
-      ["push", "Push to your screen only", async () => this.push(run)],
+      ["push", "Push to your screen only", async () => this.push(run, chat)],
       ["jobs", "Job scheduler", () => this.scheduleJob(run)],
       ["channels", "Channels", () => this.channelsCheck(options.testPost)],
-      ["members", "Members and presence", () => this.members(userId)],
+      ["members", "Members and presence", () => this.members(userId, chat)],
       [
         "client",
         "What your app sees of Root",
-        async () => this.clientCheck(userId, options.client),
+        async () =>
+          chat
+            ? { status: "skip", detail: "Started from chat, so there's no app to ask." }
+            : this.clientCheck(userId, options.client),
       ],
     ];
     for (const [id, title, work] of checks) {
@@ -209,6 +227,58 @@ export class SelfTest {
       run.report.checks.push({ id, title, ...result });
     }
     this.deps.logger.info("self-test started", { userId });
+  }
+
+  /**
+   * `!smoke` in a channel, from a listed user (the caller checks). Runs the
+   * checks that don't need the app open, replies in that channel, and posts
+   * the final result once the job check is done. Never throws.
+   */
+  async runFromChat(userId: string, channelId: string): Promise<void> {
+    const post = (text: string) =>
+      this.deps
+        .post(channelId, text)
+        .catch((error: unknown) =>
+          this.deps.logger.warn("self-test chat post failed", { error: String(error) }),
+        );
+    try {
+      await this.start(userId, { testPost: false, client: {}, fromChat: true });
+    } catch (error) {
+      await post(
+        error instanceof DomainError ? `🧪 ${error.message}` : "🧪 The smoke test couldn't start.",
+      );
+      return;
+    }
+    const run = this.run;
+    if (!run) return;
+    // With the app open, the ping comes back in well under a second.
+    for (let waited = 0; waited < CHAT_PING_WAIT_MS && this.pending("push"); waited += 100)
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    if (this.run !== run) return;
+    const report = this.report()!;
+    await post(chatSummary(report));
+    if (report.done) return;
+    run.chatChannelId = channelId;
+    // Pending checks time out when the report is read, so read it once they would have.
+    const timer = setTimeout(() => {
+      this.report();
+      void this.finishChat();
+    }, JOB_TIMEOUT_MS + 5_000);
+    timer.unref?.();
+  }
+
+  /** Posts the final summary of a chat-started run, once nothing is pending. */
+  private async finishChat(): Promise<void> {
+    const run = this.run;
+    if (!run?.chatChannelId || !run.report.checks.every((c) => c.status !== "pending")) return;
+    const channelId = run.chatChannelId;
+    run.chatChannelId = undefined;
+    run.report.done = true;
+    await this.deps
+      .post(channelId, chatSummary(run.report))
+      .catch((error: unknown) =>
+        this.deps.logger.warn("self-test chat post failed", { error: String(error) }),
+      );
   }
 
   /** The caller's client got the ping. */
@@ -258,10 +328,15 @@ export class SelfTest {
     }
   }
 
+  private pending(id: string): boolean {
+    return this.run?.report.checks.find((c) => c.id === id)?.status === "pending";
+  }
+
   private update(id: string, change: (c: Check) => Check): void {
     const checks = this.run?.report.checks;
     const i = checks?.findIndex((c) => c.id === id) ?? -1;
     if (checks && i >= 0) checks[i] = change(checks[i]!);
+    void this.finishChat();
   }
 
   // ---------------------------------------------------------------- checks
@@ -334,12 +409,14 @@ export class SelfTest {
     };
   }
 
-  private push(run: Run): Omit<Check, "id" | "title"> {
+  private push(run: Run, chat: boolean): Omit<Check, "id" | "title"> {
     run.pingSentAt = this.deps.now();
     const found = this.deps.ping(run.userId, run.pingNonce);
     const getClient = this.deps.getClientFinds(run.userId)
       ? "clients.getClient now finds you, so the SDK bug may be fixed."
       : "clients.getClient still finds no one (the SDK bug), so pushes keep searching getClients().";
+    if (!found && chat)
+      return { status: "skip", detail: `Your app isn't open, so no push was sent. ${getClient}` };
     if (!found)
       return {
         status: "fail",
@@ -386,7 +463,7 @@ export class SelfTest {
     };
   }
 
-  private async members(userId: string): Promise<Omit<Check, "id" | "title">> {
+  private async members(userId: string, chat: boolean): Promise<Omit<Check, "id" | "title">> {
     const attached = this.deps.attachedUserIds();
     const [nickname, admin] = await Promise.all([
       this.deps.nickname(userId),
@@ -394,7 +471,7 @@ export class SelfTest {
     ]);
     const you = attached.includes(userId);
     return {
-      status: you ? "pass" : "fail",
+      status: you || chat ? "pass" : "fail",
       detail: `${attached.length} member(s) have the app open${you ? ", you included" : ", but not you"}. You're ${nickname}${admin ? ", an admin" : ", not an admin"}.`,
       raw: { attached: attached.length, admin },
     };
@@ -414,4 +491,25 @@ export class SelfTest {
       },
     };
   }
+}
+
+/** One chat line: "🧪 Smoke test on 0.3.13: 6 passed, 1 skipped. Still waiting on: Job scheduler." */
+export function chatSummary(report: SelfTestReport): string {
+  const by = (status: CheckStatus) => report.checks.filter((c) => c.status === status);
+  const titles = (checks: Check[]) => checks.map((c) => c.title).join(", ");
+  const parts = [`${by("pass").length} passed`];
+  if (by("fail").length) parts.push(`${by("fail").length} failed (${titles(by("fail"))})`);
+  if (by("warn").length) parts.push(`${by("warn").length} to look at (${titles(by("warn"))})`);
+  if (by("skip").length) parts.push(`${by("skip").length} skipped`);
+  const pending = by("pending");
+  const ok = by("fail").length === 0 && by("warn").length === 0;
+  const head = pending.length ? "🧪" : ok ? "✅" : "⚠️";
+  return (
+    `${head} Smoke test on ${report.app.version}: ${parts.join(", ")}.` +
+    (pending.length
+      ? ` Still waiting on: ${titles(pending)}. I'll post again when it's done.`
+      : ok
+        ? ""
+        : " Open Developer tools in the app for the details.")
+  );
 }

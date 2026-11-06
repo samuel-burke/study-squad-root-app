@@ -39,7 +39,7 @@ export interface GatewayHandlers {
 export interface SelfTestCheck {
   id: string;
   title: string;
-  status: "pass" | "warn" | "fail" | "pending";
+  status: "pass" | "warn" | "fail" | "pending" | "skip";
   detail: string;
   raw?: unknown;
 }

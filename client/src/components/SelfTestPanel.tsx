@@ -12,12 +12,14 @@ const ICON: Record<SelfTestCheck["status"], string> = {
   warn: "!",
   fail: "✗",
   pending: "…",
+  skip: "–",
 };
 const TONE: Record<SelfTestCheck["status"], string> = {
   pass: "var(--teal-text)",
   warn: "var(--amber-text)",
   fail: "var(--coral-text)",
   pending: "var(--muted, inherit)",
+  skip: "var(--muted, inherit)",
 };
 
 /**

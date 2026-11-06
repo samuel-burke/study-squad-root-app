@@ -306,6 +306,14 @@
             "checkbox": {
               "defaultValue": true
             }
+          },
+          {
+            "key": "devTestMode",
+            "title": "Developer test mode",
+            "description": "For test communities only. Lets the app's developer change XP, streaks, the boss and the clock here. Leave off.",
+            "checkbox": {
+              "defaultValue": false
+            }
           }
         ]
       }

@@ -1,7 +1,7 @@
 import { DEFAULT_CONFIG } from "@studyroom/core";
 import { describe, expect, it, vi } from "vitest";
 import { StudyRoomHandlers } from "../src/handlers";
-import { SelfTest, shapeOf, type SelfTestDeps } from "../src/selfTest";
+import { isSmokeCommand, SelfTest, shapeOf, type SelfTestDeps } from "../src/selfTest";
 
 const quiet = { info: vi.fn(), warn: vi.fn(), error: vi.fn() };
 
@@ -189,6 +189,38 @@ describe("SelfTest", () => {
     ).rejects.toMatchObject({ code: 1004, message: expect.stringContaining("30s") });
     tick(30_000);
     await t.start("dev", { testPost: false, client: { userId: "dev" } });
+  });
+});
+
+describe("smoke test from chat", () => {
+  it("replies with a summary, then again once the job ran", async () => {
+    const post = vi.fn(async () => {});
+    const { d } = deps({ post, ping: () => false, attachedUserIds: () => [] });
+    const t = new SelfTest(d);
+    await t.runFromChat("dev", "c1");
+    expect(post).toHaveBeenCalledTimes(1);
+    const [, first] = post.mock.calls[0] as unknown as [string, string];
+    expect(first).toMatch(
+      /Smoke test on 1\.2\.3: 5 passed, 2 skipped\. Still waiting on: Job scheduler/,
+    );
+    t.onJob({ tag: "self-test", jobTime: 123, missed: false });
+    await Promise.resolve();
+    expect(post).toHaveBeenCalledTimes(2);
+    expect(post.mock.calls[1]).toEqual(["c1", "✅ Smoke test on 1.2.3: 6 passed, 2 skipped."]);
+  });
+
+  it("says when to try again during the cooldown", async () => {
+    const post = vi.fn(async () => {});
+    const t = new SelfTest(deps({ post }).d);
+    await t.runFromChat("dev", "c1");
+    await t.runFromChat("dev", "c1");
+    expect(post.mock.calls.at(-1)).toEqual(["c1", expect.stringMatching(/^🧪 Wait \d+s/)]);
+  });
+
+  it("spots the command", () => {
+    expect(isSmokeCommand(" !Smoke ")).toBe(true);
+    expect(isSmokeCommand("!smoke please")).toBe(false);
+    expect(isSmokeCommand(undefined)).toBe(false);
   });
 });
 

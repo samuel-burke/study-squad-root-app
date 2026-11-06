@@ -14,7 +14,6 @@ function deps(overrides: Partial<SelfTestDeps> = {}) {
       version: "1.2.3",
       genVersion: "1.0.0-proto.abc",
       selfTestUserIds: ["dev"],
-      selfTestCommunityIds: ["staging"],
       settingTypes: { room: { busyThreshold: "number", squadBot: "checkbox" } },
     },
     loadedGenVersion: () => "1.0.0-proto.abc",
@@ -170,29 +169,14 @@ describe("SelfTest", () => {
     expect(check(t, "members").status).toBe("pass");
   });
 
-  it("spots a listed user in a community that isn't listed", () => {
+  it("is allowed only for a listed user", () => {
     const t = new SelfTest(deps().d);
-    expect(t.listedElsewhere("dev", "live")).toBe(true);
-    expect(t.listedElsewhere("dev", "staging")).toBe(false);
-    expect(t.listedElsewhere("ana", "live")).toBe(false);
-  });
-
-  it("is allowed only for a listed user in a listed community", () => {
-    const t = new SelfTest(deps().d);
-    expect(t.allowed("dev", "staging")).toBe(true);
-    expect(t.allowed("dev", "live")).toBe(false);
-    expect(t.allowed("ana", "staging")).toBe(false);
-    const noCommunities = new SelfTest(
-      deps({
-        build: {
-          version: "1",
-          genVersion: "g",
-          selfTestUserIds: ["dev"],
-          selfTestCommunityIds: [],
-        },
-      }).d,
+    expect(t.allowed("dev")).toBe(true);
+    expect(t.allowed("ana")).toBe(false);
+    const nobody = new SelfTest(
+      deps({ build: { version: "1", genVersion: "g", selfTestUserIds: [] } }).d,
     );
-    expect(noCommunities.allowed("dev", "staging")).toBe(false);
+    expect(nobody.allowed("dev")).toBe(false);
   });
 
   it("makes you wait a minute between runs", async () => {
@@ -213,31 +197,22 @@ describe("self-test handlers", () => {
 
   it("refuses everyone not on the list, on every call", async () => {
     const h = new StudyRoomHandlers(engine, quiet, { selfTest: new SelfTest(deps().d) });
-    await expect(
-      h.runSelfTest("ana", "staging", { testPost: false, clientJson: "{}" }),
-    ).rejects.toMatchObject({ code: 1005 });
-    await expect(h.confirmSelfTestPing("ana", "staging", { nonce: "x" })).rejects.toMatchObject({
+    await expect(h.runSelfTest("ana", { testPost: false, clientJson: "{}" })).rejects.toMatchObject(
+      { code: 1005 },
+    );
+    await expect(h.confirmSelfTestPing("ana", { nonce: "x" })).rejects.toMatchObject({
       code: 1005,
     });
-    const state = await h.getSelfTest("ana", "staging");
+    const state = await h.getSelfTest("ana");
     expect(state).toMatchObject({
       allowed: false,
       reportJson: "",
     });
   });
 
-  it("refuses the developer outside the staging community", async () => {
-    const h = new StudyRoomHandlers(engine, quiet, { selfTest: new SelfTest(deps().d) });
-    await expect(
-      h.runSelfTest("dev", "live", { testPost: false, clientJson: "{}" }),
-    ).rejects.toMatchObject({ code: 1005 });
-    expect((await h.getSelfTest("dev", "live")).allowed).toBe(false);
-    expect((await h.getSelfTest("dev", "staging")).allowed).toBe(true);
-  });
-
   it("runs for the developer and returns the report as JSON", async () => {
     const h = new StudyRoomHandlers(engine, quiet, { selfTest: new SelfTest(deps().d) });
-    const state = await h.runSelfTest("dev", "staging", {
+    const state = await h.runSelfTest("dev", {
       testPost: false,
       clientJson: "not json",
     });

@@ -65,7 +65,7 @@ export interface HandlerOptions {
   /** The in-app voice channel dropdown. Absent in tests that don't need it. */
   voicePicker?: Pick<VoiceChannelPicker, "choice" | "pick">;
   /** The owner-only self-test panel. Absent in tests that don't need it. */
-  selfTest?: Pick<SelfTest, "listedElsewhere" | "allowed" | "report" | "start" | "confirmPing">;
+  selfTest?: Pick<SelfTest, "allowed" | "report" | "start" | "confirmPing">;
 }
 
 /**
@@ -94,26 +94,13 @@ export class StudyRoomHandlers {
     this.selfTest = options.selfTest;
   }
 
-  getSelfTest(userId: string, communityId: string): Promise<SelfTestMessage> {
-    return this.handle("getSelfTest", userId, "read", async () => {
-      if (this.selfTest?.listedElsewhere(userId, communityId)) {
-        // Only in the server log (Root's log viewer), so a wrong community id
-        // in the secret can be spotted without showing ids in the app.
-        this.logger.info("self-test: listed user in a community that isn't listed", {
-          communityId,
-        });
-      }
-      return this.selfTestState(userId, communityId);
-    });
+  getSelfTest(userId: string): Promise<SelfTestMessage> {
+    return this.handle("getSelfTest", userId, "read", async () => this.selfTestState(userId));
   }
 
-  runSelfTest(
-    userId: string,
-    communityId: string,
-    request: RunSelfTestRequest,
-  ): Promise<SelfTestMessage> {
+  runSelfTest(userId: string, request: RunSelfTestRequest): Promise<SelfTestMessage> {
     return this.handle("runSelfTest", userId, "write", async () => {
-      const selfTest = this.allowedSelfTest(userId, communityId);
+      const selfTest = this.allowedSelfTest(userId);
       let client: ClientInfo;
       try {
         client = request.clientJson ? (JSON.parse(request.clientJson) as ClientInfo) : {};
@@ -121,34 +108,30 @@ export class StudyRoomHandlers {
         client = {};
       }
       await selfTest.start(userId, { testPost: request.testPost, client });
-      return this.selfTestState(userId, communityId);
+      return this.selfTestState(userId);
     });
   }
 
   confirmSelfTestPing(
     userId: string,
-    communityId: string,
     request: ConfirmSelfTestPingRequest,
   ): Promise<SelfTestMessage> {
     return this.handle("confirmSelfTestPing", userId, "read", async () => {
-      this.allowedSelfTest(userId, communityId).confirmPing(userId, request.nonce);
-      return this.selfTestState(userId, communityId);
+      this.allowedSelfTest(userId).confirmPing(userId, request.nonce);
+      return this.selfTestState(userId);
     });
   }
 
-  private allowedSelfTest(userId: string, communityId: string) {
+  private allowedSelfTest(userId: string) {
     // Checked on every call: hiding the button is not the protection.
-    if (!this.selfTest?.allowed(userId, communityId)) {
-      throw new DomainError(
-        ErrorCode.Forbidden,
-        "The self-test is only for the app's developer, in the staging community.",
-      );
+    if (!this.selfTest?.allowed(userId)) {
+      throw new DomainError(ErrorCode.Forbidden, "The self-test is only for the app's developer.");
     }
     return this.selfTest;
   }
 
-  private selfTestState(userId: string, communityId: string): SelfTestMessage {
-    const allowed = this.selfTest?.allowed(userId, communityId) ?? false;
+  private selfTestState(userId: string): SelfTestMessage {
+    const allowed = this.selfTest?.allowed(userId) ?? false;
     const report = allowed ? this.selfTest!.report() : null;
     return {
       allowed,

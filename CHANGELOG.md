@@ -6,7 +6,7 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ## [0.3.12] - 2026-11-06
 
-Break challenge fixes, no cap on high-fives, and the developer self-test only opens in the staging community.
+Break challenge fixes, no cap on high-fives, and tighter locks on the developer self-test.
 
 ### Changed
 
@@ -19,8 +19,7 @@ Break challenge fixes, no cap on high-fives, and the developer self-test only op
 
 ### Security
 
-- The self-test panel only opens in the communities in the new `SELF_TEST_COMMUNITY_IDS` secret (your staging community), as well as only for the user ids in `SELF_TEST_USER_IDS`. With either secret empty it opens nowhere.
-- Room settings no longer shows anyone their Root user id or community id. If the panel doesn't appear for you, the server log names the community you opened it in.
+- Room settings no longer shows anyone their Root user id. The self-test still opens only for the user ids in `SELF_TEST_USER_IDS`, in any community.
 - Self-test runs are at least a minute apart.
 - The fake Root host used by the tests only listens on your own machine, since its test controls have no login.
 

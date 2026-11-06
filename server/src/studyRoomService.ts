@@ -156,15 +156,15 @@ export class StudyRoomService extends StudyRoomServiceBase {
   }
 
   getSelfTest(_request: GetSelfTestRequest, client: Client): Promise<SelfTest> {
-    return this.call((h) => h.getSelfTest(client.userId, client.communityId));
+    return this.call((h) => h.getSelfTest(client.userId));
   }
 
   runSelfTest(request: RunSelfTestRequest, client: Client): Promise<SelfTest> {
-    return this.call((h) => h.runSelfTest(client.userId, client.communityId, request));
+    return this.call((h) => h.runSelfTest(client.userId, request));
   }
 
   confirmSelfTestPing(request: ConfirmSelfTestPingRequest, client: Client): Promise<SelfTest> {
-    return this.call((h) => h.confirmSelfTestPing(client.userId, client.communityId, request));
+    return this.call((h) => h.confirmSelfTestPing(client.userId, request));
   }
 
   private async call<T>(work: (handlers: StudyRoomHandlers) => Promise<T>): Promise<T> {

@@ -42,8 +42,6 @@ export interface BuildInfo {
   version: string;
   genVersion: string;
   selfTestUserIds: string[];
-  /** Root community ids it may run in: the staging community. */
-  selfTestCommunityIds: string[];
   /** Setting types by group and key, from root-manifest.json. */
   settingTypes?: Record<string, Record<string, string>>;
 }
@@ -126,20 +124,12 @@ export class SelfTest {
 
   constructor(private readonly deps: SelfTestDeps) {}
 
-  /** A listed user, but in a community that isn't listed (worth a log line). */
-  listedElsewhere(userId: string, communityId: string): boolean {
-    const { selfTestUserIds, selfTestCommunityIds } = this.deps.build;
-    return selfTestUserIds.includes(userId) && !selfTestCommunityIds.includes(communityId);
-  }
-
   /**
-   * Only a listed user, in a listed community (staging). Both ids come from
-   * Root's authenticated connection, never from the request. An empty list
-   * means nobody, anywhere.
+   * Only a listed user, in any community. The id comes from Root's
+   * authenticated connection, never from the request. An empty list means nobody.
    */
-  allowed(userId: string, communityId: string): boolean {
-    const { selfTestUserIds, selfTestCommunityIds } = this.deps.build;
-    return selfTestUserIds.includes(userId) && selfTestCommunityIds.includes(communityId);
+  allowed(userId: string): boolean {
+    return this.deps.build.selfTestUserIds.includes(userId);
   }
 
   /** The latest report, with timed-out checks marked failed. */

@@ -12,7 +12,6 @@ export function loadBuildInfo(distDir: string): BuildInfo {
       version: String(info.version ?? "unknown"),
       genVersion: String(info.genVersion ?? "unknown"),
       selfTestUserIds: idList(info.selfTestUserIds),
-      selfTestCommunityIds: idList(info.selfTestCommunityIds),
       settingTypes: info.settingTypes,
     };
   } catch {
@@ -20,7 +19,6 @@ export function loadBuildInfo(distDir: string): BuildInfo {
       version: "unknown",
       genVersion: "unknown",
       selfTestUserIds: [],
-      selfTestCommunityIds: [],
     };
   }
 }

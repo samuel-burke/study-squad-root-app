@@ -49,11 +49,10 @@ The job check takes up to two minutes, because Root looks for due jobs about onc
 
 Nothing it does touches members' data. The test row and the test job are its own, and the test post only goes out when you tick the box.
 
-**Who can open it.** Only a user in `SELF_TEST_USER_IDS`, and only in a community in `SELF_TEST_COMMUNITY_IDS` (your staging community). The server checks both on every call, using the ids Root attaches to the connection, so hiding the section isn't the only protection and a member can't fake either id. If either list is empty, nobody can open it anywhere. Runs are at least a minute apart. The ids are baked in at build time (`server/dist/build-info.json`), like the feedback relay settings:
+**Who can open it.** Only a user in `SELF_TEST_USER_IDS`, in any community. The server checks it on every call, using the user id Root attaches to the connection, so hiding the section isn't the only protection and a member can't fake the id. If the list is empty, nobody can open it. Runs are at least a minute apart. The ids are baked in at build time (`server/dist/build-info.json`), like the feedback relay settings:
 
-1. In GitHub, add the Actions secrets `SELF_TEST_USER_IDS` (your Root user id) and `SELF_TEST_COMMUNITY_IDS` (your staging community's id). Separate several with commas. For Docker builds, add both to `server/.env`.
-2. Ship the next version. The Self-test section appears in Room settings, for you only, in staging only. The app never shows ids.
-3. If it doesn't appear, check Root's server log: opening Room settings as a listed user in a community that isn't listed logs "self-test: listed user in a community that isn't listed" with that community's id.
+1. In GitHub, add the Actions secret `SELF_TEST_USER_IDS` with your Root user id (separate several with commas). For Docker builds, add it to `server/.env`.
+2. Ship the next version. The Self-test section appears in Room settings, for you only. The app never shows ids.
 
 ## Before each release: staging check
 

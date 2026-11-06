@@ -35,7 +35,7 @@ When the GitHub token expires, the relay answers with an error and notes wait in
 
 ## Self-test panel (optional)
 
-Add the Actions secrets `SELF_TEST_USER_IDS` (your Root user id) and `SELF_TEST_COMMUNITY_IDS` (your staging community's id) to get the owner-only Self-test section in Room settings, in staging only. Before each release, run it there. See [TESTING.md](TESTING.md#the-self-test-panel-inside-root).
+Add the Actions secret `SELF_TEST_USER_IDS` (your Root user id) to get the owner-only Self-test section in Room settings, in any community. Before each release, run it in staging. See [TESTING.md](TESTING.md#the-self-test-panel-inside-root).
 
 ## Versions uploaded by hand
 

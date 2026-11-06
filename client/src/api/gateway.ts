@@ -54,11 +54,8 @@ export interface SelfTestReport {
 }
 
 export interface SelfTestState {
-  /** The current member may run it (their Root user id is on the build's list). */
+  /** The current member may run it here (their user id and this community are on the build's lists). */
   allowed: boolean;
-  yourUserId: string;
-  /** Nobody is on the list yet. */
-  unconfigured: boolean;
   report: SelfTestReport | null;
 }
 

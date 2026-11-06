@@ -11,15 +11,24 @@ export function loadBuildInfo(distDir: string): BuildInfo {
     return {
       version: String(info.version ?? "unknown"),
       genVersion: String(info.genVersion ?? "unknown"),
-      selfTestUserIds: Array.isArray(info.selfTestUserIds)
-        ? info.selfTestUserIds.filter((id): id is string => typeof id === "string" && id.length > 0)
-        : [],
+      selfTestUserIds: idList(info.selfTestUserIds),
+      selfTestCommunityIds: idList(info.selfTestCommunityIds),
       settingTypes: info.settingTypes,
     };
   } catch {
-    return { version: "unknown", genVersion: "unknown", selfTestUserIds: [] };
+    return {
+      version: "unknown",
+      genVersion: "unknown",
+      selfTestUserIds: [],
+      selfTestCommunityIds: [],
+    };
   }
 }
+
+const idList = (value: unknown): string[] =>
+  Array.isArray(value)
+    ? value.filter((id): id is string => typeof id === "string" && id.length > 0)
+    : [];
 
 /**
  * The version of the generated networking code this process actually loaded,

@@ -4,9 +4,11 @@
 // with the networking code it actually loaded, which is how a stale cached
 // copy (the 0.3.0/0.3.1 crash) would show.
 //
-// SELF_TEST_USER_IDS is a comma-separated list of Root user ids, read from the
-// environment, else from server/.env. Without it, nobody can run the self-test,
-// and community admins see their own id in Room settings to add.
+// SELF_TEST_USER_IDS is a comma-separated list of Root user ids, and
+// SELF_TEST_COMMUNITY_IDS one of Root community ids (your staging community),
+// read from the environment, else from server/.env. The self-test only runs for
+// a listed user in a listed community. With either list empty nobody can run
+// it, and community admins see their own ids in Room settings to add.
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -31,10 +33,11 @@ function readEnvFile(file) {
 }
 
 const env = readEnvFile(path.join(root, "server", ".env"));
-const ids = (process.env.SELF_TEST_USER_IDS || env.SELF_TEST_USER_IDS || "")
-  .split(",")
-  .map((id) => id.trim())
-  .filter(Boolean);
+const idList = (key) =>
+  (process.env[key] || env[key] || "")
+    .split(",")
+    .map((id) => id.trim())
+    .filter(Boolean);
 
 const manifest = JSON.parse(fs.readFileSync(path.join(root, "root-manifest.json"), "utf8"));
 // Each setting's type (number, checkbox, select, channel, time), so the
@@ -54,11 +57,12 @@ const settingTypes = Object.fromEntries(
 const info = {
   version: manifest.version,
   genVersion: protoVersion(path.join(root, "networking", "src")),
-  selfTestUserIds: ids,
+  selfTestUserIds: idList("SELF_TEST_USER_IDS"),
+  selfTestCommunityIds: idList("SELF_TEST_COMMUNITY_IDS"),
   settingTypes,
 };
 fs.mkdirSync(path.dirname(out), { recursive: true });
 fs.writeFileSync(out, JSON.stringify(info));
 console.log(
-  `build info: ${info.version}, ${info.genVersion}, self-test for ${ids.length} user id(s)`,
+  `build info: ${info.version}, ${info.genVersion}, self-test for ${info.selfTestUserIds.length} user id(s) in ${info.selfTestCommunityIds.length} community id(s)`,
 );

@@ -479,13 +479,12 @@ message ConfirmSelfTestPingRequest {
 }
 
 message SelfTest {
-  // The caller may run the self-test (their Root user id is on the build's list).
+  // The caller may run the self-test here: their Root user id and this
+  // community's id are both on the build's lists.
   bool allowed = 1;
-  // The caller's own Root user id, to put on that list.
-  string your_user_id = 2;
-  // No user ids are on the list yet and the caller is an admin: show them
-  // their id to add. Only set by GetSelfTest.
-  bool unconfigured = 3;
+  // Were the caller's user id, the setup hint and the community id. Room
+  // settings no longer shows ids.
+  reserved 2, 3, 5;
   // The latest report as JSON, or empty before the first run. Only when allowed.
   string report_json = 4;
 }

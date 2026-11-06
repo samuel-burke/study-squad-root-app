@@ -32,6 +32,12 @@ export default tseslint.config(
     },
   },
   {
+    // The fake Root host is CommonJS so it can stand in for @rootsdk/server-app via require().
+    files: ["fake-root/**/*.cjs"],
+    languageOptions: { sourceType: "commonjs" },
+    rules: { "@typescript-eslint/no-require-imports": "off" },
+  },
+  {
     // The domain package must stay free of host APIs so it runs in Node and the browser.
     files: ["core/src/**/*.ts"],
     languageOptions: { globals: {} },

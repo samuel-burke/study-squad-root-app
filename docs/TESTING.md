@@ -49,11 +49,11 @@ The job check takes up to two minutes, because Root looks for due jobs about onc
 
 Nothing it does touches members' data. The test row and the test job are its own, and the test post only goes out when you tick the box.
 
-**Who can open it.** The server checks the caller's Root user id against `SELF_TEST_USER_IDS` on every call, so hiding the section isn't the only protection. The ids are baked in at build time (`server/dist/build-info.json`), like the feedback relay settings:
+**Who can open it.** Only a user in `SELF_TEST_USER_IDS`, and only in a community in `SELF_TEST_COMMUNITY_IDS` (your staging community). The server checks both on every call, using the ids Root attaches to the connection, so hiding the section isn't the only protection and a member can't fake either id. If either list is empty, nobody can open it anywhere. Runs are at least a minute apart. The ids are baked in at build time (`server/dist/build-info.json`), like the feedback relay settings:
 
-1. Open Room settings in Root as a community admin. While no ids are set, it shows "Your Root user id is …". Copy it.
-2. In GitHub, add an Actions secret `SELF_TEST_USER_IDS` with that id (separate several with commas). For Docker builds, add `SELF_TEST_USER_IDS=…` to `server/.env`.
-3. Ship the next version. The line with your id goes away and the Self-test section appears, for you only.
+1. In GitHub, add the Actions secrets `SELF_TEST_USER_IDS` (your Root user id) and `SELF_TEST_COMMUNITY_IDS` (your staging community's id). Separate several with commas. For Docker builds, add both to `server/.env`.
+2. Ship the next version. The Self-test section appears in Room settings, for you only, in staging only. The app never shows ids.
+3. If it doesn't appear, check Root's server log: opening Room settings as a listed user in a community that isn't listed logs "self-test: listed user in a community that isn't listed" with that community's id.
 
 ## Before each release: staging check
 
@@ -109,7 +109,7 @@ Keep the image tag in step with the `@playwright/test` version in `client/packag
 
 Each of those was checked by putting the old bug back and watching the test fail.
 
-To poke at it by hand, run `npm run build && npm run build:fakeroot -w @studyroom/client`, then `node scripts/fake-root-host.mjs`, and open `http://localhost:4174/?user=u-ana` and `?user=u-ben` in two windows. The members are u-owner (community owner), u-ana, u-ben, u-cy, u-dee, u-eli and u-fay. Test controls live under `/__fake/`: `GET state`, `GET posts`, `POST settings`, `POST clock/advance` (`{ "ms": 60000 }`), `POST jobs/run`, and `POST voice/join` or `voice/leave`.
+To poke at it by hand, run `npm run build && npm run build:fakeroot -w @studyroom/client`, then `node scripts/fake-root-host.mjs`, and open `http://127.0.0.1:4174/?user=u-ana` and `?user=u-ben` in two windows. The members are u-owner (community owner), u-ana, u-ben, u-cy, u-dee, u-eli and u-fay. Test controls live under `/__fake/`: `GET state`, `GET posts`, `POST settings`, `POST clock/advance` (`{ "ms": 60000 }`), `POST jobs/run`, and `POST voice/join` or `voice/leave`.
 
 What the fake can't tell us is whether Root really behaves the way it copies. The self-test panel inside Root (below) checks that against the real thing.
 

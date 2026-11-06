@@ -49,8 +49,6 @@ function selfTestState(message: SelfTest): SelfTestState {
   }
   return {
     allowed: message.allowed,
-    yourUserId: message.yourUserId,
-    unconfigured: message.unconfigured,
     report,
   };
 }

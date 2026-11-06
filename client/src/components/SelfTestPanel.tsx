@@ -90,15 +90,7 @@ export function SelfTestPanel({ selfTest }: { selfTest: SelfTestApi }) {
   }, [report, selfTest]);
 
   if (!state) return null;
-  if (!state.allowed) {
-    if (!state.unconfigured) return null;
-    return (
-      <div className="tiny dim">
-        Your Root user id is <code>{state.yourUserId}</code>. Put it in SELF_TEST_USER_IDS to open
-        the self-test panel here (see docs/TESTING.md).
-      </div>
-    );
-  }
+  if (!state.allowed) return null;
 
   return (
     <section

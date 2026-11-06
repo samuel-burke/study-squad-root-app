@@ -3,7 +3,8 @@
 //
 //   node --require fake-root/register.cjs --require fake-root/transport.cjs server/dist/main.js
 //
-// One HTTP port (FAKE_ROOT_PORT, default 4174) serves:
+// One HTTP port (FAKE_ROOT_PORT, default 4174), on this machine only
+// (FAKE_ROOT_HOST, default 127.0.0.1), serves:
 //   /            the client build in FAKE_ROOT_STATIC (built with `vite build --mode fakeroot`)
 //   /root        a WebSocket per open app, carrying protobuf bytes (see client-app.js)
 //   /__fake/...  test controls: settings, jobs, posts, voice, state
@@ -18,6 +19,8 @@ const { WebSocketServer } = require("ws");
 const { __fake: fake } = require("./server-app.cjs");
 
 const port = Number(process.env.FAKE_ROOT_PORT ?? 4174);
+// The test controls have no login, so only this machine may reach them.
+const host = process.env.FAKE_ROOT_HOST ?? "127.0.0.1";
 const staticDir = process.env.FAKE_ROOT_STATIC ? path.resolve(process.env.FAKE_ROOT_STATIC) : null;
 
 const TYPES = {
@@ -166,12 +169,12 @@ fake.onStarted = async () => {
   const server = http.createServer((req, res) => void handle(req, res));
   const wss = new WebSocketServer({ server, path: "/root" });
   wss.on("connection", onSocket);
-  await new Promise((resolve) => server.listen(port, resolve));
+  await new Promise((resolve) => server.listen(port, host, resolve));
   console.log(
     JSON.stringify({
       level: "info",
       message: "fake-root: listening",
-      url: `http://localhost:${port}`,
+      url: `http://${host}:${port}`,
     }),
   );
 };

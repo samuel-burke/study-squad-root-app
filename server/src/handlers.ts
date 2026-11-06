@@ -94,16 +94,20 @@ export class StudyRoomHandlers {
     this.selfTest = options.selfTest;
   }
 
-  getSelfTest(userId: string): Promise<SelfTestMessage> {
+  getSelfTest(userId: string, communityId: string): Promise<SelfTestMessage> {
     return this.handle("getSelfTest", userId, "read", async () => ({
-      ...this.selfTestState(userId),
+      ...this.selfTestState(userId, communityId),
       unconfigured: (await this.selfTest?.showIdTo(userId)) ?? false,
     }));
   }
 
-  runSelfTest(userId: string, request: RunSelfTestRequest): Promise<SelfTestMessage> {
+  runSelfTest(
+    userId: string,
+    communityId: string,
+    request: RunSelfTestRequest,
+  ): Promise<SelfTestMessage> {
     return this.handle("runSelfTest", userId, "write", async () => {
-      const selfTest = this.allowedSelfTest(userId);
+      const selfTest = this.allowedSelfTest(userId, communityId);
       let client: ClientInfo;
       try {
         client = request.clientJson ? (JSON.parse(request.clientJson) as ClientInfo) : {};
@@ -111,34 +115,39 @@ export class StudyRoomHandlers {
         client = {};
       }
       await selfTest.start(userId, { testPost: request.testPost, client });
-      return this.selfTestState(userId);
+      return this.selfTestState(userId, communityId);
     });
   }
 
   confirmSelfTestPing(
     userId: string,
+    communityId: string,
     request: ConfirmSelfTestPingRequest,
   ): Promise<SelfTestMessage> {
     return this.handle("confirmSelfTestPing", userId, "read", async () => {
-      this.allowedSelfTest(userId).confirmPing(userId, request.nonce);
-      return this.selfTestState(userId);
+      this.allowedSelfTest(userId, communityId).confirmPing(userId, request.nonce);
+      return this.selfTestState(userId, communityId);
     });
   }
 
-  private allowedSelfTest(userId: string) {
+  private allowedSelfTest(userId: string, communityId: string) {
     // Checked on every call: hiding the button is not the protection.
-    if (!this.selfTest?.allowed(userId)) {
-      throw new DomainError(ErrorCode.Forbidden, "The self-test is only for the app's developer.");
+    if (!this.selfTest?.allowed(userId, communityId)) {
+      throw new DomainError(
+        ErrorCode.Forbidden,
+        "The self-test is only for the app's developer, in the staging community.",
+      );
     }
     return this.selfTest;
   }
 
-  private selfTestState(userId: string): SelfTestMessage {
-    const allowed = this.selfTest?.allowed(userId) ?? false;
+  private selfTestState(userId: string, communityId: string): SelfTestMessage {
+    const allowed = this.selfTest?.allowed(userId, communityId) ?? false;
     const report = allowed ? this.selfTest!.report() : null;
     return {
       allowed,
       yourUserId: userId,
+      yourCommunityId: communityId,
       unconfigured: false,
       reportJson: report ? JSON.stringify(report) : "",
     };

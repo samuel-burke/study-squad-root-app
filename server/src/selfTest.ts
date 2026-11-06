@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import type { AppConfig, Logger } from "@studyroom/core";
+import { DomainError, ErrorCode, type AppConfig, type Logger } from "@studyroom/core";
 import type { ChannelInfo } from "./wiring";
 
 /**
@@ -42,6 +42,8 @@ export interface BuildInfo {
   version: string;
   genVersion: string;
   selfTestUserIds: string[];
+  /** Root community ids it may run in: the staging community. */
+  selfTestCommunityIds: string[];
   /** Setting types by group and key, from root-manifest.json. */
   settingTypes?: Record<string, Record<string, string>>;
 }
@@ -79,6 +81,8 @@ const JOB_DELAY_MS = 30_000;
 /** Root checks for due jobs about once a minute, so allow a few. */
 const JOB_TIMEOUT_MS = 4 * 60_000;
 const PING_TIMEOUT_MS = 20_000;
+/** Each run can make a test post and books a job, so runs are spaced out. */
+export const RUN_COOLDOWN_MS = 60_000;
 
 /** The shapes the fake Root host delivers settings in, by manifest item type. */
 export const FAKE_SETTING_SHAPES: Record<string, string> = {
@@ -122,9 +126,13 @@ export class SelfTest {
 
   constructor(private readonly deps: SelfTestDeps) {}
 
-  /** Nobody is on the list yet and this member is an admin, so show them their id to add. */
+  /**
+   * A list is still empty and this member is an admin, so show them their user
+   * and community ids to add. Once both lists are set, nobody sees the hint.
+   */
   async showIdTo(userId: string): Promise<boolean> {
-    if (this.deps.build.selfTestUserIds.length > 0) return false;
+    const { selfTestUserIds, selfTestCommunityIds } = this.deps.build;
+    if (selfTestUserIds.length > 0 && selfTestCommunityIds.length > 0) return false;
     try {
       return await this.deps.isAdmin(userId);
     } catch {
@@ -132,8 +140,14 @@ export class SelfTest {
     }
   }
 
-  allowed(userId: string): boolean {
-    return this.deps.build.selfTestUserIds.includes(userId);
+  /**
+   * Only a listed user, in a listed community (staging). Both ids come from
+   * Root's authenticated connection, never from the request. An empty list
+   * means nobody, anywhere.
+   */
+  allowed(userId: string, communityId: string): boolean {
+    const { selfTestUserIds, selfTestCommunityIds } = this.deps.build;
+    return selfTestUserIds.includes(userId) && selfTestCommunityIds.includes(communityId);
   }
 
   /** The latest report, with timed-out checks marked failed. */
@@ -165,6 +179,13 @@ export class SelfTest {
 
   async start(userId: string, options: { testPost: boolean; client: ClientInfo }): Promise<void> {
     const now = this.deps.now();
+    if (this.run && now - this.run.startedAt < RUN_COOLDOWN_MS) {
+      const wait = Math.ceil((RUN_COOLDOWN_MS - (now - this.run.startedAt)) / 1000);
+      throw new DomainError(
+        ErrorCode.RateLimited,
+        `Wait ${wait}s before running the self-test again.`,
+      );
+    }
     const run: Run = {
       userId,
       startedAt: now,

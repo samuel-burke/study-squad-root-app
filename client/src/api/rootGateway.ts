@@ -50,6 +50,7 @@ function selfTestState(message: SelfTest): SelfTestState {
   return {
     allowed: message.allowed,
     yourUserId: message.yourUserId,
+    yourCommunityId: message.yourCommunityId,
     unconfigured: message.unconfigured,
     report,
   };

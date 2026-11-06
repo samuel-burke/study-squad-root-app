@@ -479,15 +479,18 @@ message ConfirmSelfTestPingRequest {
 }
 
 message SelfTest {
-  // The caller may run the self-test (their Root user id is on the build's list).
+  // The caller may run the self-test here: their Root user id and this
+  // community's id are both on the build's lists.
   bool allowed = 1;
   // The caller's own Root user id, to put on that list.
   string your_user_id = 2;
-  // No user ids are on the list yet and the caller is an admin: show them
-  // their id to add. Only set by GetSelfTest.
+  // A list is still empty and the caller is an admin: show them their ids to
+  // add. Only set by GetSelfTest.
   bool unconfigured = 3;
   // The latest report as JSON, or empty before the first run. Only when allowed.
   string report_json = 4;
+  // This community's Root id, for the community list (your staging community).
+  string your_community_id = 5;
 }
 
 // Sent only to the member running the self-test, who answers with ConfirmSelfTestPing.

@@ -94,8 +94,10 @@ export function SelfTestPanel({ selfTest }: { selfTest: SelfTestApi }) {
     if (!state.unconfigured) return null;
     return (
       <div className="tiny dim">
-        Your Root user id is <code>{state.yourUserId}</code>. Put it in SELF_TEST_USER_IDS to open
-        the self-test panel here (see docs/TESTING.md).
+        Your Root user id is <code>{state.yourUserId}</code> and this community&apos;s id is{" "}
+        <code>{state.yourCommunityId}</code>. Put them in SELF_TEST_USER_IDS and
+        SELF_TEST_COMMUNITY_IDS to open the self-test panel in this community only (see
+        docs/TESTING.md).
       </div>
     );
   }

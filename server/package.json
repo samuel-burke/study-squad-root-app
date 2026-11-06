@@ -1,6 +1,6 @@
 {
   "name": "@studyroom/server",
-  "version": "0.3.9",
+  "version": "0.3.10",
   "private": true,
   "scripts": {
     "build": "tsc -p tsconfig.build.json && node ../scripts/feedback-config.mjs",

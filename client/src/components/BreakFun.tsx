@@ -1,5 +1,4 @@
 import {
-  breakChallengeFor,
   HIGH_FIVE_EMOJI,
   roomBreakKey,
   soloBreakKey,
@@ -51,10 +50,9 @@ export function BreakChallengeCard({
   busy: boolean;
   onDone(): void;
 }) {
-  const key = myBreakKey(room, me.userId, now);
-  if (!key) return null;
-  const challenge = breakChallengeFor(key);
   const mine = room.members.find((m) => m.userId === me.userId);
+  // The server picks each break's challenge, so it never repeats the last one.
+  if (!myBreakKey(room, me.userId, now) || !mine?.challenge) return null;
   const done = mine?.challengeDone ?? false;
   // Everyone on your break: the whole room timer, or just you on a solo break.
   const together =
@@ -70,7 +68,7 @@ export function BreakChallengeCard({
     <section className="break-challenge" aria-label="Break challenge" data-done={done}>
       <div className="eyebrow break-challenge-eyebrow">Break challenge</div>
       <div className="break-challenge-body">
-        <div className="break-challenge-text">{challenge.text}</div>
+        <div className="break-challenge-text">{mine.challenge}</div>
         {done ? (
           <span className="break-challenge-done" role="status">
             ✓ Done

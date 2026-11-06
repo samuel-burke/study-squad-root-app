@@ -73,9 +73,10 @@ import {
 import { squadHeading } from "../posts";
 import { SECRET_BADGE_NAME, type SquadEvent } from "../squad/squadLines";
 import {
-  breakChallengeFor,
+  breakChallengeById,
   HIGH_FIVES_PER_TEAMMATE,
   isHighFiveEmoji,
+  pickBreakChallenge,
   roomBreakKey,
   soloBreakKey,
 } from "../squad/breakFun";
@@ -149,6 +150,8 @@ const SQUAD_JOIN_COOLDOWN_MS = 2 * 60 * MINUTE_MS;
 const SQUAD_STALE_MS = 2 * MINUTE_MS;
 /** How long to wait before retrying a wake-up whose tick failed. */
 const TICK_RETRY_MS = 30_000;
+/** Break challenge picks remembered at once; far more than are ever live. */
+const MAX_REMEMBERED_CHALLENGES = 500;
 /** Break logs are forgotten this long after their break ends. */
 const BREAK_LOG_TTL_MS = 30 * MINUTE_MS;
 
@@ -255,6 +258,10 @@ export class StudyRoomEngine {
   private readonly present = new Set<string>();
   private readonly inVoice = new Set<string>();
   private readonly breaks = new Map<string, BreakLog>();
+  /** Each break's challenge id, by break key. */
+  private readonly challenges = new Map<string, string>();
+  /** The last challenge picked for the room ("room") or for each member's solo breaks. */
+  private readonly lastChallenge = new Map<string, string>();
   private config: AppConfig;
   private stopped = false;
   private feedbackPass: Promise<void> | null = null;
@@ -737,6 +744,25 @@ export class StudyRoomEngine {
     return { key: soloBreakKey(userId, solo.breakEndsAt), endsAt: solo.breakEndsAt, room: false };
   }
 
+  /**
+   * The challenge for a break, picked the first time the break is shown.
+   * `scope` is "room" for the room timer or the member for a solo break, so
+   * the next break there never repeats the last one. Kept in memory: after a
+   * restart a running break may get a new pick.
+   */
+  private breakChallenge(key: string, scope: string): string {
+    const known = breakChallengeById(this.challenges.get(key) ?? "");
+    if (known) return known.text;
+    const picked = pickBreakChallenge(this.lastChallenge.get(scope), this.deps.random);
+    this.challenges.set(key, picked.id);
+    this.lastChallenge.set(scope, picked.id);
+    // Old breaks are long over; keep the record small.
+    while (this.challenges.size > MAX_REMEMBERED_CHALLENGES) {
+      this.challenges.delete(this.challenges.keys().next().value!);
+    }
+    return picked.text;
+  }
+
   /** The log for a break, made on first use. Old logs are dropped on the way. */
   private breakLog(current: CurrentBreak, now: number): BreakLog {
     for (const [key, log] of this.breaks) {
@@ -775,9 +801,8 @@ export class StudyRoomEngine {
       .sort((a, b) => b.count - a.count)
       .slice(0, 3);
     if (log.challengeDone.size === 0 && highFives.length === 0) return undefined;
-    const challenge = breakChallengeFor(key);
     return {
-      challenge: challenge.text,
+      challenge: breakChallengeById(this.challenges.get(key) ?? "")?.text ?? "",
       challengeDone: log.challengeDone.size,
       highFives,
     };
@@ -1896,13 +1921,16 @@ export class StudyRoomEngine {
       ]),
     );
 
-    const roomBreak =
-      phase && phase.kind !== "focus" ? this.breaks.get(roomBreakKey(phase.startsAt)) : undefined;
+    const roomKey = phase && phase.kind !== "focus" ? roomBreakKey(phase.startsAt) : undefined;
+    const roomBreak = roomKey ? this.breaks.get(roomKey) : undefined;
+    const roomChallenge =
+      roomKey && participants.length > 0 ? this.breakChallenge(roomKey, "room") : "";
     const card = (
       userId: string,
       status: MemberCardDto["status"],
       endsAt: number,
       breakLog?: BreakLog,
+      challenge = "",
     ): MemberCardDto => {
       const member = members.get(userId);
       const isPrivate = this.goalsArePrivate(member);
@@ -1917,6 +1945,7 @@ export class StudyRoomEngine {
         badges: looks.get(userId)?.showcase ?? [],
         cardStyle: looks.get(userId)?.style ?? "classic",
         weeklyRank: ranks.get(userId) ?? 0,
+        challenge,
         challengeDone: breakLog?.challengeDone.has(userId) ?? false,
         highFives: highFiveTotal(breakLog?.highFives.get(userId)),
       };
@@ -1929,6 +1958,7 @@ export class StudyRoomEngine {
           phase?.kind === "focus" ? "roomFocus" : "roomBreak",
           phase?.endsAt ?? now,
           roomBreak,
+          roomChallenge,
         ),
       ),
       ...solos.map((s) =>
@@ -1939,6 +1969,7 @@ export class StudyRoomEngine {
               "soloBreak",
               s.breakEndsAt,
               this.breaks.get(soloBreakKey(s.userId, s.breakEndsAt)),
+              this.breakChallenge(soloBreakKey(s.userId, s.breakEndsAt), s.userId),
             ),
       ),
     ];

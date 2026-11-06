@@ -1,7 +1,7 @@
 import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
-import { breakChallengeFor, roomBreakKey, type MemberCardDto } from "@studyroom/core";
+import type { MemberCardDto } from "@studyroom/core";
 import { createHarness, MINUTE } from "../../core/test/helpers";
 import { BreakChallengeCard, HighFiveFloats } from "../src/components/BreakFun";
 import { MemberBoard } from "../src/components/MemberBoard";
@@ -18,6 +18,7 @@ const card = (userId: string, overrides: Partial<MemberCardDto> = {}): MemberCar
   badges: [],
   cardStyle: "classic",
   weeklyRank: 0,
+  challenge: "",
   challengeDone: false,
   highFives: 0,
   ...overrides,
@@ -46,8 +47,9 @@ describe("BreakChallengeCard", () => {
     render(
       <BreakChallengeCard room={room} me={me} now={room.serverNow} busy={false} onDone={onDone} />,
     );
-    const challenge = breakChallengeFor(roomBreakKey(room.timer.phaseStartedAt));
-    expect(screen.getByText(challenge.text)).toBeInTheDocument();
+    const challenge = room.members.find((m) => m.userId === "me")!.challenge;
+    expect(challenge).not.toBe("");
+    expect(screen.getByText(challenge)).toBeInTheDocument();
     expect(screen.getByText("1 of 2 done")).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Done" }));
     expect(onDone).toHaveBeenCalledTimes(1);

@@ -53,15 +53,19 @@ export function soloBreakKey(userId: string, breakEndsAt: number): string {
   return `solo:${userId}:${breakEndsAt}`;
 }
 
+/** A challenge by id, if it's still in the list. */
+export function breakChallengeById(id: string): BreakChallenge | undefined {
+  return BREAK_CHALLENGES.find((c) => c.id === id);
+}
+
 /**
- * The challenge for a break. It's worked out from the break's key, so the
- * server and every device agree on it without sending it anywhere.
+ * Picks a challenge at random, never the one the last break had, so the same
+ * challenge never comes up twice in a row.
  */
-export function breakChallengeFor(key: string): BreakChallenge {
-  let hash = 2166136261;
-  for (let i = 0; i < key.length; i++) {
-    hash ^= key.charCodeAt(i);
-    hash = Math.imul(hash, 16777619);
-  }
-  return BREAK_CHALLENGES[(hash >>> 0) % BREAK_CHALLENGES.length]!;
+export function pickBreakChallenge(
+  lastId: string | undefined,
+  random: () => number,
+): BreakChallenge {
+  const choices = BREAK_CHALLENGES.filter((c) => c.id !== lastId);
+  return choices[Math.min(choices.length - 1, Math.floor(random() * choices.length))]!;
 }

@@ -2,16 +2,15 @@ import { describe, expect, it } from "vitest";
 import {
   BREAK_CHALLENGES,
   HIGH_FIVES_PER_TEAMMATE,
-  breakChallengeFor,
+  pickBreakChallenge,
   breakRecapLines,
   ErrorCode,
   DomainError,
-  roomBreakKey,
   soloBreakKey,
   squadPost,
   type BreakRecapDto,
 } from "../src";
-import { configWith, createHarness, MINUTE } from "./helpers";
+import { configWith, createHarness, MINUTE, seededRandom } from "./helpers";
 
 const FOCUS = 25 * MINUTE;
 const NO_BOSS = configWith({ boss: { enabled: false, baseHpXp: 10_000 } });
@@ -37,15 +36,45 @@ async function onBreakTogether() {
 }
 
 describe("break challenges", () => {
-  it("picks the same challenge for the same break, and spreads them out", () => {
-    expect(breakChallengeFor(roomBreakKey(123))).toEqual(breakChallengeFor(roomBreakKey(123)));
-    const picked = new Set(
-      Array.from({ length: 200 }, (_, i) => breakChallengeFor(roomBreakKey(i * 30 * MINUTE)).id),
+  it("never repeats the last challenge, and spreads them out", () => {
+    let last: string | undefined;
+    const seen = new Set<string>();
+    const random = seededRandom(7);
+    for (let i = 0; i < 200; i++) {
+      const next = pickBreakChallenge(last, random);
+      expect(next.id).not.toBe(last);
+      seen.add(next.id);
+      last = next.id;
+    }
+    expect(seen.size).toBe(BREAK_CHALLENGES.length);
+    // Even a random() that always lands on the last one's slot moves on.
+    expect(pickBreakChallenge(BREAK_CHALLENGES[0]!.id, () => 0).id).not.toBe(
+      BREAK_CHALLENGES[0]!.id,
     );
-    expect(picked.size).toBeGreaterThan(BREAK_CHALLENGES.length / 2);
     expect(new Set(BREAK_CHALLENGES.map((c) => c.id)).size).toBe(BREAK_CHALLENGES.length);
     // Plain words only: no emoji in any challenge.
     for (const c of BREAK_CHALLENGES) expect(c.text).toMatch(/^[\x20-\x7e]+$/);
+  });
+
+  it("gives everyone on the room break the same challenge, and a new one each break", async () => {
+    const { engine, advance } = createHarness(NO_BOSS);
+    await engine.joinRoomTimer("ana");
+    await engine.joinRoomTimer("kai");
+    expect((await engine.getSnapshot("ana")).room.members[0]?.challenge).toBe("");
+    const picks: string[] = [];
+    for (let round = 0; round < 3; round++) {
+      await advance(round === 0 ? FOCUS + MINUTE : 30 * MINUTE);
+      const { members } = (await engine.getSnapshot("ana")).room;
+      expect(members[0]?.challenge).not.toBe("");
+      expect(members[1]?.challenge).toBe(members[0]?.challenge);
+      // Asking again in the same break gives the same one.
+      expect((await engine.getSnapshot("kai")).room.members[0]?.challenge).toBe(
+        members[0]?.challenge,
+      );
+      picks.push(members[0]!.challenge);
+    }
+    expect(picks[1]).not.toBe(picks[0]);
+    expect(picks[2]).not.toBe(picks[1]);
   });
 
   it("ticks a member's card once they're done, and never gives XP", async () => {

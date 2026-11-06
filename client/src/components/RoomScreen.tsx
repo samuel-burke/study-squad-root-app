@@ -114,26 +114,31 @@ function Header({
 export function RoomScreen(props: RoomScreenProps) {
   const { room, me, profiles, now, busy, compact } = props;
   const inSession = me.status !== "idle";
-  const breakKey = myBreakKey(room, me);
-  // Who you high-fived, for the break you're on. A new break starts it fresh.
-  const [sent, setSent] = useState<{ key: string | null; ids: ReadonlySet<string> }>({
+  const breakKey = myBreakKey(room, me.userId, now);
+  // How many high-fives you sent each teammate this break. A new break starts it fresh.
+  const [sent, setSent] = useState<{ key: string | null; counts: ReadonlyMap<string, number> }>({
     key: null,
-    ids: new Set(),
+    counts: new Map(),
   });
-  const sentIds = sent.key === breakKey ? sent.ids : new Set<string>();
+  const sentCounts = sent.key === breakKey ? sent.counts : new Map<string, number>();
   const highFive = breakKey
     ? {
-        sent: sentIds,
+        sent: sentCounts,
         busy,
         onSend: (userId: string, emoji: string) => {
           void props.onHighFive(userId, emoji).then((ok) => {
-            if (ok) setSent({ key: breakKey, ids: new Set([...sentIds, userId]) });
+            if (!ok) return;
+            setSent((prev) => {
+              const counts = new Map(prev.key === breakKey ? prev.counts : []);
+              counts.set(userId, (counts.get(userId) ?? 0) + 1);
+              return { key: breakKey, counts };
+            });
           });
         },
       }
     : undefined;
   const challenge = (
-    <BreakChallengeCard room={room} me={me} busy={busy} onDone={props.onChallengeDone} />
+    <BreakChallengeCard room={room} me={me} now={now} busy={busy} onDone={props.onChallengeDone} />
   );
   const timer = (
     <TimerCard

@@ -53,7 +53,7 @@ export interface HighFiveDto {
 
 /** What happened on the room's last break, for the squad bot's back-to-study post. */
 export interface BreakRecapDto {
-  /** The challenge, with its emoji: "💧 Drink a glass of water". */
+  /** The challenge: "Drink a glass of water". */
   challenge: string;
   challengeDone: number;
   /** Most high-fives first, at most three. */

@@ -2956,12 +2956,6 @@ textarea.input {
   gap: 12px;
 }
 
-.break-challenge-emoji {
-  font-size: 30px;
-  line-height: 1;
-  flex: none;
-}
-
 .break-challenge-text {
   flex: 1;
   min-width: 0;

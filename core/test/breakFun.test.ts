@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   BREAK_CHALLENGES,
+  HIGH_FIVES_PER_TEAMMATE,
   breakChallengeFor,
   breakRecapLines,
   ErrorCode,
@@ -43,6 +44,8 @@ describe("break challenges", () => {
     );
     expect(picked.size).toBeGreaterThan(BREAK_CHALLENGES.length / 2);
     expect(new Set(BREAK_CHALLENGES.map((c) => c.id)).size).toBe(BREAK_CHALLENGES.length);
+    // Plain words only: no emoji in any challenge.
+    for (const c of BREAK_CHALLENGES) expect(c.text).toMatch(/^[\x20-\x7e]+$/);
   });
 
   it("ticks a member's card once they're done, and never gives XP", async () => {
@@ -91,14 +94,16 @@ describe("high-fives", () => {
     ]);
   });
 
-  it("allows one per pair per break, so spamming does nothing", async () => {
+  it("allows up to 5 per teammate per break, then ignores more taps", async () => {
     const { engine, notifier } = await onBreakTogether();
-    await engine.sendHighFive("ana", "kai", "👋");
-    await engine.sendHighFive("ana", "kai", "👋");
-    await engine.sendHighFive("ana", "kai", "🔥");
-    const kai = (await engine.getSnapshot("kai")).room.members.find((m) => m.userId === "kai");
-    expect(kai?.highFives).toBe(1);
-    expect(notifier.highFives).toHaveLength(1);
+    for (let i = 0; i < 8; i++) await engine.sendHighFive("ana", "kai", i % 2 ? "🔥" : "👋");
+    await engine.sendHighFive("kai", "ana", "👋");
+    const room = (await engine.getSnapshot("kai")).room;
+    expect(room.members.find((m) => m.userId === "kai")?.highFives).toBe(HIGH_FIVES_PER_TEAMMATE);
+    expect(room.members.find((m) => m.userId === "ana")?.highFives).toBe(1);
+    expect(notifier.highFives.filter((h) => h.toUserId === "kai")).toHaveLength(
+      HIGH_FIVES_PER_TEAMMATE,
+    );
   });
 
   it("never interrupts someone focusing, and needs you on a break", async () => {
@@ -142,7 +147,7 @@ describe("break recap", () => {
       { userId: "kai", count: 2 },
       { userId: "ana", count: 1 },
     ]);
-    expect(BREAK_CHALLENGES.map((c) => `${c.emoji} ${c.text}`)).toContain(recap.challenge);
+    expect(BREAK_CHALLENGES.map((c) => c.text)).toContain(recap.challenge);
   });
 
   it("adds nothing when nobody joined in", async () => {
@@ -158,7 +163,7 @@ describe("break recap", () => {
   it("writes plain lines under the post", () => {
     const lines = breakRecapLines(
       {
-        challenge: "💧 Drink a glass of water",
+        challenge: "Drink a glass of water",
         challengeDone: 3,
         highFives: [
           { userId: "kai", count: 4 },
@@ -171,7 +176,7 @@ describe("break recap", () => {
       ]),
     );
     expect(lines).toEqual([
-      "✅ 3 people did the break challenge: 💧 Drink a glass of water",
+      "✅ 3 people did the break challenge: Drink a glass of water",
       "👋 High-fives: Kai 4 · Ana 1",
     ]);
     expect(squadPost("studyResumed", "Back to it.", ["Ana"], 1, "📚 Focus", lines)).toBe(

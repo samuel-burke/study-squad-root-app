@@ -6,31 +6,36 @@
 
 export interface BreakChallenge {
   id: string;
-  emoji: string;
   text: string;
 }
 
 /** Short, screen-free things to do in a 5 minute break. */
 export const BREAK_CHALLENGES: readonly BreakChallenge[] = [
-  { id: "water", emoji: "💧", text: "Drink a glass of water" },
-  { id: "stretch", emoji: "🧍", text: "Stand up and stretch for 30 seconds" },
-  { id: "window", emoji: "🪟", text: "Look out a window at something far away for 20 seconds" },
-  { id: "breaths", emoji: "🌬️", text: "Take five slow, deep breaths" },
-  { id: "walk", emoji: "🚶", text: "Walk around the room once" },
-  { id: "shoulders", emoji: "🙆", text: "Roll your shoulders back 10 times" },
-  { id: "eyes", emoji: "😌", text: "Close your eyes and rest them for 30 seconds" },
-  { id: "tidy", emoji: "🧹", text: "Tidy one thing on your desk" },
-  { id: "snack", emoji: "🍎", text: "Grab a healthy snack" },
-  { id: "jacks", emoji: "🤸", text: "Do 10 jumping jacks" },
-  { id: "hands", emoji: "✋", text: "Shake out your hands and wrists" },
-  { id: "air", emoji: "🌿", text: "Open a window or step outside for fresh air" },
-  { id: "kind", emoji: "💬", text: "Send someone a kind message" },
-  { id: "toes", emoji: "🦶", text: "Touch your toes, or try to" },
-  { id: "posture", emoji: "🪑", text: "Fix your posture: feet flat, shoulders back" },
-  { id: "learned", emoji: "📝", text: "Write down one thing you just learned" },
-  { id: "squats", emoji: "💪", text: "Do 5 squats" },
-  { id: "refill", emoji: "🫖", text: "Refill your drink" },
+  { id: "water", text: "Drink a glass of water" },
+  { id: "stretch", text: "Stand up and stretch for 30 seconds" },
+  { id: "window", text: "Look out a window at something far away for 20 seconds" },
+  { id: "breaths", text: "Take five slow, deep breaths" },
+  { id: "walk", text: "Walk around the room once" },
+  { id: "shoulders", text: "Roll your shoulders back 10 times" },
+  { id: "eyes", text: "Close your eyes and rest them for 30 seconds" },
+  { id: "tidy", text: "Tidy one thing on your desk" },
+  { id: "snack", text: "Grab a healthy snack" },
+  { id: "jacks", text: "Do 10 jumping jacks" },
+  { id: "hands", text: "Shake out your hands and wrists" },
+  { id: "air", text: "Open a window or step outside for fresh air" },
+  { id: "kind", text: "Send someone a kind message" },
+  { id: "toes", text: "Touch your toes, or try to" },
+  { id: "posture", text: "Fix your posture: feet flat, shoulders back" },
+  { id: "learned", text: "Write down one thing you just learned" },
+  { id: "squats", text: "Do 5 squats" },
+  { id: "refill", text: "Refill your drink" },
 ];
+
+/**
+ * High-fives one member can send the same teammate in one break. Beyond
+ * this, taps do nothing, so nobody can flood a teammate's screen.
+ */
+export const HIGH_FIVES_PER_TEAMMATE = 5;
 
 /** What members can send each other. */
 export const HIGH_FIVE_EMOJI = ["👋", "🔥"] as const;

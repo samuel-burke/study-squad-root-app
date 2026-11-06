@@ -43,7 +43,9 @@ describe("BreakChallengeCard", () => {
     await engine.completeBreakChallenge("kai");
     const { room, me } = await engine.getSnapshot("me");
     const onDone = vi.fn();
-    render(<BreakChallengeCard room={room} me={me} busy={false} onDone={onDone} />);
+    render(
+      <BreakChallengeCard room={room} me={me} now={room.serverNow} busy={false} onDone={onDone} />,
+    );
     const challenge = breakChallengeFor(roomBreakKey(room.timer.phaseStartedAt));
     expect(screen.getByText(challenge.text)).toBeInTheDocument();
     expect(screen.getByText("1 of 2 done")).toBeInTheDocument();
@@ -55,13 +57,46 @@ describe("BreakChallengeCard", () => {
     const engine = await roomOnBreak();
     const { room, me } = await engine.completeBreakChallenge("me");
     const { rerender } = render(
-      <BreakChallengeCard room={room} me={me} busy={false} onDone={vi.fn()} />,
+      <BreakChallengeCard room={room} me={me} now={room.serverNow} busy={false} onDone={vi.fn()} />,
     );
     expect(screen.getByRole("status")).toHaveTextContent("✓ Done");
     rerender(
       <BreakChallengeCard
-        room={room}
-        me={{ ...me, status: "roomFocus" }}
+        room={{ ...room, timer: { ...room.timer, phase: "focus" } }}
+        me={me}
+        now={room.serverNow}
+        busy={false}
+        onDone={vi.fn()}
+      />,
+    );
+    expect(screen.queryByLabelText("Break challenge")).not.toBeInTheDocument();
+  });
+
+  it("goes away when study starts, even if your own status hasn't caught up", async () => {
+    const { engine, advance } = createHarness();
+    await engine.joinRoomTimer("me");
+    await advance(26 * MINUTE);
+    const onBreak = await engine.getSnapshot("me");
+    await advance(5 * MINUTE);
+    const studying = await engine.getSnapshot("me");
+    expect(studying.room.timer.phase).toBe("focus");
+    // Your status still says break (its push is late), but the board says focus.
+    const { rerender } = render(
+      <BreakChallengeCard
+        room={studying.room}
+        me={onBreak.me}
+        now={studying.room.serverNow}
+        busy={false}
+        onDone={vi.fn()}
+      />,
+    );
+    expect(screen.queryByLabelText("Break challenge")).not.toBeInTheDocument();
+    // Nor does it outlast the break while the room push is on its way.
+    rerender(
+      <BreakChallengeCard
+        room={onBreak.room}
+        me={onBreak.me}
+        now={onBreak.room.timer.phaseEndsAt}
         busy={false}
         onDone={vi.fn()}
       />,
@@ -82,7 +117,7 @@ describe("high-fives on the board", () => {
         now={0}
         compact={compact}
         onOpenMember={onOpen}
-        highFive={{ sent: new Set(), busy: false, onSend }}
+        highFive={{ sent: new Map(), busy: false, onSend }}
       />,
     );
     // Only on Kai's card, never your own.
@@ -94,14 +129,27 @@ describe("high-fives on the board", () => {
     expect(onOpen).not.toHaveBeenCalled();
   });
 
-  it("hides the buttons for someone focusing or already high-fived", () => {
+  it("keeps the buttons until you've sent a teammate 5", () => {
+    render(
+      <MemberBoard
+        members={[card("me"), card("kai")]}
+        profiles={profiles}
+        youId="me"
+        now={0}
+        highFive={{ sent: new Map([["kai", 4]]), busy: false, onSend: vi.fn() }}
+      />,
+    );
+    expect(screen.getAllByRole("button", { name: /^Send Kai/ })).toHaveLength(2);
+  });
+
+  it("hides the buttons for someone focusing or already high-fived 5 times", () => {
     const { rerender } = render(
       <MemberBoard
         members={[card("me"), card("kai", { status: "soloFocus" })]}
         profiles={profiles}
         youId="me"
         now={0}
-        highFive={{ sent: new Set(), busy: false, onSend: vi.fn() }}
+        highFive={{ sent: new Map(), busy: false, onSend: vi.fn() }}
       />,
     );
     expect(screen.queryByRole("button", { name: /high-five/ })).not.toBeInTheDocument();
@@ -111,7 +159,7 @@ describe("high-fives on the board", () => {
         profiles={profiles}
         youId="me"
         now={0}
-        highFive={{ sent: new Set(["kai"]), busy: false, onSend: vi.fn() }}
+        highFive={{ sent: new Map([["kai", 5]]), busy: false, onSend: vi.fn() }}
       />,
     );
     expect(screen.queryByRole("button", { name: /high-five/ })).not.toBeInTheDocument();

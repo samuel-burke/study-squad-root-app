@@ -1,4 +1,4 @@
-import { badgeById, type MemberCardDto } from "@studyroom/core";
+import { badgeById, HIGH_FIVES_PER_TEAMMATE, type MemberCardDto } from "@studyroom/core";
 import type { Profile } from "../api/gateway";
 import { isFocusing, rowTime, statusChip } from "../lib/view";
 import { Avatar } from "./Avatar";
@@ -22,8 +22,8 @@ interface BoardProps {
 }
 
 export interface HighFiveProps {
-  /** Teammates you already high-fived this break. */
-  sent: ReadonlySet<string>;
+  /** High-fives you sent each teammate this break. */
+  sent: ReadonlyMap<string, number>;
   busy: boolean;
   onSend(userId: string, emoji: string): void;
 }
@@ -46,7 +46,7 @@ function HighFiveFor({
   return (
     <HighFiveButtons
       name={name}
-      sent={highFive.sent.has(member.userId)}
+      sent={(highFive.sent.get(member.userId) ?? 0) >= HIGH_FIVES_PER_TEAMMATE}
       busy={highFive.busy}
       compact={compact}
       onSend={(emoji) => highFive.onSend(member.userId, emoji)}

@@ -72,7 +72,13 @@ import {
 } from "../timer/roomCycle";
 import { squadHeading } from "../posts";
 import { SECRET_BADGE_NAME, type SquadEvent } from "../squad/squadLines";
-import { breakChallengeFor, isHighFiveEmoji, roomBreakKey, soloBreakKey } from "../squad/breakFun";
+import {
+  breakChallengeFor,
+  HIGH_FIVES_PER_TEAMMATE,
+  isHighFiveEmoji,
+  roomBreakKey,
+  soloBreakKey,
+} from "../squad/breakFun";
 import { pickSquadLine, type LastSquadLines } from "../squad/squadVoice";
 import {
   validateFeedbackText,
@@ -157,8 +163,15 @@ interface BreakLog {
   room: boolean;
   recapped: boolean;
   challengeDone: Set<string>;
-  /** Recipient to the members who high-fived them. One high-five per pair per break. */
-  highFives: Map<string, Set<string>>;
+  /** Recipient to sender to how many high-fives, up to HIGH_FIVES_PER_TEAMMATE per pair. */
+  highFives: Map<string, Map<string, number>>;
+}
+
+/** High-fives a member received from everyone, in one break. */
+function highFiveTotal(from: ReadonlyMap<string, number> | undefined): number {
+  let total = 0;
+  for (const count of from?.values() ?? []) total += count;
+  return total;
 }
 
 /** The break a member is on right now. */
@@ -698,9 +711,10 @@ export class StudyRoomEngine {
       const theirs = await this.currentBreak(tx, to, now);
       if (!theirs) throw conflictError("They're focusing right now. Try on their next break.");
       const log = this.breakLog(theirs, now);
-      const from = log.highFives.get(to) ?? new Set<string>();
-      if (!from.has(userId)) {
-        from.add(userId);
+      const from = log.highFives.get(to) ?? new Map<string, number>();
+      const sent = from.get(userId) ?? 0;
+      if (sent < HIGH_FIVES_PER_TEAMMATE) {
+        from.set(userId, sent + 1);
         log.highFives.set(to, from);
         effects.roomChanged = true;
         effects.notifications.push((n) => n.highFive(to, { fromUserId: userId, emoji }));
@@ -757,13 +771,13 @@ export class StudyRoomEngine {
     if (!found) return undefined;
     const [key, log] = found;
     const highFives = [...log.highFives]
-      .map(([userId, from]) => ({ userId, count: from.size }))
+      .map(([userId, from]) => ({ userId, count: highFiveTotal(from) }))
       .sort((a, b) => b.count - a.count)
       .slice(0, 3);
     if (log.challengeDone.size === 0 && highFives.length === 0) return undefined;
     const challenge = breakChallengeFor(key);
     return {
-      challenge: `${challenge.emoji} ${challenge.text}`,
+      challenge: challenge.text,
       challengeDone: log.challengeDone.size,
       highFives,
     };
@@ -1904,7 +1918,7 @@ export class StudyRoomEngine {
         cardStyle: looks.get(userId)?.style ?? "classic",
         weeklyRank: ranks.get(userId) ?? 0,
         challengeDone: breakLog?.challengeDone.has(userId) ?? false,
-        highFives: breakLog?.highFives.get(userId)?.size ?? 0,
+        highFives: highFiveTotal(breakLog?.highFives.get(userId)),
       };
     };
 

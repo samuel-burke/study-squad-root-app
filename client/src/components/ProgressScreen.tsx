@@ -133,7 +133,8 @@ export function ProgressScreen({
                   {progress.me.streak} day streak
                 </span>
               </div>
-              {freezesEnabled && (
+              {/* Nothing to protect at 0, so no freeze status either. */}
+              {freezesEnabled && progress.me.streak > 0 && (
                 <span className="freeze-chip">
                   {progress.me.freezeAvailable ? "1 freeze left" : "Freeze used this week"}
                 </span>

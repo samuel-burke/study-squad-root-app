@@ -15,6 +15,7 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 ### Fixed
 
 - The freeze chip no longer says "1 freeze left" when this week's freeze is already holding up your streak because you missed a day. It now says "Freeze used this week".
+- The freeze chip is hidden on a 0 day streak, since there's nothing for a freeze to protect.
 
 ## [0.3.12] - 2026-11-06
 

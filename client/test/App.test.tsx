@@ -289,6 +289,14 @@ describe("Study Squad app", () => {
     expect(await screen.findByRole("timer")).toBeInTheDocument();
   });
 
+  it("hides the freeze status when there's no streak to protect", async () => {
+    const { user } = await renderApp({ activeDaysAgo: [10] });
+    await user.click(screen.getByRole("button", { name: "Your progress" }));
+    expect(await screen.findByText("0 day streak")).toBeInTheDocument();
+    expect(screen.queryByText("1 freeze left")).not.toBeInTheDocument();
+    expect(screen.queryByText("Freeze used this week")).not.toBeInTheDocument();
+  });
+
   it("waits for the stats and the leaderboard before showing either, so nothing jumps", async () => {
     const { gateway, user } = await renderApp();
     let releaseProgress!: () => void;

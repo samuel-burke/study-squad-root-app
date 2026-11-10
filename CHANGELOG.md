@@ -8,6 +8,16 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 - Developer chat commands, for the developer only: `!smoke` runs the self-test from chat, `!preview …` plays a badge, level-up, break, high-five, "Keep going?" or celebration on the developer's own screen, and, with the new **Developer test mode** app setting on, commands set XP, level, streak and badges, drive the boss and the room timer, start a 1-minute test round, post the recap and jump the game clock forward. See docs/TESTING.md.
 - Self-test checks can now be skipped (shown as –) when they don't apply, such as the push check when the app isn't open.
+- Days a streak freeze covered show in ice blue on the Progress heatmap, with a small key underneath.
+
+### Changed
+
+- The Progress heatmap is laid out in Monday-to-Sunday weeks with weekday letters on top, and today has an outline. Before, it was the last 35 days in rows of seven, so the columns weren't weekdays.
+
+### Fixed
+
+- The freeze chip no longer says "1 freeze left" when this week's freeze is already holding up your streak because you missed a day. It now says "Freeze used this week".
+- The freeze chip is hidden on a 0 day streak, since there's nothing for a freeze to protect.
 
 ## [0.3.12] - 2026-11-06
 

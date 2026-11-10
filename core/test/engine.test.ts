@@ -512,6 +512,36 @@ describe("XP rules", () => {
   });
 });
 
+describe("streak freezes through the engine", () => {
+  const DAY = 24 * 60 * MINUTE;
+  const session = async (h: ReturnType<typeof createHarness>) => {
+    await h.engine.startSolo("ana", 25);
+    await h.advance(25 * MINUTE);
+  };
+  const me = async (h: ReturnType<typeof createHarness>) => (await h.engine.getProgress("ana")).me;
+
+  it("holds the freeze while a missed day needs it, spends it on the next session, and renews on Monday", async () => {
+    const h = createHarness(NO_BOSS); // Wednesday Oct 28
+    await session(h);
+    expect(await me(h)).toMatchObject({ streak: 1, freezeAvailable: true });
+    await h.advance(2 * DAY); // skipped Thursday, now Friday
+    expect(await me(h)).toMatchObject({ streak: 1, freezeAvailable: false });
+    await session(h);
+    expect(await me(h)).toMatchObject({ streak: 2, freezeAvailable: false });
+    await h.advance(3 * DAY); // Monday Nov 2, without Sat or Sun
+    expect(await me(h)).toMatchObject({ streak: 0, freezeAvailable: true });
+  });
+
+  it("breaks the streak with no freeze offered when freezes are off", async () => {
+    const h = createHarness(configWith({ ...NO_BOSS, streakFreezesEnabled: false }));
+    await session(h);
+    await h.advance(2 * DAY);
+    expect(await me(h)).toMatchObject({ streak: 0, freezeAvailable: false });
+    await session(h);
+    expect(await me(h)).toMatchObject({ streak: 1, freezeAvailable: false });
+  });
+});
+
 describe("live stats", () => {
   it("credits focus minutes and XP every minute, and the rest when a solo ends", async () => {
     const { engine, notifier, advance } = createHarness(NO_BOSS);
@@ -1055,12 +1085,14 @@ describe("presence and notifications", () => {
 });
 
 describe("progress", () => {
-  it("returns a 35-day window ending today", async () => {
+  it("returns four whole weeks plus this week up to today", async () => {
     const { engine, advance } = createHarness();
     await engine.startSolo("ana", 45);
     await advance(45 * MINUTE);
     const progress = await engine.getProgress("ana");
-    expect(progress.days).toHaveLength(35);
+    // Wednesday: four Monday-to-Sunday weeks, then Monday to Wednesday.
+    expect(progress.days).toHaveLength(31);
+    expect(progress.days[0]?.day).toBe("2026-09-28");
     expect(progress.days.at(-1)).toEqual({ day: "2026-10-28", focusMinutes: 45 });
     expect(progress.totalFocusMinutes).toBe(45);
     expect(progress.me.streak).toBe(1);

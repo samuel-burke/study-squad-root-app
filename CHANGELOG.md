@@ -4,6 +4,19 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ## [Unreleased]
 
+### Added
+
+- Days a streak freeze covered show in ice blue on the Progress heatmap, with a small key underneath.
+
+### Changed
+
+- The Progress heatmap is laid out in Monday-to-Sunday weeks with weekday letters on top, and today has an outline. Before, it was the last 35 days in rows of seven, so the columns weren't weekdays.
+
+### Fixed
+
+- The freeze chip no longer says "1 freeze left" when this week's freeze is already holding up your streak because you missed a day. It now says "Freeze used this week".
+- The freeze chip is hidden on a 0 day streak, since there's nothing for a freeze to protect.
+
 ## [0.3.12] - 2026-11-06
 
 Break challenge fixes, no cap on high-fives, and tighter locks on the developer self-test.

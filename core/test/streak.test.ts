@@ -103,6 +103,149 @@ describe("freezeAvailable", () => {
     expect(freezeAvailable(spent, "2026-11-02", true)).toBe(true);
     expect(freezeAvailable(EMPTY_STREAK, "2026-10-28", false)).toBe(false);
   });
+
+  it("counts this week's freeze as used while it is covering a missed day", () => {
+    // Studied Thu-Sun, skipped Monday, opened the app on Tuesday.
+    const thuToSun = days(EMPTY_STREAK, ["2026-11-05", "2026-11-06", "2026-11-07", "2026-11-08"]);
+    expect(currentStreak(thuToSun, "2026-11-10", true)).toBe(4);
+    expect(freezeAvailable(thuToSun, "2026-11-10", true)).toBe(false);
+    // Monday itself: nothing missed yet, so the freeze is still there.
+    expect(freezeAvailable(thuToSun, "2026-11-09", true)).toBe(true);
+    // Missing Tuesday too is more than one freeze can cover.
+    expect(currentStreak(thuToSun, "2026-11-11", true)).toBe(0);
+  });
+
+  it("keeps this week's freeze when the missed day was last week", () => {
+    // Studied Saturday, skipped Sunday, opened the app on Monday.
+    const sat = days(EMPTY_STREAK, ["2026-11-07"]);
+    expect(currentStreak(sat, "2026-11-09", true)).toBe(1);
+    expect(freezeAvailable(sat, "2026-11-09", true)).toBe(true);
+  });
+});
+
+// Every rule a freeze follows, one case each. Weeks run Monday to Sunday.
+// Nov 2026: Mon 2, Mon 9, Mon 16. Dec 28 2026 is the Monday of the week that ends Jan 3 2027.
+describe("freeze edge cases", () => {
+  const record = (state: StreakState, day: string, freezes = true) =>
+    recordActiveDay(state, day, freezes);
+
+  it("needs no freeze when yesterday was active", () => {
+    const state = days(EMPTY_STREAK, ["2026-11-03", "2026-11-04"]);
+    expect(currentStreak(state, "2026-11-05", true)).toBe(2);
+    expect(freezeAvailable(state, "2026-11-05", true)).toBe(true);
+    expect(record(state, "2026-11-05").freezesSpent).toBe(0);
+  });
+
+  it("spends a freeze when the next session finishes, and shows it spent after", () => {
+    const state = days(EMPTY_STREAK, ["2026-11-03", "2026-11-04"]); // missed Thu 5th
+    const update = record(state, "2026-11-06");
+    expect(update.state.streak).toBe(3);
+    expect(update.freezesSpent).toBe(1);
+    expect(update.state.freezeWeeksUsed).toEqual(["2026-11-02"]);
+    expect(freezeAvailable(update.state, "2026-11-06", true)).toBe(false);
+    expect(freezeAvailable(update.state, "2026-11-08", true)).toBe(false);
+  });
+
+  it("gives a fresh freeze every Monday", () => {
+    const state = days(EMPTY_STREAK, ["2026-11-03", "2026-11-05"]); // spent week of the 2nd
+    expect(freezeAvailable(state, "2026-11-08", true)).toBe(false); // Sunday
+    expect(freezeAvailable(state, "2026-11-09", true)).toBe(true); // Monday
+  });
+
+  it("breaks the streak on a second missed day in a week whose freeze is spent", () => {
+    const state = days(EMPTY_STREAK, ["2026-11-03", "2026-11-05", "2026-11-06"]);
+    expect(currentStreak(state, "2026-11-08", true)).toBe(0); // missed Sat 7th
+    expect(record(state, "2026-11-08").state.streak).toBe(1);
+  });
+
+  it("breaks the streak on two missed days in the same week", () => {
+    const state = days(EMPTY_STREAK, ["2026-11-03", "2026-11-04"]);
+    expect(currentStreak(state, "2026-11-07", true)).toBe(0); // missed Thu and Fri
+    const update = record(state, "2026-11-07");
+    expect(update.state.streak).toBe(1);
+    expect(update.freezesSpent).toBe(0);
+    // Nothing was spent, so the week's freeze is still there for later.
+    expect(update.state.freezeWeeksUsed).toEqual([]);
+    expect(freezeAvailable(update.state, "2026-11-07", true)).toBe(true);
+  });
+
+  it("leaves the freeze untouched when the streak is already lost", () => {
+    const state = days(EMPTY_STREAK, ["2026-11-03"]);
+    expect(currentStreak(state, "2026-11-06", true)).toBe(0); // missed Wed and Thu
+    expect(freezeAvailable(state, "2026-11-06", true)).toBe(true);
+  });
+
+  it("uses last week's freeze for a missed Sunday, keeping this week's", () => {
+    const state = days(EMPTY_STREAK, ["2026-11-06", "2026-11-07"]); // missed Sun 8th
+    expect(currentStreak(state, "2026-11-09", true)).toBe(2);
+    expect(freezeAvailable(state, "2026-11-09", true)).toBe(true);
+    const update = record(state, "2026-11-09");
+    expect(update.state.freezeWeeksUsed).toEqual(["2026-11-02"]);
+    expect(freezeAvailable(update.state, "2026-11-09", true)).toBe(true);
+  });
+
+  it("can't use last week's freeze for a missed Sunday if it was already spent", () => {
+    const state = days(EMPTY_STREAK, ["2026-11-03", "2026-11-05", "2026-11-06", "2026-11-07"]);
+    expect(currentStreak(state, "2026-11-09", true)).toBe(0);
+    expect(record(state, "2026-11-09").state.streak).toBe(1);
+  });
+
+  it("uses one freeze from each week for a missed Sunday and Monday", () => {
+    const state = days(EMPTY_STREAK, ["2026-11-06", "2026-11-07"]);
+    expect(currentStreak(state, "2026-11-10", true)).toBe(2);
+    expect(freezeAvailable(state, "2026-11-10", true)).toBe(false);
+    const update = record(state, "2026-11-10");
+    expect(update.state.streak).toBe(3);
+    expect(update.freezesSpent).toBe(2);
+    expect(update.state.freezeWeeksUsed).toEqual(["2026-11-02", "2026-11-09"]);
+  });
+
+  it("breaks the streak on a missed Saturday and Sunday", () => {
+    const state = days(EMPTY_STREAK, ["2026-11-05", "2026-11-06"]);
+    expect(currentStreak(state, "2026-11-09", true)).toBe(0);
+    expect(record(state, "2026-11-09").state.streak).toBe(1);
+  });
+
+  it("breaks the streak on a missed Sunday, Monday and Tuesday", () => {
+    const state = days(EMPTY_STREAK, ["2026-11-06", "2026-11-07"]);
+    expect(currentStreak(state, "2026-11-11", true)).toBe(0);
+    expect(record(state, "2026-11-11").state.streak).toBe(1);
+  });
+
+  it("follows Monday weeks across the new year", () => {
+    // Wed Dec 30 and Fri Jan 1 are in the same week, so only one can be covered.
+    const state = days(EMPTY_STREAK, ["2026-12-28", "2026-12-29"]);
+    expect(record(state, "2026-12-31").state.streak).toBe(3);
+    const after = days(state, ["2026-12-31"]);
+    expect(record(after, "2027-01-02").state.streak).toBe(1);
+    // Sun Jan 3 is still that week; Mon Jan 4 brings a new freeze.
+    const sat = days(EMPTY_STREAK, ["2027-01-01", "2027-01-02"]);
+    expect(freezeAvailable(after, "2027-01-03", true)).toBe(false);
+    expect(freezeAvailable(after, "2027-01-04", true)).toBe(true);
+    expect(record(sat, "2027-01-04").state.streak).toBe(3); // missed Sun 3rd
+  });
+
+  it("spends no freezes and offers none when freezes are turned off", () => {
+    const state = days(EMPTY_STREAK, ["2026-11-03", "2026-11-04"], false);
+    expect(currentStreak(state, "2026-11-05", false)).toBe(2);
+    expect(currentStreak(state, "2026-11-06", false)).toBe(0);
+    expect(freezeAvailable(state, "2026-11-05", false)).toBe(false);
+    const update = record(state, "2026-11-06", false);
+    expect(update.state.streak).toBe(1);
+    expect(update.freezesSpent).toBe(0);
+  });
+
+  it("keeps freezes already spent when the setting is turned back on", () => {
+    const spent = days(EMPTY_STREAK, ["2026-11-03", "2026-11-05"]);
+    expect(freezeAvailable(spent, "2026-11-06", false)).toBe(false);
+    expect(freezeAvailable(spent, "2026-11-06", true)).toBe(false);
+  });
+
+  it("keeps the streak if the clock is behind the last active day", () => {
+    const state = days(EMPTY_STREAK, ["2026-11-04", "2026-11-05"]);
+    expect(currentStreak(state, "2026-11-04", true)).toBe(2);
+    expect(freezeAvailable(state, "2026-11-04", true)).toBe(true);
+  });
 });
 
 function addTwo(day: string) {

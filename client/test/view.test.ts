@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { PRESETS, type RoomTimerDto } from "@studyroom/core";
 import {
   avatarColor,
+  freezeDays,
   heatLevel,
   initials,
   nextLabel,
@@ -91,6 +92,35 @@ describe("small helpers", () => {
 
   it("buckets heatmap days", () => {
     expect([0, 10, 45, 120].map(heatLevel)).toEqual([0, 1, 2, 3]);
+  });
+
+  describe("freezeDays", () => {
+    // Mon 2 .. Tue 10 Nov 2026; minutes per day.
+    const week = (minutes: number[]) =>
+      minutes.map((m, i) => ({
+        day: `2026-11-${String(2 + i).padStart(2, "0")}`,
+        focusMinutes: m,
+      }));
+    const frozen = (minutes: number[], streak: number) => [...freezeDays(week(minutes), streak)];
+
+    it("marks nothing on an unbroken streak, with or without today", () => {
+      expect(frozen([0, 0, 0, 40, 40, 40, 40, 40, 0], 5)).toEqual([]);
+      expect(frozen([0, 0, 0, 40, 40, 40, 40, 40, 40], 6)).toEqual([]);
+    });
+
+    it("marks a missed day the freeze is still holding up", () => {
+      // Samuel's case: Thu-Sun, skipped Monday, today Tuesday.
+      expect(frozen([0, 0, 0, 40, 40, 40, 40, 0, 0], 4)).toEqual(["2026-11-09"]);
+    });
+
+    it("marks a covered day inside the streak", () => {
+      expect(frozen([0, 0, 0, 40, 0, 40, 40, 0, 40], 4)).toEqual(["2026-11-09", "2026-11-06"]);
+    });
+
+    it("stops at the start of the streak, so older gaps stay plain", () => {
+      expect(frozen([40, 0, 0, 40, 40, 0, 0, 0, 0], 0)).toEqual([]);
+      expect(frozen([40, 0, 0, 40, 40, 0, 0, 0, 40], 1)).toEqual([]);
+    });
   });
 
   it("computes bounded percentages", () => {

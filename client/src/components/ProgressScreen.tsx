@@ -1,7 +1,7 @@
 import { formatHours, type ProgressDto, type QuestDto } from "@studyroom/core";
 import { useEffect, useRef, useState } from "react";
 import { toGatewayError, type StudyRoomGateway } from "../api/gateway";
-import { heatLevel, percent } from "../lib/view";
+import { freezeDays, heatLevel, percent } from "../lib/view";
 import { BadgeShelf, CardStylePicker } from "./BadgeShelf";
 import { BackIcon, FlameIcon } from "./Icons";
 import { XpBar } from "./SessionPanel";
@@ -42,6 +42,8 @@ export function ProgressScreen({
   // pop in under an already-drawn board while the member is reading it.
   const [boardSettled, setBoardSettled] = useState(false);
   const ready = (progress !== null || error !== null) && boardSettled;
+  const frozen =
+    progress && freezesEnabled ? freezeDays(progress.days, progress.me.streak) : new Set<string>();
 
   async function save(work: () => Promise<ProgressDto>) {
     setSaving(true);
@@ -143,21 +145,39 @@ export function ProgressScreen({
               ))}
             </div>
             <ol className="heatmap" aria-label="Focus time, last 5 weeks">
-              {progress.days.map((d, i) => (
-                <li
-                  key={d.day}
-                  className={i === progress.days.length - 1 ? "heat heat-today" : "heat"}
-                  data-level={heatLevel(d.focusMinutes)}
-                  title={`${d.day}: ${formatHours(d.focusMinutes)}`}
-                  aria-label={`${d.day}: ${formatHours(d.focusMinutes)}`}
-                />
-              ))}
+              {progress.days.map((d, i) => {
+                const isFrozen = frozen.has(d.day);
+                const label = `${d.day}: ${isFrozen ? "covered by a freeze" : formatHours(d.focusMinutes)}`;
+                return (
+                  <li
+                    key={d.day}
+                    className={[
+                      "heat",
+                      isFrozen && "heat-frozen",
+                      i === progress.days.length - 1 && "heat-today",
+                    ]
+                      .filter(Boolean)
+                      .join(" ")}
+                    data-level={heatLevel(d.focusMinutes)}
+                    title={label}
+                    aria-label={label}
+                  />
+                );
+              })}
               {Array.from({ length: (7 - (progress.days.length % 7)) % 7 }, (_, i) => (
                 <li key={`later-${i}`} className="heat heat-later" aria-hidden="true" />
               ))}
             </ol>
             <div className="row-between tiny dim">
-              <span>Last 5 weeks</span>
+              <span>
+                Last 5 weeks
+                {frozen.size > 0 && (
+                  <>
+                    {" · "}
+                    <span className="heat-key" aria-hidden="true" /> freeze
+                  </>
+                )}
+              </span>
               <span>{formatHours(progress.totalFocusMinutes)} total</span>
             </div>
           </section>

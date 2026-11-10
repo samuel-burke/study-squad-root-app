@@ -4,6 +4,10 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ## [Unreleased]
 
+### Added
+
+- Days a streak freeze covered show in ice blue on the Progress heatmap, with a small key underneath.
+
 ### Changed
 
 - The Progress heatmap is laid out in Monday-to-Sunday weeks with weekday letters on top, and today has an outline. Before, it was the last 35 days in rows of seven, so the columns weren't weekdays.

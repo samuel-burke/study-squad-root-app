@@ -6,20 +6,22 @@ Most game features take days to reach for real: streaks need calendar days, and 
 
 Run `npm run demo` and add these to the printed URL. They only exist in the demo build, so they never reach a Root community. Reloading the page starts over.
 
-| Parameter        | Example                         | What it does                                                                                                                                                                     |
-| ---------------- | ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `focus`, `break` | `?focus=1&break=0.5`            | Room timer lengths in minutes. A 1 / 0.5 cycle takes 7 minutes. XP counts whole minutes, so `focus` under 1 earns 0 XP.                                                          |
-| `bots`           | `bots=0`                        | Leaves out the simulated members.                                                                                                                                                |
-| `elapsed`        | `elapsed=10`                    | How far into round 1 the room is when the page opens.                                                                                                                            |
-| `bossLeft`       | `bossLeft=2`                    | HP the weekly boss has left, in XP. Any finished round of 1 minute or more then defeats it.                                                                                      |
-| `bossName`       | `bossName=The Final Final Exam` | Makes this week's boss the built-in boss with that name, for its strength and badges. Names not in the built-in list are ignored.                                                |
-| `bossHp`         | `bossHp=100`                    | Stands in for the Boss base HP setting.                                                                                                                                          |
-| `streak`         | `streak=6`                      | Your starting streak. With yesterday active, one finished session makes it 7.                                                                                                    |
-| `missed`         | `missed=1`                      | Days missed since you were last active. 1 is covered by the week's freeze; 3 always breaks the streak.                                                                           |
-| `xp`             | `xp=2440`                       | Your starting lifetime XP, for level-ups, Jackpot (any total ending in 777) and Over 9000.                                                                                       |
-| `unlock`         | `unlock=giant-slayer,blitz`     | Plays those badges' unlock animations, without awarding them, after your first click on the page (browsers only allow sound after a click). `unlock=all` plays one of each tier. |
-| `badges`         | `badges=first-session,squad-up` | Starts you holding those badges. Without it you start with none, so your first round and goal earn badges live with their unlock moments.                                        |
-| `weekHours`      | `weekHours=6`                   | Adds that many focus hours to your earlier days this week, to place you on the weekly leaderboard (used for store screenshots).                                                  |
+| Parameter        | Example                         | What it does                                                                                                                                                                                                  |
+| ---------------- | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `focus`, `break` | `?focus=1&break=0.5`            | Room timer lengths in minutes. A 1 / 0.5 cycle takes 7 minutes. XP counts whole minutes, so `focus` under 1 earns 0 XP.                                                                                       |
+| `bots`           | `bots=0`                        | Leaves out the simulated members.                                                                                                                                                                             |
+| `elapsed`        | `elapsed=10`                    | How far into round 1 the room is when the page opens.                                                                                                                                                         |
+| `bossLeft`       | `bossLeft=2`                    | HP the weekly boss has left, in XP. Any finished round of 1 minute or more then defeats it.                                                                                                                   |
+| `bossName`       | `bossName=The Final Final Exam` | Makes this week's boss the built-in boss with that name, for its strength and badges. Names not in the built-in list are ignored.                                                                             |
+| `bossHp`         | `bossHp=100`                    | Stands in for the Boss base HP setting.                                                                                                                                                                       |
+| `streak`         | `streak=6`                      | Your starting streak. With yesterday active, one finished session makes it 7.                                                                                                                                 |
+| `missed`         | `missed=1`                      | Days missed since you were last active. 1 is covered by the week's freeze; 3 always breaks the streak.                                                                                                        |
+| `active`         | `active=5,4,3,2`                | Days ago you finished a session (0 is today). Your history is exactly those days, and the streak replays them through the real rules, so freezes are spent as they would be. Overrides `streak` and `missed`. |
+| `freezes`        | `freezes=0`                     | Turns streak freezes off, like the admin setting.                                                                                                                                                             |
+| `xp`             | `xp=2440`                       | Your starting lifetime XP, for level-ups, Jackpot (any total ending in 777) and Over 9000.                                                                                                                    |
+| `unlock`         | `unlock=giant-slayer,blitz`     | Plays those badges' unlock animations, without awarding them, after your first click on the page (browsers only allow sound after a click). `unlock=all` plays one of each tier.                              |
+| `badges`         | `badges=first-session,squad-up` | Starts you holding those badges. Without it you start with none, so your first round and goal earn badges live with their unlock moments.                                                                     |
+| `weekHours`      | `weekHours=6`                   | Adds that many focus hours to your earlier days this week, to place you on the weekly leaderboard (used for store screenshots).                                                                               |
 
 Useful combinations:
 
@@ -27,6 +29,7 @@ Useful combinations:
 - Giant Slayer and Survived Finals: `?focus=1&break=0.5&bossLeft=2&bossName=The%20Final%20Final%20Exam`.
 - Streak milestone: `?focus=1&break=0.5&streak=6`, finish a round (On a Roll).
 - Freeze: `?focus=1&break=0.5&streak=4&missed=1`, finish a round (Saved by the Freeze).
+- Freeze edge cases on the Progress screen: `?active=5,4,3,2` on a Tuesday is a missed Monday held up by the freeze. Pin the date with Playwright's `page.clock.setFixedTime` to pick the weekday.
 - Comeback and Phoenix: `?focus=1&break=0.5&streak=30&missed=3`, finish a round.
 - Every medal tier's animation and sound: `?unlock=all`.
 

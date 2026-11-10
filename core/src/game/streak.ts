@@ -79,5 +79,12 @@ export function freezeAvailable(
   today: DayKey,
   freezesEnabled: boolean,
 ): boolean {
-  return freezesEnabled && !state.freezeWeeksUsed.includes(weekKey(today));
+  if (!freezesEnabled) return false;
+  const week = weekKey(today);
+  if (state.freezeWeeksUsed.includes(week)) return false;
+  // A missed day this week that is keeping the streak alive has already
+  // claimed this week's freeze, even though it is only written down once the
+  // next session finishes.
+  const pending = bridgeGap(state, today, freezesEnabled) ?? [];
+  return !pending.includes(week);
 }

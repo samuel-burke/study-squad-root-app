@@ -126,9 +126,10 @@ test.describe("progress", () => {
     await expect(page.getByRole("heading", { name: "Your progress" })).toBeVisible();
     await expect(page.getByText("5 day streak")).toBeVisible();
     await expect(page.getByText("1 freeze left")).toBeVisible();
-    await expect(
-      page.getByRole("list", { name: "Focus time, last 5 weeks" }).getByRole("listitem"),
-    ).toHaveCount(35);
+    // Five whole Monday-to-Sunday rows; days after today are blank padding.
+    const heatmap = page.getByRole("list", { name: "Focus time, last 5 weeks" });
+    await expect(heatmap.locator("li")).toHaveCount(35);
+    await expect(heatmap.locator("li.heat-today")).toHaveCount(1);
     await expect(
       page.getByRole("region", { name: "Weekly quests" }).getByRole("progressbar"),
     ).toHaveCount(3);

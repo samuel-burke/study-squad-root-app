@@ -2055,10 +2055,12 @@ export class StudyRoomEngine {
 
   private async buildProgress(tx: Store, userId: string, now: number): Promise<ProgressDto> {
     const today = dayKey(now, this.config.timeZone);
-    const from = addDays(today, -(LIMITS.progressWindowDays - 1));
+    // Whole Monday-to-Sunday weeks, so the heatmap's columns are weekdays.
+    // The current week runs only up to today; the client pads the rest.
+    const from = addDays(weekKey(today), -(LIMITS.progressWindowDays - 7));
     const rows = await tx.stats.listForUser(userId, from, today);
     const byDay = new Map(rows.map((r) => [r.day, r.focusMinutes]));
-    const days = Array.from({ length: LIMITS.progressWindowDays }, (_, i) => {
+    const days = Array.from({ length: daysBetween(from, today) + 1 }, (_, i) => {
       const day = addDays(from, i);
       return { day, focusMinutes: byDay.get(day) ?? 0 };
     });

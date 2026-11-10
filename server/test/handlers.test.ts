@@ -177,7 +177,7 @@ describe("StudyRoomHandlers", () => {
     expect((await handlers.clearDoneGoals("priya")).goals).toEqual([]);
     const added = (await handlers.addGoal("priya", { text: "One more" })).goals[0]!;
     expect((await handlers.deleteGoal("priya", { goalId: added.id })).goals).toEqual([]);
-    expect((await handlers.getProgress("priya")).days).toHaveLength(35);
+    expect((await handlers.getProgress("priya")).days).toHaveLength(31);
     expect((await handlers.getLeaderboard("priya", { by: 0, period: 0 })).startDay).toBe(
       "2026-10-26",
     );

@@ -7,6 +7,9 @@ import { BackIcon, FlameIcon } from "./Icons";
 import { XpBar } from "./SessionPanel";
 import { WeeklyLeaderboard } from "./WeeklyLeaderboard";
 
+/** Heatmap rows are Monday-to-Sunday weeks, ending with this week. */
+const WEEKDAY_LETTERS = ["M", "T", "W", "T", "F", "S", "S"];
+
 /** The leaderboard first, then level, streak with freeze status, a five-week heatmap, weekly quests, badges and card style. */
 export function ProgressScreen({
   gateway,
@@ -134,15 +137,23 @@ export function ProgressScreen({
                 </span>
               )}
             </div>
+            <div className="heatmap heat-weekdays" aria-hidden="true">
+              {WEEKDAY_LETTERS.map((letter, i) => (
+                <span key={i}>{letter}</span>
+              ))}
+            </div>
             <ol className="heatmap" aria-label="Focus time, last 5 weeks">
-              {progress.days.map((d) => (
+              {progress.days.map((d, i) => (
                 <li
                   key={d.day}
-                  className="heat"
+                  className={i === progress.days.length - 1 ? "heat heat-today" : "heat"}
                   data-level={heatLevel(d.focusMinutes)}
                   title={`${d.day}: ${formatHours(d.focusMinutes)}`}
                   aria-label={`${d.day}: ${formatHours(d.focusMinutes)}`}
                 />
+              ))}
+              {Array.from({ length: (7 - (progress.days.length % 7)) % 7 }, (_, i) => (
+                <li key={`later-${i}`} className="heat heat-later" aria-hidden="true" />
               ))}
             </ol>
             <div className="row-between tiny dim">

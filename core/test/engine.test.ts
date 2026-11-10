@@ -1043,12 +1043,14 @@ describe("presence and notifications", () => {
 });
 
 describe("progress", () => {
-  it("returns a 35-day window ending today", async () => {
+  it("returns four whole weeks plus this week up to today", async () => {
     const { engine, advance } = createHarness();
     await engine.startSolo("ana", 45);
     await advance(45 * MINUTE);
     const progress = await engine.getProgress("ana");
-    expect(progress.days).toHaveLength(35);
+    // Wednesday: four Monday-to-Sunday weeks, then Monday to Wednesday.
+    expect(progress.days).toHaveLength(31);
+    expect(progress.days[0]?.day).toBe("2026-09-28");
     expect(progress.days.at(-1)).toEqual({ day: "2026-10-28", focusMinutes: 45 });
     expect(progress.totalFocusMinutes).toBe(45);
     expect(progress.me.streak).toBe(1);

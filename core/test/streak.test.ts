@@ -103,6 +103,24 @@ describe("freezeAvailable", () => {
     expect(freezeAvailable(spent, "2026-11-02", true)).toBe(true);
     expect(freezeAvailable(EMPTY_STREAK, "2026-10-28", false)).toBe(false);
   });
+
+  it("counts this week's freeze as used while it is covering a missed day", () => {
+    // Studied Thu-Sun, skipped Monday, opened the app on Tuesday.
+    const thuToSun = days(EMPTY_STREAK, ["2026-11-05", "2026-11-06", "2026-11-07", "2026-11-08"]);
+    expect(currentStreak(thuToSun, "2026-11-10", true)).toBe(4);
+    expect(freezeAvailable(thuToSun, "2026-11-10", true)).toBe(false);
+    // Monday itself: nothing missed yet, so the freeze is still there.
+    expect(freezeAvailable(thuToSun, "2026-11-09", true)).toBe(true);
+    // Missing Tuesday too is more than one freeze can cover.
+    expect(currentStreak(thuToSun, "2026-11-11", true)).toBe(0);
+  });
+
+  it("keeps this week's freeze when the missed day was last week", () => {
+    // Studied Saturday, skipped Sunday, opened the app on Monday.
+    const sat = days(EMPTY_STREAK, ["2026-11-07"]);
+    expect(currentStreak(sat, "2026-11-09", true)).toBe(1);
+    expect(freezeAvailable(sat, "2026-11-09", true)).toBe(true);
+  });
 });
 
 function addTwo(day: string) {

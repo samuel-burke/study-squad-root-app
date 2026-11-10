@@ -28,6 +28,7 @@ function setup(overrides: Partial<DevCommandDeps> = {}) {
     snapshot: async () => snapshot,
     advanceClock: vi.fn(async (ms: number) => ms),
     clockOffset: () => 0,
+    reset: vi.fn(async () => "Wiped."),
     notifier,
     celebrate: vi.fn(),
     logger: quiet,
@@ -122,6 +123,20 @@ describe("developer chat commands", () => {
     await say("!clock +5w");
     expect(replies[1]).toMatch(/only goes forward/);
     expect(replies[2]).toMatch(/between 1 minute and 4 weeks/);
+  });
+
+  it("wipes the community only with confirm and test mode", async () => {
+    const { say, replies, deps } = setup();
+    await say("!reset");
+    expect(deps.reset).not.toHaveBeenCalled();
+    expect(replies[0]).toMatch(/!reset confirm/);
+    await say("!reset confirm");
+    expect(deps.reset).toHaveBeenCalledTimes(1);
+    expect(replies[1]).toBe("🧪 Wiped.");
+    const off = setup({ testMode: () => false });
+    await off.say("!reset confirm");
+    expect(off.deps.reset).not.toHaveBeenCalled();
+    expect(off.replies[0]).toMatch(/test mode is off/);
   });
 
   it("starts the test round and runs the smoke test", async () => {

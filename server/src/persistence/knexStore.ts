@@ -168,6 +168,23 @@ export class KnexStore implements Store {
     });
   }
 
+  async eraseAll(keepKv: readonly string[]): Promise<void> {
+    await this.transaction(async (tx) => {
+      const db = (tx as KnexStore).db;
+      const rows: { name: string }[] = await db("sqlite_master")
+        .where({ type: "table" })
+        .select("name");
+      for (const { name } of rows) {
+        if (name.startsWith("sqlite_") || name.startsWith("knex_") || name === "feedback") continue;
+        if (name === "kv")
+          await db("kv")
+            .whereNotIn("key", [...keepKv])
+            .delete();
+        else await db(name).delete();
+      }
+    });
+  }
+
   async transaction<T>(work: (tx: Store) => Promise<T>): Promise<T> {
     if (this.db.isTransaction) return work(this);
     return this.db.transaction((trx) => work(new KnexStore(trx)));

@@ -31,6 +31,8 @@ export interface DevCommandDeps {
   /** Moves the game clock forward and settles everything now due. Returns the new offset. */
   advanceClock(ms: number): Promise<number>;
   clockOffset(): number;
+  /** Wipes the community's data (through the engine) and puts the clock back to real time. */
+  reset(): Promise<string>;
   /** Pushes that reach only the developer's own open app. */
   notifier: Pick<Notifier, "personalResult" | "myStatusUpdated" | "badgesEarned" | "highFive">;
   celebrate(userId: string, event: PhaseCompletedDto): void;
@@ -54,6 +56,7 @@ const HELP = [
   "`!room skip` · `!room stop`",
   "`!clock +30m` · `!clock +1h` · `!clock +1d` · `!clock +1w` · `!clock`: jump the game clock forward (it can't go back)",
   "`!recap` · `!botline`",
+  "`!reset confirm`: wipe this community's Study Squad data and put the clock back to real time",
 ].join("\n");
 
 const UNITS: Record<string, number> = { m: 60_000, h: 3_600_000, d: 86_400_000, w: 604_800_000 };
@@ -145,6 +148,11 @@ export class DevCommands {
         return this.clock(arg(0));
       case "recap":
         return `🧪 ${await this.deps.admin({ kind: "recap" })}`;
+      case "reset":
+        if (arg(0) !== "confirm")
+          return "🧪 This wipes all of this community's Study Squad data. Type `!reset confirm` to do it.";
+        this.requireTestMode();
+        return `🧪 ${await this.deps.reset()}`;
       case "botline":
         return `🧪 ${await this.deps.admin({ kind: "botLine", byUserId: userId })}`;
       default:

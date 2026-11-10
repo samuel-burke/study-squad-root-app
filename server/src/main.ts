@@ -22,7 +22,7 @@ import { loadFeedbackDestination, RelayFeedbackInbox } from "./adapters/feedback
 import { createLogger } from "./adapters/logger";
 import { PushNotifier } from "./adapters/pushNotifier";
 import { TimeoutScheduler } from "./adapters/timeoutScheduler";
-import { VoiceChannelPicker } from "./adapters/voiceChannelPicker";
+import { VOICE_PICK_KEY, VoiceChannelPicker } from "./adapters/voiceChannelPicker";
 import { VoiceRoster } from "./adapters/voiceRoster";
 import { StudyRoomHandlers } from "./handlers";
 import { RecapScheduler } from "./jobs/recapScheduler";
@@ -243,6 +243,11 @@ async function onStarting(state: RootAppStartState): Promise<void> {
       return offset;
     },
     clockOffset: () => devClock.offset(),
+    reset: async () => {
+      const done = await engine.devAdmin({ kind: "reset", keepKv: [VOICE_PICK_KEY] });
+      await devClock.reset();
+      return `${done} The game clock is back to real time.`;
+    },
     notifier,
     celebrate: (userId, event) => {
       const client = findClient(userId);

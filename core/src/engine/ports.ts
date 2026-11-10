@@ -269,6 +269,12 @@ export interface Store {
    * Community totals for past recaps are not recomputed.
    */
   eraseUser(userId: string): Promise<void>;
+  /**
+   * Removes every member's records and the room, boss and kv state, so the
+   * community starts over. Keeps feedback notes still owed to the developer
+   * and the kv keys named in `keepKv`. Only the developer's `!reset` uses it.
+   */
+  eraseAll(keepKv: readonly string[]): Promise<void>;
   /** Runs `work` atomically. Implementations must roll back if it throws. */
   transaction<T>(work: (tx: Store) => Promise<T>): Promise<T>;
 }

@@ -258,7 +258,9 @@ export type DevAction =
   | { kind: "endTimer"; userId: string }
   | { kind: "bossHp"; value: number }
   | { kind: "bossDefeat" | "botLine"; byUserId: string }
-  | { kind: "bossNew" | "roomSkip" | "roomStop" | "recap" };
+  | { kind: "bossNew" | "roomSkip" | "roomStop" | "recap" }
+  /** Wipes this community's data and starts over. `keepKv` survives (like the voice channel pick). */
+  | { kind: "reset"; keepKv: readonly string[] };
 
 /** Total XP at the start of `level`. */
 function xpAtLevel(level: number): number {
@@ -766,6 +768,15 @@ export class StudyRoomEngine {
             return "The squad bot is off or has no channel.";
           await this.squadMessage(tx, effects, "sessionStarted", [action.byUserId], 1, now);
           return "Sent a squad bot line to the bot channel.";
+        }
+        case "reset": {
+          await tx.eraseAll(action.keepKv);
+          this.breaks.clear();
+          this.challenges.clear();
+          this.lastChallenge.clear();
+          for (const userId of this.present) this.touch(effects, userId);
+          effects.roomChanged = true;
+          return "Wiped this community's Study Squad data. Everyone starts from zero.";
         }
       }
     });

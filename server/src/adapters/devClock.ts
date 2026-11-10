@@ -30,6 +30,12 @@ export class DevClock {
     return this.offsetMs;
   }
 
+  /** Back to real time. Only after `!reset` has wiped the data, so nothing is left in the future. */
+  async reset(): Promise<void> {
+    this.offsetMs = 0;
+    await this.store.set(DEV_CLOCK_KEY, 0);
+  }
+
   async advance(ms: number): Promise<number> {
     if (!(ms > 0)) throw new Error("The clock only moves forward.");
     this.offsetMs += ms;

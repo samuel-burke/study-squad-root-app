@@ -47,7 +47,7 @@ import {
   SHOWCASE_SIZE,
 } from "../game/cosmetics";
 import { currentStreak, EMPTY_STREAK, freezeAvailable, recordActiveDay } from "../game/streak";
-import { baseFocusXp, focusXp, levelFromXp } from "../game/xp";
+import { baseFocusXp, focusXp, levelFromXp, xpForLevel } from "../game/xp";
 import type { AppConfig } from "../settings";
 import {
   addDays,
@@ -251,6 +251,27 @@ function attachNewBadges(result: unknown, effects: Effects): void {
  * scheduling, real-time pushes and channel posts. The Root server and the
  * browser demo both run this same class with different adapters.
  */
+/** One of the developer's chat commands that change real data (Developer test mode only). */
+export type DevAction =
+  | { kind: "setXp" | "setLevel" | "setStreak"; userId: string; value: number }
+  | { kind: "grantBadge"; userId: string; badgeId: string }
+  | { kind: "endTimer"; userId: string }
+  | { kind: "bossHp"; value: number }
+  | { kind: "bossDefeat" | "botLine"; byUserId: string }
+  | { kind: "bossNew" | "roomSkip" | "roomStop" | "recap" }
+  /** Wipes this community's data and starts over. `keepKv` survives (like the voice channel pick). */
+  | { kind: "reset"; keepKv: readonly string[] };
+
+/** Total XP at the start of `level`. */
+function xpAtLevel(level: number): number {
+  let xp = 0;
+  for (let l = 1; l < level; l++) xp += xpForLevel(l);
+  return xp;
+}
+
+/** The developer test round's focus and break, in minutes. */
+const TEST_ROUND_MINUTES = 1;
+
 export class StudyRoomEngine {
   private readonly queue = new SerialQueue();
   private readonly pendingPosts = new Set<Promise<void>>();
@@ -611,6 +632,163 @@ export class StudyRoomEngine {
   ): Promise<SnapshotDto> {
     const minutes = validateSoloMinutes(minutesInput);
     const goals = validateStartGoals(options.goals ?? []);
+    return this.soloFor(userId, minutes, this.config.preset.breakMinutes, goals, options);
+  }
+
+  /**
+   * The developer's live test round: a real one-minute solo focus and a
+   * one-minute break, so pushes, XP, the boss, badges and the break screen
+   * can be watched end to end. Callers check who may start it.
+   */
+  startTestRound(userId: string): Promise<SnapshotDto> {
+    return this.soloFor(userId, TEST_ROUND_MINUTES, TEST_ROUND_MINUTES, [], {});
+  }
+
+  // ---------------------------------------------------------------- developer
+
+  /**
+   * The developer's chat commands that change real data. Only when an admin
+   * has turned on Developer test mode in this community; callers also check
+   * who is asking. Returns one plain line saying what changed.
+   */
+  devAdmin(action: DevAction): Promise<string> {
+    if (!this.config.devTestMode) {
+      return Promise.reject(
+        new DomainError(
+          ErrorCode.Forbidden,
+          "Developer test mode is off here. Turn it on in Study Squad's app settings first.",
+        ),
+      );
+    }
+    return this.run(async (tx, now, effects) => {
+      const whole = (value: number, min: number, max: number, what: string) => {
+        if (!Number.isInteger(value) || value < min || value > max)
+          throw validationError(`${what} must be a whole number from ${min} to ${max}.`);
+        return value;
+      };
+      switch (action.kind) {
+        case "setXp":
+        case "setLevel": {
+          const member = await this.loadMember(tx, action.userId);
+          const xpTotal =
+            action.kind === "setXp"
+              ? whole(action.value, 0, 10_000_000, "XP")
+              : xpAtLevel(whole(action.value, 1, 500, "Level"));
+          await tx.members.save({ ...member, xpTotal });
+          this.touch(effects, action.userId);
+          return `XP is now ${xpTotal.toLocaleString("en-US")} (level ${levelFromXp(xpTotal).level}).`;
+        }
+        case "setStreak": {
+          const member = await this.loadMember(tx, action.userId);
+          const streak = whole(action.value, 0, 10_000, "Streak");
+          const today = dayKey(now, this.config.timeZone);
+          await tx.members.save({
+            ...member,
+            streak: { ...member.streak, streak, lastActiveDay: streak > 0 ? today : null },
+          });
+          this.touch(effects, action.userId);
+          return `Streak is now ${streak} day${streak === 1 ? "" : "s"}, active today.`;
+        }
+        case "grantBadge": {
+          const badge = badgeById(action.badgeId);
+          if (!badge) throw notFoundError(`There's no badge "${action.badgeId}".`);
+          const held = (await tx.badges.list([action.userId])).some((b) => b.badgeId === badge.id);
+          if (held) return `They already have ${badge.name}.`;
+          await tx.badges.award({ userId: action.userId, badgeId: badge.id, earnedAt: now });
+          effects.badges.set(action.userId, [badge.id]);
+          this.touch(effects, action.userId);
+          return `Gave ${badge.name}.`;
+        }
+        case "endTimer": {
+          const solo = await tx.solos.get(action.userId);
+          if (solo) await tx.solos.delete(action.userId);
+          const onRoom = (await tx.room.listParticipants()).some((p) => p.userId === action.userId);
+          if (onRoom) await this.removeFromRoom(tx, action.userId);
+          if (!solo && !onRoom) return "They weren't on a timer.";
+          this.touch(effects, action.userId);
+          return "Ended their timer, without crediting the rest of it.";
+        }
+        case "bossHp": {
+          const boss = await this.loadBoss(tx, now);
+          const hpLeft = whole(action.value, 1, boss.maxHpXp, "Boss HP");
+          await tx.bosses.save({ ...boss, damageXp: boss.maxHpXp - hpLeft, defeatedAt: null });
+          effects.roomChanged = true;
+          return `${boss.name} has ${hpLeft.toLocaleString("en-US")} of ${boss.maxHpXp.toLocaleString("en-US")} HP left.`;
+        }
+        case "bossDefeat": {
+          const boss = await this.loadBoss(tx, now);
+          if (boss.defeatedAt !== null) return `${boss.name} is already defeated.`;
+          const result = applyDamage(boss, bossHpLeft(boss), [action.byUserId], now);
+          await tx.bosses.save(result.boss);
+          effects.roomChanged = true;
+          if (result.defeatedNow)
+            await this.onBossDefeated(tx, result.boss, effects, [action.byUserId]);
+          return `${boss.name} is defeated, with you landing the final blow.`;
+        }
+        case "bossNew": {
+          const week = weekKey(dayKey(now, this.config.timeZone));
+          const boss = newBoss(week, bossNameFor(week), this.config.boss.baseHpXp);
+          await tx.bosses.save(boss);
+          effects.roomChanged = true;
+          return `${boss.name} is back at full HP (${boss.maxHpXp.toLocaleString("en-US")}).`;
+        }
+        case "roomSkip": {
+          const cycle = await tx.room.getCycle();
+          const phase = cycle && phaseAt(buildCycle(cycle.cycleStartedAt, cycle.preset), now);
+          if (!cycle || !phase) return "The room timer isn't running.";
+          // Shift the cycle so this phase ends now; the next settle moves on.
+          await tx.room.saveCycle({
+            ...cycle,
+            cycleStartedAt: cycle.cycleStartedAt - (phase.endsAt - now),
+          });
+          effects.roomChanged = true;
+          return `Skipped to the end of this ${phase.kind === "focus" ? "focus" : "break"}.`;
+        }
+        case "roomStop": {
+          const participants = await tx.room.listParticipants();
+          for (const p of participants) {
+            await tx.room.removeParticipant(p.userId);
+            effects.statusChanged.add(p.userId);
+          }
+          await tx.room.saveCycle(null);
+          effects.roomChanged = true;
+          return participants.length
+            ? `Stopped the room timer for ${participants.length} member(s), without crediting the rest.`
+            : "The room timer wasn't running.";
+        }
+        case "recap": {
+          const channelId = this.config.postChannelId;
+          if (!channelId) return "No bot messages channel is set, so there's nowhere to post.";
+          const recap = await this.recapFor(tx, now, now);
+          effects.posts.push((a) => a.dailyRecap(channelId, recap));
+          return "Posted today's recap in the bot channel.";
+        }
+        case "botLine": {
+          if (!this.config.postChannelId || !this.config.squadBot.enabled)
+            return "The squad bot is off or has no channel.";
+          await this.squadMessage(tx, effects, "sessionStarted", [action.byUserId], 1, now);
+          return "Sent a squad bot line to the bot channel.";
+        }
+        case "reset": {
+          await tx.eraseAll(action.keepKv);
+          this.breaks.clear();
+          this.challenges.clear();
+          this.lastChallenge.clear();
+          for (const userId of this.present) this.touch(effects, userId);
+          effects.roomChanged = true;
+          return "Wiped this community's Study Squad data. Everyone starts from zero.";
+        }
+      }
+    });
+  }
+
+  private soloFor(
+    userId: string,
+    minutes: number,
+    breakMinutes: number,
+    goals: string[],
+    options: StartOptions,
+  ): Promise<SnapshotDto> {
     return this.run(async (tx, now, effects) => {
       const participants = await tx.room.listParticipants();
       if (participants.some((p) => p.userId === userId)) {
@@ -627,7 +805,7 @@ export class StudyRoomEngine {
         endsAt,
         minutes,
         phase: "focus",
-        breakEndsAt: endsAt + this.config.preset.breakMinutes * MINUTE_MS,
+        breakEndsAt: endsAt + breakMinutes * MINUTE_MS,
         ...NO_LIVE_CREDIT,
       });
       this.touch(effects, userId);
@@ -1785,6 +1963,13 @@ export class StudyRoomEngine {
   }
 
   // ---------------------------------------------------------------- loading
+
+  /** Takes a member off the room timer without crediting anything. */
+  private async removeFromRoom(tx: Store, userId: string): Promise<void> {
+    const left = (await tx.room.listParticipants()).filter((p) => p.userId !== userId);
+    await tx.room.removeParticipant(userId);
+    if (left.length === 0) await tx.room.saveCycle(null);
+  }
 
   private async loadMember(tx: Store, userId: string): Promise<MemberRecord> {
     return (

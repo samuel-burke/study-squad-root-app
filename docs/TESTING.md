@@ -57,6 +57,27 @@ Nothing it does touches members' data. The test row and the test job are its own
 1. In GitHub, add the Actions secret `SELF_TEST_USER_IDS` with your Root user id (separate several with commas). For Docker builds, add it to `server/.env`.
 2. Ship the next version. The Self-test section appears in Room settings, for you only. The app never shows ids.
 
+## Developer chat commands
+
+The developer (a user in `SELF_TEST_USER_IDS`) can type commands in any channel Study Squad can see. Everyone else's messages are ignored, with no reply. `!help` lists them.
+
+- `!smoke` runs the self-test from chat and posts a summary, then a second one when the job check finishes.
+- `!preview badge <id>`, `!preview levelup`, `!preview break`, `!preview highfive`, `!preview keepgoing`, `!preview celebrate` play that screen on your own open app only. Nothing is saved, and the next real update replaces it. These work without test mode.
+
+The rest change real data, so they also need **Developer test mode** turned on in that community's Study Squad app settings. Leave it off everywhere except a test community. The server checks it on every command.
+
+- `!test round`: a real 1-minute solo and 1-minute break, with real XP.
+- `!xp <who> <n>`, `!level <who> <n>`, `!streak <who> <n>`, `!badge <who> <id>`, `!end <who>`. `<who>` is `me` or an @mention.
+- `!boss hp <n>`, `!boss defeat`, `!boss new`.
+- `!room skip` ends the room's current phase now. `!room stop` stops the room timer.
+- `!clock +30m`, `+1h`, `+1d`, `+1w` jump the game clock forward (up to 4 weeks at a time) and settle everything now due, like streaks, quests and recaps. It can't go back: the offset is saved and stays that way. `!clock` on its own shows how far ahead it is.
+- `!recap` posts the recap now. `!botline` posts a squad bot line.
+- `!reset confirm` wipes all of this community's Study Squad data (members, XP, streaks, badges, goals, history, the boss and the room) and puts the game clock back to real time. It keeps the voice channel pick and feedback notes still on their way to you. `!reset` alone only explains what it would do.
+
+A live time travel run in a test community: `!reset confirm`, study, `!clock +1d`, check streaks, freezes, quests and the boss in the app, repeat, then `!reset confirm` when you're done.
+
+Messages are only read to spot a command. Nothing is stored or logged.
+
 ## Before each release: staging check
 
 Merging into `main` only uploads the package to Root. Nothing reaches communities until you press prerelease or release in the Root portal. So between the two:
@@ -98,6 +119,10 @@ docker run --rm -it --platform linux/amd64 --ipc=host -v "$PWD":/app -w /app mcr
 ```
 
 Keep the image tag in step with the `@playwright/test` version in `client/package.json`. Afterwards, rerun `npm ci && npm run generate` natively before testing on the Mac, since the container installs Linux packages.
+
+### Time travel on the real database
+
+`server/test/timeTravel.integration.test.ts` runs the engine on a fresh copy of the same SQLite tables and migrations Root runs, and moves the clock forward across two weeks: the 4am day change, a freeze spent on a missed Friday, the end of daylight saving, a server restart in the middle, a fresh freeze and boss on Monday, a streak broken by two missed days, and `!reset` wiping everything. It runs with `npm test`, so every PR checks it.
 
 ### Full stack, on the fake Root host
 

@@ -263,6 +263,18 @@ describe("solo timer", () => {
     await expectError(engine.startSolo("priya", 25), ErrorCode.Conflict);
   });
 
+  it("runs the developer's test round: one minute of focus, then a one-minute break", async () => {
+    const { engine, notifier, advance } = createHarness();
+    const snap = await engine.startTestRound("priya");
+    expect(snap.me).toMatchObject({ status: "soloFocus", endsAt: T0 + MINUTE });
+    await advance(MINUTE);
+    const result = notifier.personal.find((p) => p.userId === "priya")!.event;
+    expect(result).toMatchObject({ source: "solo", finished: true, xpEarned: 2 });
+    expect(result.breakEndsAt).toBe(T0 + 2 * MINUTE);
+    await advance(MINUTE);
+    expect((await engine.getSnapshot("priya")).me.status).toBe("idle");
+  });
+
   it("lets someone on a solo break hop onto the room timer", async () => {
     const { engine, advance } = createHarness();
     await engine.startSolo("priya", 25);

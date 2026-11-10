@@ -53,21 +53,27 @@ function selfTestState(message: SelfTest): SelfTestState {
   };
 }
 
+const confirmPing = (event: { nonce: string }) => {
+  void client.confirmSelfTestPing({ nonce: event.nonce }).catch(() => {});
+};
+
 /** The self-test panel's half on the client: runs it, and answers the server's ping. */
 class RootSelfTest implements SelfTestApi {
   private listening = false;
+
+  /** Answers the server's ping for a run started here (subscribe covers the rest). */
+  private listen() {
+    if (this.listening) return;
+    this.listening = true;
+    client.on(StudyRoomServiceClientEvent.SelfTestPing, confirmPing);
+  }
 
   async get() {
     return selfTestState(await call(() => client.getSelfTest({})));
   }
 
   async run(testPost: boolean) {
-    if (!this.listening) {
-      this.listening = true;
-      client.on(StudyRoomServiceClientEvent.SelfTestPing, (event: { nonce: string }) => {
-        void client.confirmSelfTestPing({ nonce: event.nonce }).catch(() => {});
-      });
-    }
+    this.listen();
     const info = await this.clientInfo();
     return selfTestState(
       await call(() => client.runSelfTest({ testPost, clientJson: JSON.stringify(info) })),
@@ -283,7 +289,11 @@ export class RootGateway implements StudyRoomGateway {
     client.on(StudyRoomServiceClientEvent.MyStatus, onStatus);
     client.on(StudyRoomServiceClientEvent.BadgesEarned, onBadges);
     client.on(StudyRoomServiceClientEvent.HighFive, onHighFive);
+    // The server only pings the developer. A run can start from chat (!smoke)
+    // with the Self-test panel closed, so the ping is answered from here too.
+    client.on(StudyRoomServiceClientEvent.SelfTestPing, confirmPing);
     return () => {
+      client.off(StudyRoomServiceClientEvent.SelfTestPing, confirmPing);
       client.off(StudyRoomServiceClientEvent.RoomUpdated, onRoom);
       client.off(StudyRoomServiceClientEvent.PhaseCompleted, onPhase);
       client.off(StudyRoomServiceClientEvent.PersonalResult, onPersonal);

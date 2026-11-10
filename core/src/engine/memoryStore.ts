@@ -93,6 +93,13 @@ export class MemoryStore implements Store {
     }
   }
 
+  async eraseAll(keepKv: readonly string[]): Promise<void> {
+    const fresh = emptyData();
+    fresh.feedback = this.data.feedback;
+    for (const key of keepKv) if (this.data.kv.has(key)) fresh.kv.set(key, this.data.kv.get(key));
+    this.data = fresh;
+  }
+
   async transaction<T>(work: (tx: Store) => Promise<T>): Promise<T> {
     const draft = new MemoryStore(copy(this.data));
     const result = await work(draft);

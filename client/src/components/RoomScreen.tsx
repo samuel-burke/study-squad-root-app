@@ -36,6 +36,8 @@ export interface RoomScreenProps {
   onNewTable(): void;
   /** This week's top three, which opens the full leaderboard. */
   podium?: ReactNode;
+  /** The next scheduled session. */
+  upNext?: ReactNode;
 }
 
 function Header({
@@ -167,6 +169,7 @@ export function RoomScreen(props: RoomScreenProps) {
         {timer}
         {challenge}
         {props.podium}
+        {props.upNext}
         {room.features.comboEnabled && (
           <div style={{ display: "flex", justifyContent: "center", marginBottom: 12 }}>
             <ComboPill
@@ -214,6 +217,7 @@ export function RoomScreen(props: RoomScreenProps) {
           {board}
         </main>
         <aside className="room-aside">
+          {props.upNext}
           {props.podium}
           {room.boss.enabled && <BossCard boss={room.boss} combo={room.combo} now={now} />}
           {room.features.comboEnabled && (

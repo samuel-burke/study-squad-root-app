@@ -3230,3 +3230,97 @@ textarea.input {
   height: 32px;
   font-size: 15px;
 }
+
+/* Scheduled sessions */
+.sched-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.sched-item,
+.up-next-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 10px 12px;
+}
+.up-next-row {
+  margin: 0 16px 12px;
+  background: var(--surface);
+}
+.up-next {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.up-next-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.sched-date {
+  flex: none;
+  width: 46px;
+  text-align: center;
+  border-radius: 10px;
+  background: var(--amber-bg);
+  color: var(--amber-text);
+  padding: 4px 0;
+  line-height: 1.1;
+}
+.sched-date span {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.sched-date b {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 18px;
+}
+.sched-body {
+  flex: 1;
+  min-width: 0;
+}
+.sched-open {
+  border: none;
+  background: none;
+  padding: 0;
+  text-align: left;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.sched-title {
+  font-weight: 700;
+  font-size: 15px;
+  overflow-wrap: anywhere;
+}
+.sched-meta {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.sched-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-top: 1px solid var(--divider);
+  padding-top: 14px;
+}
+.btn-sm {
+  min-height: 34px;
+  padding: 6px 12px;
+  font-size: 13px;
+  flex: none;
+}
+.rsvp-on {
+  background: var(--amber-bg);
+  color: var(--amber-text);
+  border-color: var(--amber-you);
+}

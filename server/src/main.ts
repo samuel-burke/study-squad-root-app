@@ -26,10 +26,11 @@ import { VOICE_PICK_KEY, VoiceChannelPicker } from "./adapters/voiceChannelPicke
 import { VoiceRoster } from "./adapters/voiceRoster";
 import { StudyRoomHandlers } from "./handlers";
 import { RecapScheduler } from "./jobs/recapScheduler";
+import { SessionSchedule } from "./jobs/sessionSchedule";
 import { openDatabase } from "./persistence/database";
 import { KnexStore } from "./persistence/knexStore";
 import { migrateToLatest, migratorConfig } from "./persistence/migrations";
-import { phaseCompletedToProto } from "@studyroom/contract";
+import { phaseCompletedToProto, scheduleToProto } from "@studyroom/contract";
 import { DevClock } from "./adapters/devClock";
 import { loadBuildInfo, loadedGenVersion } from "./buildInfo";
 import { DevCommands } from "./devCommands";
@@ -217,7 +218,41 @@ async function onStarting(state: RootAppStartState): Promise<void> {
     now: Date.now,
     logger,
   });
-  studyRoomService.bind(new StudyRoomHandlers(engine, logger, { voicePicker, selfTest }));
+  const schedule = new SessionSchedule({
+    store: store.kv,
+    scheduleOnce: async (tag, at) => {
+      await rootServer.jobScheduler.create({
+        resourceId: tag,
+        tag,
+        start: at,
+        jobInterval: JobInterval.OneTime,
+      });
+    },
+    cancelByTag: (tag) => rootServer.jobScheduler.deleteByTag(tag),
+    post: async (content) => {
+      const channelId = engine.getConfig().postChannelId;
+      if (!channelId) return;
+      await rootServer.community.channelMessages.create({
+        channelId: channelId as ChannelGuid,
+        content,
+      });
+    },
+    nickname: async (userId) =>
+      (await rootServer.community.communityMembers.get({ userId: userId as UserGuid })).nickname,
+    changed: (sessions) =>
+      studyRoomService.broadcastScheduleUpdated({ schedule: scheduleToProto(sessions) }, "all"),
+    timeZone: () => engine.getConfig().timeZone,
+    newId: randomUUID,
+    now: Date.now,
+    logger,
+  });
+  // Missed jobs too (say, the app restarted): the schedule skips stale reminders.
+  rootServer.jobScheduler.on(JobScheduleEvent.Job, (job: JobData) => void schedule.onJob(job.tag));
+  rootServer.jobScheduler.on(
+    JobScheduleEvent.JobMissed,
+    (job: JobData) => void schedule.onJob(job.tag),
+  );
+  studyRoomService.bind(new StudyRoomHandlers(engine, logger, { voicePicker, selfTest, schedule }));
   rootServer.lifecycle.addService(studyRoomService);
   await engine.start();
 

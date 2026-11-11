@@ -37,6 +37,11 @@ import type {
   GetSelfTestRequest,
   RunSelfTestRequest,
   SelfTest,
+  CancelScheduledSessionRequest,
+  GetScheduleRequest,
+  Schedule,
+  ScheduleSessionRequest,
+  RsvpSessionRequest,
 } from "@studyroom/gen-shared";
 import { RequestFailure, type StudyRoomHandlers } from "./handlers";
 
@@ -165,6 +170,25 @@ export class StudyRoomService extends StudyRoomServiceBase {
 
   confirmSelfTestPing(request: ConfirmSelfTestPingRequest, client: Client): Promise<SelfTest> {
     return this.call((h) => h.confirmSelfTestPing(client.userId, request));
+  }
+
+  getSchedule(_request: GetScheduleRequest, client: Client): Promise<Schedule> {
+    return this.call((h) => h.getSchedule(client.userId));
+  }
+
+  scheduleSession(request: ScheduleSessionRequest, client: Client): Promise<Schedule> {
+    return this.call((h) => h.scheduleSession(client.userId, request));
+  }
+
+  cancelScheduledSession(
+    request: CancelScheduledSessionRequest,
+    client: Client,
+  ): Promise<Schedule> {
+    return this.call((h) => h.cancelScheduledSession(client.userId, request));
+  }
+
+  rsvpSession(request: RsvpSessionRequest, client: Client): Promise<Schedule> {
+    return this.call((h) => h.rsvpSession(client.userId, request));
   }
 
   private async call<T>(work: (handlers: StudyRoomHandlers) => Promise<T>): Promise<T> {

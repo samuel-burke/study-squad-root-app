@@ -40,6 +40,7 @@ export const LIMITS = {
   maxTables: 8,
   /** Feedback notes a member can send per hour, so nobody can flood the developer's inbox. */
   feedbackPerHour: 3,
+  scheduledTitleMaxLength: 60,
 } as const;
 
 /** "Room is busy" posts re-arm only after this cool-down. */

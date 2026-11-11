@@ -140,6 +140,32 @@ describe("Study Squad app", () => {
     expect(opener).toHaveFocus();
   });
 
+  it("shows the next scheduled session, RSVPs, schedules and cancels", async () => {
+    const { user } = await renderApp();
+    const card = screen.getByRole("region", { name: "Up next" });
+    expect(card).toHaveTextContent("Exam cram");
+    expect(card).toHaveTextContent("3 going");
+    await user.click(within(card).getByRole("button", { name: "I'm in" }));
+    expect(await within(card).findByRole("button", { name: "✓ Going" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(card).toHaveTextContent("4 going");
+
+    await user.click(within(card).getByRole("button", { name: "All sessions" }));
+    const dialog = screen.getByRole("dialog", { name: "Scheduled sessions" });
+    // Only your own sessions can be cancelled.
+    expect(within(dialog).queryByRole("button", { name: "Cancel" })).not.toBeInTheDocument();
+    const schedule = within(dialog).getByRole("button", { name: "Schedule" });
+    expect(schedule).toBeDisabled();
+    await user.type(within(dialog).getByRole("textbox", { name: "Session name" }), "Finals");
+    await user.click(schedule);
+    expect(await within(dialog).findByText("Finals")).toBeInTheDocument();
+    expect(dialog).toHaveTextContent("by you · 1 going");
+    await user.click(within(dialog).getByRole("button", { name: "Cancel" }));
+    await waitFor(() => expect(within(dialog).queryByText("Finals")).not.toBeInTheDocument());
+  });
+
   it("sends anonymous feedback to the developer from room settings", async () => {
     const { user, gateway } = await renderApp();
     await user.click(screen.getByRole("button", { name: "Room settings" }));

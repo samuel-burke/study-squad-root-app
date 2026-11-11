@@ -9,6 +9,7 @@ import {
   phaseCompletedFromProto,
   progressFromProto,
   roomFromProto,
+  scheduleFromProto,
   snapshotFromProto,
   voiceChannelChoiceFromProto,
 } from "@studyroom/contract";
@@ -16,6 +17,7 @@ import {
   ClockSync,
   type LeaderboardMetric,
   type LeaderboardPeriod,
+  type ScheduledSessionDto,
   type SnapshotDto,
 } from "@studyroom/core";
 import { studyRoomServiceClient, StudyRoomServiceClientEvent } from "@studyroom/gen-client";
@@ -261,6 +263,31 @@ export class RootGateway implements StudyRoomGateway {
 
   async setVoiceChannel(channelId: string) {
     return voiceChannelChoiceFromProto(await call(() => client.setVoiceChannel({ channelId })));
+  }
+
+  async getSchedule() {
+    return scheduleFromProto(await call(() => client.getSchedule({})));
+  }
+
+  async scheduleSession(title: string, startsAtMs: number) {
+    return scheduleFromProto(await call(() => client.scheduleSession({ title, startsAtMs })));
+  }
+
+  async cancelScheduledSession(id: string) {
+    return scheduleFromProto(await call(() => client.cancelScheduledSession({ id })));
+  }
+
+  async rsvpSession(id: string, going: boolean) {
+    return scheduleFromProto(await call(() => client.rsvpSession({ id, going })));
+  }
+
+  onScheduleUpdated(handler: (sessions: ScheduledSessionDto[]) => void) {
+    const listener = (e: { schedule?: Parameters<typeof scheduleFromProto>[0] }) =>
+      handler(scheduleFromProto(e.schedule ?? { sessions: [] }));
+    client.on(StudyRoomServiceClientEvent.ScheduleUpdated, listener);
+    return () => {
+      client.off(StudyRoomServiceClientEvent.ScheduleUpdated, listener);
+    };
   }
 
   async getProfiles(userIds: string[]): Promise<Profile[]> {

@@ -9,6 +9,7 @@ import type {
   PhaseCompletedDto,
   ProgressDto,
   RoomStateDto,
+  ScheduledSessionDto,
   SnapshotDto,
   VoiceChannelChoiceDto,
 } from "@studyroom/core";
@@ -135,6 +136,15 @@ export interface StudyRoomGateway {
   getVoiceChannels(): Promise<VoiceChannelChoiceDto>;
   /** Admins only: saves the voice channel ("" clears the pick). */
   setVoiceChannel(channelId: string): Promise<VoiceChannelChoiceDto>;
+  /** Upcoming scheduled sessions, soonest first. */
+  getSchedule(): Promise<ScheduledSessionDto[]>;
+  scheduleSession(title: string, startsAtMs: number): Promise<ScheduledSessionDto[]>;
+  /** Only the member who scheduled it can cancel it. */
+  cancelScheduledSession(id: string): Promise<ScheduledSessionDto[]>;
+  /** "I'm in" (pinged when it starts), or not. */
+  rsvpSession(id: string, going: boolean): Promise<ScheduledSessionDto[]>;
+  /** Someone scheduled, cancelled or RSVP'd. Returns an unsubscribe. */
+  onScheduleUpdated(handler: (sessions: ScheduledSessionDto[]) => void): () => void;
   getProfiles(userIds: string[]): Promise<Profile[]>;
   subscribe(handlers: GatewayHandlers): () => void;
 }

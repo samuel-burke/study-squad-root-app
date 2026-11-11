@@ -20,6 +20,7 @@ import type {
   QuestUnit as QuestUnitDto,
   RoomPhase,
   RoomStateDto,
+  ScheduledSessionDto,
   RoomTimerDto,
   SnapshotDto,
   TimerPreset as TimerPresetDto,
@@ -47,6 +48,7 @@ import {
   type Quest,
   type RoomSnapshot,
   type RoomState,
+  type Schedule,
   type RoomTimer,
   type TimerPreset,
   type VoiceChannelChoice,
@@ -597,4 +599,18 @@ export function voiceChannelChoiceFromProto(choice: VoiceChannelChoice): VoiceCh
     channels: (choice.channels ?? []).map((c) => ({ id: c.id, name: c.name })),
     status: choice.status ?? "",
   };
+}
+
+export function scheduleToProto(sessions: ScheduledSessionDto[]): Schedule {
+  return { sessions: sessions.map((s) => ({ ...s, goingUserIds: [...s.goingUserIds] })) };
+}
+
+export function scheduleFromProto(schedule: Schedule): ScheduledSessionDto[] {
+  return (schedule.sessions ?? []).map((s) => ({
+    id: s.id ?? "",
+    title: s.title ?? "",
+    startsAtMs: s.startsAtMs ?? 0,
+    byUserId: s.byUserId ?? "",
+    goingUserIds: [...(s.goingUserIds ?? [])],
+  }));
 }

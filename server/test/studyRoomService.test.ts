@@ -43,6 +43,10 @@ function bound(overrides: Partial<Record<keyof Handlers, () => Promise<unknown>>
     sendFeedback: ok("sendFeedback"),
     completeBreakChallenge: ok("completeBreakChallenge"),
     sendHighFive: ok("sendHighFive"),
+    getSchedule: ok("getSchedule"),
+    scheduleSession: ok("scheduleSession"),
+    cancelScheduledSession: ok("cancelScheduledSession"),
+    rsvpSession: ok("rsvpSession"),
     ...overrides,
   };
   const service = new StudyRoomService();
@@ -102,6 +106,22 @@ describe("StudyRoomService", () => {
         "sendHighFive",
         () => service.sendHighFive({ toUserId: "kai", emoji: "👋" }, client),
         { toUserId: "kai", emoji: "👋" },
+      ],
+      ["getSchedule", () => service.getSchedule({}, client)],
+      [
+        "scheduleSession",
+        () => service.scheduleSession({ title: "Cram", startsAtMs: 5 }, client),
+        { title: "Cram", startsAtMs: 5 },
+      ],
+      [
+        "cancelScheduledSession",
+        () => service.cancelScheduledSession({ id: "s1" }, client),
+        { id: "s1" },
+      ],
+      [
+        "rsvpSession",
+        () => service.rsvpSession({ id: "s1", going: true }, client),
+        { id: "s1", going: true },
       ],
     ];
     for (const [name, call, request] of calls) {

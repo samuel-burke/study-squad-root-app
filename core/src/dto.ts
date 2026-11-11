@@ -109,6 +109,16 @@ export interface VoiceChannelOptionDto {
 }
 
 /** The voice channels admins can pick from, and the current pick. */
+/** A study session someone scheduled, for the Schedule sheet. */
+export interface ScheduledSessionDto {
+  id: string;
+  title: string;
+  startsAtMs: number;
+  byUserId: string;
+  /** Tapped "I'm in"; they're pinged when it starts. The scheduler is in by default. */
+  goingUserIds: string[];
+}
+
 export interface VoiceChannelChoiceDto {
   /** The caller may change the pick (they can manage apps in this community). */
   canEdit: boolean;

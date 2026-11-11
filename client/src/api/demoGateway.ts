@@ -26,6 +26,7 @@ import {
   type PhaseCompletedDto,
   type RecapDto,
   type RoomStateDto,
+  type ScheduledSessionDto,
   type VoiceChannelChoiceDto,
   type WakeScheduler,
 } from "@studyroom/core";
@@ -291,6 +292,16 @@ export class DemoGateway implements StudyRoomGateway {
   private readonly botBreaks = new Set<string>();
   private unlockPreviewed = false;
   private nextId = 1;
+  /** Devon's "7pm room timer?" from the mockup, as a scheduled session. */
+  private schedule: ScheduledSessionDto[] = [
+    {
+      id: "demo-session-0",
+      title: "Exam cram",
+      startsAtMs: new Date(Date.now() + 2 * 24 * MINUTE * 60).setHours(19, 0, 0, 0),
+      byUserId: "bot-devon",
+      goingUserIds: ["bot-devon", "bot-ana", "bot-jordan"],
+    },
+  ];
 
   private constructor(private readonly options: DemoOptions) {
     const now = () => Date.now() + this.skewMs;
@@ -736,6 +747,46 @@ export class DemoGateway implements StudyRoomGateway {
       voiceChannelStatus: picked ? `#${picked.name}` : "",
     });
     return this.getVoiceChannels();
+  }
+
+  async getSchedule(): Promise<ScheduledSessionDto[]> {
+    return [...this.schedule].sort((a, b) => a.startsAtMs - b.startsAtMs);
+  }
+
+  async scheduleSession(title: string, startsAtMs: number): Promise<ScheduledSessionDto[]> {
+    const id = `demo-session-${this.schedule.length + 1}`;
+    this.schedule.push({
+      id,
+      title: title.trim(),
+      startsAtMs,
+      byUserId: DEMO_USER_ID,
+      goingUserIds: [DEMO_USER_ID],
+    });
+    return this.getSchedule();
+  }
+
+  async rsvpSession(id: string, going: boolean): Promise<ScheduledSessionDto[]> {
+    this.schedule = this.schedule.map((s) =>
+      s.id !== id
+        ? s
+        : {
+            ...s,
+            goingUserIds: [
+              ...s.goingUserIds.filter((u) => u !== DEMO_USER_ID),
+              ...(going ? [DEMO_USER_ID] : []),
+            ],
+          },
+    );
+    return this.getSchedule();
+  }
+
+  onScheduleUpdated() {
+    return () => {};
+  }
+
+  async cancelScheduledSession(id: string): Promise<ScheduledSessionDto[]> {
+    this.schedule = this.schedule.filter((s) => s.id !== id);
+    return this.getSchedule();
   }
 
   async getProfiles(userIds: string[]): Promise<Profile[]> {

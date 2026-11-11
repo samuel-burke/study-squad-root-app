@@ -31,17 +31,22 @@ The contract is `networking/src/studyroom.proto`. `npm run generate` turns it in
 | `SendFeedback`           | `text` (1–1000 chars)                          | `FeedbackSent` | Saves the note and sends it to the developer anonymously (text and time only). Fails with 1003 when no destination is built in, 1004 after 3 notes in an hour.                                                                                                                                                         |
 | `CompleteBreakChallenge` | none                                           | `RoomSnapshot` | Ticks this break's challenge on your card. Only on a break (else 1003), once per break, no XP.                                                                                                                                                                                                                         |
 | `SendHighFive`           | `to_user_id`, `emoji` (👋 or 🔥)               | `RoomSnapshot` | High-fives a member. You both must be on a break (else 1003). No cap per teammate; the write rate limit stops spam. No XP.                                                                                                                                                                                             |
+| `GetSchedule`            | none                                           | `Schedule`     | Upcoming scheduled sessions, soonest first.                                                                                                                                                                                                                                                                            |
+| `ScheduleSession`        | `title` (1–60 chars), `starts_at_ms`           | `Schedule`     | Anyone can schedule, up to 30 days ahead, 3 at a time per member. Posts in the bot channel, and a Root one-time job posts the reminder at the start time. The scheduler is in by default.                                                                                                                              |
+| `RsvpSession`            | `id`, `going`                                  | `Schedule`     | "I'm in": the reminder @mentions everyone going (up to 10, then "+N more").                                                                                                                                                                                                                                            |
+| `CancelScheduledSession` | `id`                                           | `Schedule`     | Only the member who scheduled it (else 1005). Drops the reminder job.                                                                                                                                                                                                                                                  |
 
 ## Broadcasts (server → client)
 
-| Event                       | Sent to               | When                                                                          |
-| --------------------------- | --------------------- | ----------------------------------------------------------------------------- |
-| `RoomUpdated` (`RoomState`) | everyone              | After any change to the board, timer, boss or settings                        |
-| `PhaseCompleted`            | everyone              | A room phase ended: round, finisher ids, combo, damage, new room state        |
-| `PersonalResult`            | that member's devices | After a focus block you took part in: XP math, streak, goal prompt, break end |
-| `MyStatus`                  | that member's devices | After a change to your status, goals or XP (keeps your other devices in sync) |
-| `BadgesEarned`              | that member's devices | Badge ids you just earned (the catalog lives in `@studyroom/core`)            |
-| `HighFive`                  | that member's devices | Someone high-fived you: their user id and the emoji                           |
+| Event                          | Sent to               | When                                                                          |
+| ------------------------------ | --------------------- | ----------------------------------------------------------------------------- |
+| `RoomUpdated` (`RoomState`)    | everyone              | After any change to the board, timer, boss or settings                        |
+| `PhaseCompleted`               | everyone              | A room phase ended: round, finisher ids, combo, damage, new room state        |
+| `PersonalResult`               | that member's devices | After a focus block you took part in: XP math, streak, goal prompt, break end |
+| `MyStatus`                     | that member's devices | After a change to your status, goals or XP (keeps your other devices in sync) |
+| `BadgesEarned`                 | that member's devices | Badge ids you just earned (the catalog lives in `@studyroom/core`)            |
+| `HighFive`                     | that member's devices | Someone high-fived you: their user id and the emoji                           |
+| `ScheduleUpdated` (`Schedule`) | everyone              | A session was scheduled, cancelled, RSVP'd or started                         |
 
 Badges are also carried in `MyStatus.new_badge_ids`, on the reply to the action that earned them and on the status push, so the unlock still plays if the `BadgesEarned` push is lost. The client shows each badge once however many ways it arrives.
 
@@ -57,6 +62,7 @@ Failures reach the client as `RootServerException` with a `code` and a message s
 | 1002 | Not found (also used for "not yours", so ids can't be probed)                                     |
 | 1003 | Conflict, e.g. starting a solo timer while on the room timer                                      |
 | 1004 | Rate limited (per user: 20 writes in a burst, refilling at 2 per second; reads 30 / 5 per second) |
+| 1005 | Not allowed, e.g. cancelling a session someone else scheduled                                     |
 | 1500 | Unexpected server error. Details are logged on the server, never sent to the client               |
 | 503  | The server is still starting                                                                      |
 

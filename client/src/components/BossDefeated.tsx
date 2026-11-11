@@ -1,10 +1,24 @@
 import type { BossDto } from "@studyroom/core";
 import { useEffect, useId, useRef, type CSSProperties } from "react";
-import type { Sword3D } from "../lib/sword3d";
-import { BOSS_SHOW, drawFlatSword, ShowPainter, type DrawMedal } from "../lib/unlockShow";
+import type { BadgeDefinition } from "@studyroom/core";
+import type { Medal3D } from "../lib/medal3d";
+import { BOSS_SHOW, ShowPainter, type DrawMedal } from "../lib/unlockShow";
+import { BadgeMedal, FRAMES, METALS } from "./BadgeMedal";
+import { medalImage } from "./BadgeUnlocked";
 
 /** Seconds the moment stays up after the music ends, before moving on by itself. */
 const LINGER = 1.5;
+
+/** The medal that rises from the wreck: a gold boss medal with crossed swords. */
+const SLAYER: BadgeDefinition = {
+  id: "boss-slayer",
+  name: "Boss slayer",
+  description: "",
+  glyph: "swords",
+  tier: "gold",
+  category: "boss",
+  earned: () => false,
+};
 
 /** How long the moment stays up, in milliseconds, before moving on by itself. */
 export const BOSS_SHOW_MS = Math.round((BOSS_SHOW.end + LINGER) * 1000);
@@ -12,7 +26,7 @@ export const BOSS_SHOW_MS = Math.round((BOSS_SHOW.end + LINGER) * 1000);
 /**
  * The full-screen moment when the room defeats the weekly boss: its card
  * shakes as the last hit drains its HP, shatters on the orchestra hit, and a
- * sword rises (see lib/unlockShow.ts and lib/sword3d.ts). The music is the boss event
+ * boss slayer medal rises, minted in 3D like the badges (see lib/unlockShow.ts). The music is the boss event
  * sound, which starts at the same moment. It moves on by itself, or with a
  * tap anywhere, the button, or Escape.
  */
@@ -20,6 +34,7 @@ export function BossDefeated({ boss, onDismiss }: { boss: BossDto; onDismiss(): 
   const titleId = useId();
   const button = useRef<HTMLButtonElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
+  const art = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     button.current?.focus();
@@ -36,36 +51,51 @@ export function BossDefeated({ boss, onDismiss }: { boss: BossDto; onDismiss(): 
   useEffect(() => {
     const ctx = canvas.current?.getContext("2d");
     if (!ctx) return;
-    // With reduced motion there is no cinematic: the sword is drawn once, still.
+    // With reduced motion there is no cinematic: the medal is drawn once, still.
     const still =
       typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
-    // The sword is 3D where WebGL allows, and flat until then or otherwise.
-    let sword: Sword3D | null = null;
+    // The medal is 3D where WebGL allows, and flat until then or otherwise.
+    const svg = art.current?.querySelector("svg");
+    let medal: Medal3D | null = null;
+    let flat: HTMLCanvasElement | null = null;
     let closed = false;
     let dpr = 1;
-    import("../lib/sword3d")
-      .then(({ createSword3D }) => {
-        if (!closed) sword = createSword3D();
-      })
-      .catch(() => {
-        // No 3D: the flat sword stays.
-      });
-    const drawSword: DrawMedal = (c, x, y, r, t, tilt) => {
-      if (!sword) return drawFlatSword(c, x, y, r, t, tilt);
-      const size = r * 3.2;
-      const flash =
-        t > BOSS_SHOW.land && t < BOSS_SHOW.land + 1.5
-          ? 2 * Math.exp(-(t - BOSS_SHOW.land) * 3)
-          : 0;
-      c.drawImage(
-        sword.render(tilt, Math.round(size * dpr), 1.4 + flash),
-        x - size / 2,
-        y - size / 2 - r * 0.25,
-        size,
-        size,
-      );
+    if (svg) {
+      const img = medalImage(svg);
+      img.onload = () => {
+        const c = document.createElement("canvas");
+        c.width = c.height = 1024;
+        c.getContext("2d")?.drawImage(img, 0, 0, 1024, 1024);
+        flat = c;
+        import("../lib/medal3d")
+          .then(({ createMedal3D }) => {
+            if (!closed) medal = createMedal3D("gold", FRAMES.boss, METALS.gold.rim[1]!, c);
+          })
+          .catch(() => {
+            // No 3D: the flat medal stays.
+          });
+      };
+    }
+    const drawMedal: DrawMedal = (c, x, y, r, t, tilt) => {
+      const dt = t - BOSS_SHOW.land;
+      if (medal) {
+        const size = r * 4.9;
+        const flash = dt > 0 && dt < 1.5 ? 3 * Math.exp(-dt * 3) : 0;
+        const frame = medal.render(t, tilt, Math.round(size * dpr), {
+          key: 1.4 + flash,
+          fill: 1.2,
+        });
+        c.drawImage(frame, x - size / 2, y - size / 2, size, size);
+      } else if (flat) {
+        const size = r * 4;
+        c.save();
+        c.translate(x, y);
+        c.scale(Math.max(0.06, Math.abs(Math.cos(tilt))), 1);
+        c.drawImage(flat, -size / 2, -size / 2, size, size);
+        c.restore();
+      }
     };
-    const painter = new ShowPainter(ctx, BOSS_SHOW, drawSword, still, { name, maxHp: maxHpXp });
+    const painter = new ShowPainter(ctx, BOSS_SHOW, drawMedal, still, { name, maxHp: maxHpXp });
     const start = performance.now();
     let raf = 0;
     const frame = () => {
@@ -89,7 +119,7 @@ export function BossDefeated({ boss, onDismiss }: { boss: BossDto; onDismiss(): 
     return () => {
       closed = true;
       cancelAnimationFrame(raf);
-      sword?.dispose();
+      medal?.dispose();
     };
   }, [name, maxHpXp]);
 
@@ -104,6 +134,9 @@ export function BossDefeated({ boss, onDismiss }: { boss: BossDto; onDismiss(): 
       onClick={onDismiss}
     >
       <canvas ref={canvas} className="unlock-canvas" aria-hidden="true" />
+      <div ref={art} hidden>
+        <BadgeMedal badge={SLAYER} size={512} />
+      </div>
       <div className="unlock-text">
         <span className="unlock-eyebrow">Boss defeated!</span>
         <h2 id={titleId} className="unlock-name">

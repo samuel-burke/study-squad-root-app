@@ -18,7 +18,7 @@ export type Build =
   | "beam"
   /** Stars trace the gem's outline, then collapse into the medal (secret). */
   | "constellation"
-  /** The weekly boss's card shakes as its HP drains, shatters, and a sword rises. */
+  /** The weekly boss's card shakes as its HP drains, shatters, and the boss slayer medal rises. */
   | "boss";
 
 export interface Show {
@@ -554,7 +554,7 @@ export class ShowPainter {
 
   /**
    * The boss show: its card shakes harder as the last hit drains the HP bar,
-   * breaks apart on the hit, and a sword rises in its place (drawn by `medal`).
+   * breaks apart on the hit, and the boss slayer medal rises in its place (drawn by `medal`).
    */
   private bossFight(t: number, cx: number, cy: number, R: number): void {
     const { ctx, show: s } = this;
@@ -612,14 +612,14 @@ export class ShowPainter {
     ctx.globalCompositeOperation = "lighter";
     this.dot(tx, ty, R * 2.4, "#f3b52d", 0.45 * p);
     ctx.globalCompositeOperation = "source-over";
-    // The sword rises out of the wreck with one turn, then sways gently.
+    // The boss slayer medal rises out of the wreck with one turn, then sways gently.
     const tilt = (1 - p) * Math.PI * 2 + Math.sin(dt * 0.8) * 0.25;
     ctx.globalAlpha = p;
     this.medal(ctx, tx, ty, R, t, tilt);
     ctx.globalAlpha = 1;
     if (dt > 1) {
       const gp = ((dt - 1) % 3) / 0.5;
-      if (gp < 1) this.glint(tx, ty - R * 1.25, R * 0.5, Math.sin(gp * Math.PI));
+      if (gp < 1) this.glint(tx + R * 0.62, ty - R * 0.62, R * 0.55, Math.sin(gp * Math.PI));
     }
   }
 
@@ -709,33 +709,3 @@ export class ShowPainter {
     ctx.restore();
   }
 }
-
-/** A flat sword, point up, for the boss show without 3D: turned `tilt` radians about its length. */
-export const drawFlatSword: DrawMedal = (ctx, x, y, r, _t, tilt) => {
-  const w = Math.max(0.08, Math.abs(Math.cos(tilt)));
-  ctx.save();
-  ctx.translate(x, y);
-  ctx.scale(w, 1);
-  const steel = ctx.createLinearGradient(-r * 0.12, 0, r * 0.12, 0);
-  steel.addColorStop(0, "#9aa6b4");
-  steel.addColorStop(0.5, "#ffffff");
-  steel.addColorStop(1, "#7d8896");
-  ctx.fillStyle = steel;
-  ctx.beginPath();
-  ctx.moveTo(-r * 0.12, r * 0.3);
-  ctx.lineTo(r * 0.12, r * 0.3);
-  ctx.lineTo(r * 0.1, -r * 1.15);
-  ctx.lineTo(0, -r * 1.42);
-  ctx.lineTo(-r * 0.1, -r * 1.15);
-  ctx.closePath();
-  ctx.fill();
-  ctx.fillStyle = "#e2a72a";
-  ctx.fillRect(-r * 0.62, r * 0.28, r * 1.24, r * 0.12);
-  ctx.fillStyle = "#3a2418";
-  ctx.fillRect(-r * 0.06, r * 0.4, r * 0.12, r * 0.42);
-  ctx.fillStyle = "#e2a72a";
-  ctx.beginPath();
-  ctx.arc(0, r * 0.9, r * 0.11, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.restore();
-};

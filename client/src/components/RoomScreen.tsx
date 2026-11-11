@@ -20,7 +20,8 @@ export interface RoomScreenProps {
   busy: boolean;
   compact: boolean;
   soundsMuted: boolean;
-  onToggleSounds(): void;
+  ambientOn: boolean;
+  onOpenSounds(): void;
   onStart(mode: "room" | "solo"): void;
   onLeave(): void;
   onEndSolo(): void;
@@ -44,12 +45,19 @@ function Header({
   room,
   compact,
   soundsMuted,
-  onToggleSounds,
+  ambientOn,
+  onOpenSounds,
   onOpenProgress,
   onOpenSettings,
 }: Pick<
   RoomScreenProps,
-  "room" | "compact" | "soundsMuted" | "onToggleSounds" | "onOpenProgress" | "onOpenSettings"
+  | "room"
+  | "compact"
+  | "soundsMuted"
+  | "ambientOn"
+  | "onOpenSounds"
+  | "onOpenProgress"
+  | "onOpenSettings"
 >) {
   const channel = room.features.postChannelName;
   return (
@@ -87,12 +95,13 @@ function Header({
         <button
           type="button"
           className="icon-btn"
-          aria-label="Sound effects"
-          aria-pressed={!soundsMuted}
-          title={soundsMuted ? "Sounds off" : "Sounds on"}
-          onClick={onToggleSounds}
+          aria-label="Sounds"
+          aria-haspopup="dialog"
+          title={ambientOn ? "Background sound on" : soundsMuted ? "Sounds off" : "Sounds on"}
+          onClick={onOpenSounds}
         >
-          {soundsMuted ? <SoundOffIcon size={18} /> : <SoundOnIcon size={18} />}
+          {soundsMuted && !ambientOn ? <SoundOffIcon size={18} /> : <SoundOnIcon size={18} />}
+          {ambientOn && <span className="sound-on" aria-hidden="true" />}
         </button>
         <button
           type="button"

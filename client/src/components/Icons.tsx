@@ -196,3 +196,33 @@ export const TrophyIcon = (p: IconProps) => (
     <path d="M17 6h3v2a3 3 0 0 1-3 3M7 6H4v2a3 3 0 0 0 3 3" />
   </Svg>
 );
+
+export const RainIcon = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M20 16.6A5 5 0 0 0 18 7h-1.3A8 8 0 1 0 4 15.3" />
+    <path d="M8 19v2M8 13v2M16 19v2M16 13v2M12 21v2M12 15v2" />
+  </Svg>
+);
+
+export const CafeIcon = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M17 8h1a4 4 0 1 1 0 8h-1" />
+    <path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z" />
+    <path d="M6 2v2M10 2v2M14 2v2" />
+  </Svg>
+);
+
+export const MusicIcon = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M9 18V5l12-2v13" />
+    <circle cx="6" cy="18" r="3" />
+    <circle cx="18" cy="16" r="3" />
+  </Svg>
+);
+
+export const OffIcon = (p: IconProps) => (
+  <Svg {...p}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="m5.7 5.7 12.6 12.6" />
+  </Svg>
+);

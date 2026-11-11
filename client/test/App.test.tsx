@@ -243,15 +243,39 @@ describe("Study Squad app", () => {
     expect(within(dialog).getByRole("textbox")).toHaveValue("hello");
   });
 
-  it("mutes and unmutes sound effects from the header", async () => {
+  it("opens the Sounds sheet to pick a background and mute sound effects", async () => {
     const { user } = await renderApp();
-    const button = screen.getByRole("button", { name: "Sound effects" });
-    expect(button).toHaveAttribute("aria-pressed", "true");
+    const button = screen.getByRole("button", { name: "Sounds" });
     await user.click(button);
-    expect(button).toHaveAttribute("aria-pressed", "false");
+    let dialog = screen.getByRole("dialog", { name: "Sounds" });
+    expect(within(dialog).getByRole("button", { name: /^Off/ })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    await user.click(within(dialog).getByRole("button", { name: /^Rain/ }));
+    expect(within(dialog).getByRole("button", { name: /^Rain/ })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(window.localStorage.getItem("studysquad.ambient")).toBe("rain");
+
+    const effects = within(dialog).getByRole("switch", { name: "Sound effects" });
+    expect(effects).toHaveAttribute("aria-checked", "true");
+    await user.click(effects);
+    expect(effects).toHaveAttribute("aria-checked", "false");
     expect(window.localStorage.getItem("studysquad.soundsMuted")).toBe("1");
+
+    await user.click(within(dialog).getByRole("button", { name: "Done" }));
+    expect(screen.queryByRole("dialog", { name: "Sounds" })).not.toBeInTheDocument();
+    // The header shows a background sound is on.
+    expect(button.querySelector(".sound-on")).not.toBeNull();
+
     await user.click(button);
-    expect(button).toHaveAttribute("aria-pressed", "true");
+    dialog = screen.getByRole("dialog", { name: "Sounds" });
+    expect(within(dialog).getByRole("button", { name: /^Rain/ })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
     window.localStorage.clear();
   });
 

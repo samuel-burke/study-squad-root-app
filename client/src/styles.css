@@ -335,6 +335,7 @@ h3 {
 }
 
 .icon-btn {
+  position: relative;
   width: var(--tap);
   height: var(--tap);
   border-radius: 10px;
@@ -3323,4 +3324,78 @@ textarea.input {
   background: var(--amber-bg);
   color: var(--amber-text);
   border-color: var(--amber-you);
+}
+
+/* ---------------------------------------------------------------- sounds */
+
+.sound-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sound-choice {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+  border-radius: 14px;
+  border: 1px solid var(--border-strong);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  padding: 10px 12px;
+}
+
+.sound-choice[aria-pressed="true"] {
+  border-color: var(--amber-strong);
+  background: var(--amber-bg);
+}
+
+.sound-icon {
+  width: 40px;
+  height: 40px;
+  flex: none;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+  color: var(--text-muted);
+}
+
+.sound-choice[aria-pressed="true"] .sound-icon {
+  color: var(--amber-text);
+}
+
+.sound-name {
+  display: block;
+  font-weight: 700;
+}
+
+.sound-detail {
+  display: block;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.sound-volume {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sound-volume input {
+  flex: 1;
+  accent-color: var(--amber-strong);
+}
+
+.icon-btn .sound-on {
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--amber-strong);
 }

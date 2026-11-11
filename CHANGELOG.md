@@ -6,7 +6,7 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ### Added
 
-- Some badges now come in their own colors: Saved by the Freeze is ice, Night Owl is purple, Early Bird is sunrise orange, Comeback is green and Power Day is electric blue. Rarity is unchanged.
+- Some badges now come in their own colors: Saved by the Freeze is ice, Night Owl is purple, Early Bird is sunrise orange, Comeback is green and Power Day is electric blue, and their unlock moment is lit to match. Rarity is unchanged.
 - Sounds sheet behind the speaker button: a music player with 20 calm lo-fi tracks by HoliznaCC0 (CC0), with play/pause, skip, shuffle, mood chips and a track list, plus ambience you can layer under the music (rain, storm, café, fireplace, forest), each with its own volume. Both fade out on breaks unless "Pause on breaks" is off. A small now-playing bar sits under the timer while music plays. Everything ships inside the app, so no outside requests are made. Credits are in client/src/assets/music/CREDITS.md and client/src/assets/ambient/CREDITS.md.
 
 ## [0.4.1] - 2026-11-11

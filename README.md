@@ -6,31 +6,40 @@ Study Squad is a group study timer for [Root](https://www.rootapp.com) communiti
 
 <picture>
   <source media="(prefers-color-scheme: light)" srcset="docs/screenshots/room-desktop-light.png">
-  <img src="docs/screenshots/room-desktop.png" alt="Study Squad focus room on desktop: the room timer, everyone focusing, the weekly boss, the combo and your goals">
+  <img src="docs/screenshots/room-desktop.png" alt="Study Squad focus room on desktop: the room timer, everyone focusing, Up next, the weekly leaderboard and the weekly boss">
 </picture>
 
 <p>
-  <img src="docs/screenshots/room-mobile.png" alt="Focus room on a phone, dark theme" width="200">
-  <img src="docs/screenshots/room-mobile-light.png" alt="Focus room on a phone, light theme" width="200">
-  <img src="docs/screenshots/start-session-mobile.png" alt="Start a session: goals, private toggle, room or solo timer" width="200">
-  <img src="docs/screenshots/break-moment-mobile.png" alt="The break moment: XP earned, streak, boss damage and did you finish your goal" width="200">
+  <img src="docs/screenshots/break-moment-desktop.png" alt="The break moment: XP earned, streak, boss damage and did you finish your goal" width="49%">
+  <img src="docs/screenshots/sounds-desktop.png" alt="The Sounds sheet: a lo-fi music player with moods and a track list, plus ambience under the music" width="49%">
 </p>
 
 <p>
-  <img src="docs/screenshots/goals-mobile.png" alt="Your goals: edit, drag to reorder, finished goals folded with how long they took" width="200">
-  <img src="docs/screenshots/progress-mobile-light.png" alt="Your progress: level, streak calendar, weekly quests and badges" width="200">
-  <img src="docs/screenshots/settings-mobile.png" alt="Room settings: the room's rules, the voice channel dropdown for admins and Send feedback" width="200">
-  <img src="docs/screenshots/break-moment-mobile-light.png" alt="The break moment in the light theme" width="200">
+  <img src="docs/screenshots/start-session-desktop.png" alt="Start a session: goals, private toggle, room or solo timer" width="49%">
+  <img src="docs/screenshots/goals-desktop.png" alt="Your goals: edit, drag to reorder, finished goals folded with how long they took" width="49%">
 </p>
 
-## Features (v0.3.8)
+<p>
+  <img src="docs/screenshots/progress-desktop.png" alt="Your progress: the weekly leaderboard, level, streak calendar, quests and badges" width="49%">
+  <img src="docs/screenshots/settings-desktop.png" alt="Room settings: the room's rules, the voice channel dropdown for admins and Send feedback" width="49%">
+</p>
+
+<p>
+  <img src="docs/screenshots/room-mobile.png" alt="Focus room on a phone, dark theme" width="200">
+</p>
+
+## Features (v0.5.1)
 
 - **Shared room timer** (25/5, 50/10 or custom, rounds of 4 with a long break) and **solo timers** that still show on the board
 - **Live focus board**: who's focusing, on what, how long is left, their rank and who's in voice. Goals can be private ("Focusing")
+- **Study tables**: start a named table like "Calc II" with its own 25/5 or 50/10 timer and tap Sit here to join. Everyone at every table still counts toward the room's combo
+- **Scheduled sessions**: plan one from the Up next card, tap I'm in, and get a mention in the channel when it starts
+- **Sounds**: a music player with 20 calm lo-fi tracks (CC0) plus rain, storm, café, fireplace or forest ambience layered underneath, each with its own volume. It fades out on breaks and ships inside the app, so nothing is loaded from outside
 - **No drift**: the server stores when a cycle started; every client derives the countdown (and the countdown chirps) from that and a measured clock offset
 - **Goals list**: add, edit, drag to reorder (the top goal is the one on your card), and clear finished goals in one tap. Finished goals fold into one row and show how long they took. The first 5 goals finished each day pay +25 XP
 - **Break moment**: XP earned, streak, damage dealt to the boss, and "did you finish your goal?"
-- **Game layer**: XP and levels with no daily cap, a combo multiplier for focusing together, a weekly built-in boss with its own strength, weekly quests, 49 medals to collect (some secret) and card styles that unlock with level
+- **Game layer**: XP and levels with no daily cap, a combo multiplier for focusing together, a weekly built-in boss with its own strength, weekly quests, over 60 medals to collect (some secret, some in their own colors) and card styles that unlock with level
+- **Big moments**: badge unlocks are short cinematics with recorded orchestral music for each tier, and when the room defeats the weekly boss everyone sees it shatter and a gold boss slayer medal rise
 - **Leaderboard** by focus minutes or XP, for this week, month, year or all time. Members can hide themselves
 - **Streaks without guilt**: one finished session counts the day, one free freeze per week, and days start at 4am so late nights count
 - **Keep going?** at the end of each cycle, so a forgotten timer can't farm XP all day
@@ -156,4 +165,4 @@ See [PRIVACY.md](PRIVACY.md) for what the app stores and how members delete it (
 
 ## License
 
-[MIT](LICENSE). Fonts in `client/src/assets/fonts` are under the SIL Open Font License (see `OFL.txt` there). The sounds in `client/src/assets/sounds` are by other artists under CC0 and CC BY 4.0 (see [CREDITS.md](CREDITS.md)). The Root SDK packages are © Root Communications, Inc. and are installed from npm, not redistributed here.
+[MIT](LICENSE). Fonts in `client/src/assets/fonts` are under the SIL Open Font License (see `OFL.txt` there). The sounds in `client/src/assets/sounds` are by other artists under CC0 and CC BY 4.0 (see [CREDITS.md](CREDITS.md)). The music and ambience in `client/src/assets/music` and `client/src/assets/ambient` are CC0 (see the CREDITS.md in each folder). The Root SDK packages are © Root Communications, Inc. and are installed from npm, not redistributed here.

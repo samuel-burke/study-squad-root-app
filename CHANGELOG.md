@@ -4,8 +4,13 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-11-11
+
+Study tables, scheduled sessions, streak freeze fixes and developer chat commands.
+
 ### Added
 
+- Study tables (#10). Anyone can start a named table in the room, like "Calc II", with its own 25/5 or 50/10 timer, and tap **Sit here** to move between tables. The combo belongs to the whole room, so everyone at every table counts toward it. Once a second table exists the board splits into a section per table, yours first, plus a Solo section. Up to 8 tables at once, and an empty table closes on its own.
 - Scheduled sessions (#11). Anyone can schedule a study session, like "Sunday exam cram, 7pm", from the new **Up next** card in the room. Study Squad posts it in the bot messages channel, members tap **I'm in**, and when it starts a reminder posts in the channel and @mentions everyone who's in. Only the person who scheduled a session can cancel it.
 - Developer chat commands, for the developer only: `!smoke` runs the self-test from chat, `!preview …` plays a badge, level-up, break, high-five, "Keep going?" or celebration on the developer's own screen, and, with the new **Developer test mode** app setting on, commands set XP, level, streak and badges, drive the boss and the room timer, start a 1-minute test round, post the recap, jump the game clock forward and wipe a test community's data with `!reset confirm`. See docs/TESTING.md.
 - Self-test checks can now be skipped (shown as –) when they don't apply, such as the push check when the app isn't open.

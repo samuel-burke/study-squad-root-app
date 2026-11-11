@@ -16,6 +16,10 @@ export default defineConfig({
     baseURL: `http://localhost:${PORT}`,
     // The demo uses the browser's time zone as the community's, so pin it.
     timezoneId: "UTC",
+    // Badge unlocks draw a cinematic every frame, which the fake clock in the
+    // game tests would have to run frame by frame. Reduced motion draws it
+    // once, still. The unlock preview test turns motion back on.
+    reducedMotion: "reduce",
     trace: "retain-on-failure",
   },
   projects: [

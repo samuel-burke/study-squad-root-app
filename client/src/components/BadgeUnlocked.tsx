@@ -97,10 +97,12 @@ export function BadgeUnlocked({
     let closed = false;
     img.onerror = () => setPlain(true);
     img.onload = () => {
+      if (still) paint();
       import("../lib/medal3d")
         .then(({ createMedal3D }) => {
           if (closed) return;
           medal3d = createMedal3D(tier, FRAMES[badge.category], METALS[tier].rim[1]!, img);
+          if (still) paint();
         })
         .catch(() => {
           // No 3D: the flat medal stays.
@@ -111,6 +113,7 @@ export function BadgeUnlocked({
       if (medal3d) {
         const dt = t - show.land;
         const size = r * 4.9;
+        if (size < 1) return;
         const lit = show.build === "herald" && dt < 0 ? 0.2 + 1.2 * clamp(t / show.land) ** 2 : 1.4;
         const flash = dt > 0 && dt < 1 ? 3 * Math.exp(-dt * 4) : 0;
         const frame = medal3d.render(t, tilt, Math.round(size * dpr), {
@@ -127,25 +130,36 @@ export function BadgeUnlocked({
         c.restore();
       }
     };
-    const reduce =
+    // With reduced motion there is no cinematic: the landed medal is drawn once, still.
+    const still =
       typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const painter = new ShowPainter(ctx, show, drawMedal, reduce);
+    const painter = new ShowPainter(ctx, show, drawMedal, still);
     const start = performance.now();
-    let raf = 0;
-    const frame = () => {
+    /** Draws the show `t` seconds in, sized to the canvas. False while it isn't laid out. */
+    const drawAt = (t: number) => {
       const el = ctx.canvas;
       const W = el.clientWidth;
       const H = el.clientHeight;
+      if (!W || !H) return false;
       dpr = Math.min(2, window.devicePixelRatio || 1);
       if (el.width !== Math.round(W * dpr) || el.height !== Math.round(H * dpr)) {
         el.width = Math.round(W * dpr);
         el.height = Math.round(H * dpr);
       }
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      painter.draw((performance.now() - start) / 1000, W, H);
-      raf = requestAnimationFrame(frame);
+      painter.draw(t, W, H);
+      return true;
     };
-    raf = requestAnimationFrame(frame);
+    const paint = () => drawAt(show.land + 2);
+    let raf = 0;
+    // Frames stop once the moment would have closed by itself.
+    const frame = () => {
+      const t = (performance.now() - start) / 1000;
+      drawAt(t);
+      if (t < show.end + LINGER) raf = requestAnimationFrame(frame);
+    };
+    if (still) raf = requestAnimationFrame(paint);
+    else raf = requestAnimationFrame(frame);
     return () => {
       closed = true;
       cancelAnimationFrame(raf);

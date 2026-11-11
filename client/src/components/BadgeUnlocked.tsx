@@ -42,6 +42,9 @@ function partOnly(svg: SVGSVGElement, part: string): SVGSVGElement | null {
   return copy;
 }
 
+/** How soft the engraved icon's groove walls are, in medal units (an SVG blur). */
+const ENGRAVE_BLUR = 0.3;
+
 /** Draws a loaded image onto a 1024 pixel canvas. */
 function rasterize(img: HTMLImageElement): HTMLCanvasElement {
   const c = document.createElement("canvas");
@@ -51,25 +54,20 @@ function rasterize(img: HTMLImageElement): HTMLCanvasElement {
 }
 
 /**
- * A height map that cuts the icon into the face: white face, dark icon, with
- * softened edges for the groove's walls. Blurred by drawing it small and back.
+ * A height map that cuts the icon into the face: white face, dark icon. It is
+ * drawn at full size from an icon blurred a little (see ENGRAVE_BLUR), which
+ * gives the groove smooth walls without jagged edges.
  */
 function engraving(img: HTMLImageElement): HTMLCanvasElement {
-  const small = document.createElement("canvas");
-  small.width = small.height = 96;
-  const s = small.getContext("2d");
-  const c = document.createElement("canvas");
-  c.width = c.height = 512;
+  const c = rasterize(img);
   const ctx = c.getContext("2d");
-  if (!s || !ctx) return c;
-  s.drawImage(img, 0, 0, 96, 96);
-  s.globalCompositeOperation = "source-in";
-  s.fillStyle = "#000";
-  s.fillRect(0, 0, 96, 96);
+  if (!ctx) return c;
+  ctx.globalCompositeOperation = "source-in";
+  ctx.fillStyle = "#000";
+  ctx.fillRect(0, 0, c.width, c.height);
+  ctx.globalCompositeOperation = "destination-over";
   ctx.fillStyle = "#fff";
-  ctx.fillRect(0, 0, 512, 512);
-  ctx.imageSmoothingQuality = "high";
-  ctx.drawImage(small, 0, 0, 512, 512);
+  ctx.fillRect(0, 0, c.width, c.height);
   return c;
 }
 
@@ -78,10 +76,19 @@ function loadPart(
   svg: SVGSVGElement,
   part: string,
   draw: (img: HTMLImageElement) => HTMLCanvasElement,
+  blur = 0,
 ): Promise<HTMLCanvasElement | null> {
   return new Promise((resolve) => {
     const only = partOnly(svg, part);
     if (!only) return resolve(null);
+    if (blur) {
+      // An SVG filter, since Safari can't blur on a canvas.
+      only.insertAdjacentHTML(
+        "afterbegin",
+        `<filter id="part-blur"><feGaussianBlur stdDeviation="${blur}"/></filter>`,
+      );
+      only.querySelector(`.${part}`)?.setAttribute("filter", "url(#part-blur)");
+    }
     const img = medalImage(only);
     img.onload = () => resolve(draw(img));
     img.onerror = () => resolve(null);
@@ -162,7 +169,7 @@ export function BadgeUnlocked({
     // The 3D medal lays its number bubble on top as its own layer, so the
     // raised rim can't cover it, and cuts its icon into the face.
     const stamp = loadPart(svg, "medal-stamp", rasterize);
-    const glyph = loadPart(svg, "medal-glyph", engraving);
+    const glyph = loadPart(svg, "medal-glyph", engraving, ENGRAVE_BLUR);
     img.onload = () => {
       const c = rasterize(img);
       flat = c;

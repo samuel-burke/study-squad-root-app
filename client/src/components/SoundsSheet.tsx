@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import type { Ambience } from "../lib/library";
 import type { Sounds } from "../state/useSounds";
 import {
@@ -48,15 +48,14 @@ export function SoundsSheet({
   onClose(): void;
   wide: boolean;
 }) {
-  const { settings, update, tracks, loadTracks } = sounds;
-  useEffect(loadTracks, [loadTracks]);
+  const { settings, update } = sounds;
 
   const music = <Music sounds={sounds} />;
   const ambience = (
     <section className="sounds-col" aria-labelledby="ambience-title">
       <div className="row-between">
         <h2 id="ambience-title">Ambience</h2>
-        <span className="tiny dim">{tracks?.length ? "Plays under the music" : ""}</span>
+        <span className="tiny dim">Plays under the music</span>
       </div>
       <div className="ambience-grid" role="group" aria-labelledby="ambience-title">
         {AMBIENCES.map(([id, name, icon]) => (
@@ -124,7 +123,7 @@ export function SoundsSheet({
 function Music({ sounds }: { sounds: Sounds }) {
   const { settings, update, tracks, queue, track, playing, progress } = sounds;
   const [showAll, setShowAll] = useState(false);
-  const genres = ["All", ...new Set((tracks ?? []).map((t) => t.genre))];
+  const genres = ["All", ...new Set(tracks.map((t) => t.genre))];
   const shown = showAll ? queue : queue.slice(0, SHORT_LIST);
   const duration = progress.duration || track?.seconds || 0;
   const elapsed = playing || progress.seconds ? progress.seconds : 0;
@@ -133,14 +132,8 @@ function Music({ sounds }: { sounds: Sounds }) {
     <section className="sounds-col" aria-labelledby="music-title">
       <div className="row-between">
         <h2 id="music-title">Music</h2>
-        {tracks && tracks.length > 0 && (
-          <span className="tiny dim">{tracks.length} tracks · all free to use</span>
-        )}
+        <span className="tiny dim">{tracks.length} tracks · all free to use</span>
       </div>
-      {tracks === null && <div className="small muted">Loading music…</div>}
-      {tracks?.length === 0 && (
-        <div className="small muted">Music isn't available right now. Ambience still works.</div>
-      )}
       {track && (
         <>
           <div className="now-playing">

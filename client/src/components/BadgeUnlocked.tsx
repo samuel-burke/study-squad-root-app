@@ -2,8 +2,8 @@ import { badgeById, type BadgeTier } from "@studyroom/core";
 import { useEffect, useId, useRef, useState, type CSSProperties } from "react";
 import { playClip } from "../lib/clips";
 import type { Medal3D } from "../lib/medal3d";
-import { clamp, SHOWS, ShowPainter, type DrawMedal } from "../lib/unlockShow";
-import { BadgeMedal, FRAMES, METALS } from "./BadgeMedal";
+import { clamp, SHOWS, ShowPainter, type DrawMedal, type Show } from "../lib/unlockShow";
+import { BadgeMedal, FRAMES, medalMetal } from "./BadgeMedal";
 
 const EYEBROWS: Record<BadgeTier, string> = {
   bronze: "Badge unlocked",
@@ -147,7 +147,11 @@ export function BadgeUnlocked({
     const ctx = canvas.current?.getContext("2d");
     const svg = art.current?.querySelector("svg");
     if (!badge || !tier || !ctx || !svg) return;
-    const show = SHOWS[tier];
+    const rim = medalMetal(badge).rim;
+    // A colored badge lights its show in its own tint instead of the tier's.
+    const show: Show = badge.color
+      ? { ...SHOWS[tier], colors: [rim[2]!, rim[1]!, rim[0]!] }
+      : SHOWS[tier];
     const img = medalImage(svg);
     let medal3d: Medal3D | null = null;
     let closed = false;
@@ -169,7 +173,7 @@ export function BadgeUnlocked({
           medal3d = createMedal3D(
             tier,
             FRAMES[badge.category],
-            METALS[tier].rim[1]!,
+            medalMetal(badge).rim[1]!,
             c,
             bubble,
             engraved,
@@ -252,7 +256,12 @@ export function BadgeUnlocked({
       role="dialog"
       aria-modal="true"
       aria-labelledby={titleId}
-      style={{ "--land": `${SHOWS[tier].land + 0.45}s` } as CSSProperties}
+      style={
+        {
+          "--land": `${SHOWS[tier].land + 0.45}s`,
+          ...(badge.color && { "--glow": medalMetal(badge).rim[1] }),
+        } as CSSProperties
+      }
       onClick={onDismiss}
     >
       <canvas ref={canvas} className="unlock-canvas" aria-hidden="true" />

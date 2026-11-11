@@ -23,14 +23,18 @@ Study Squad is a group study timer for [Root](https://www.rootapp.com) communiti
   <img src="docs/screenshots/break-moment-mobile-light.png" alt="The break moment in the light theme" width="200">
 </p>
 
-## Features (v0.3.8)
+## Features (v0.5.1)
 
 - **Shared room timer** (25/5, 50/10 or custom, rounds of 4 with a long break) and **solo timers** that still show on the board
 - **Live focus board**: who's focusing, on what, how long is left, their rank and who's in voice. Goals can be private ("Focusing")
+- **Study tables**: start a named table like "Calc II" with its own 25/5 or 50/10 timer and tap Sit here to join. Everyone at every table still counts toward the room's combo
+- **Scheduled sessions**: plan one from the Up next card, tap I'm in, and get a mention in the channel when it starts
+- **Sounds**: a music player with 20 calm lo-fi tracks (CC0) plus rain, storm, café, fireplace or forest ambience layered underneath, each with its own volume. It fades out on breaks and ships inside the app, so nothing is loaded from outside
 - **No drift**: the server stores when a cycle started; every client derives the countdown (and the countdown chirps) from that and a measured clock offset
 - **Goals list**: add, edit, drag to reorder (the top goal is the one on your card), and clear finished goals in one tap. Finished goals fold into one row and show how long they took. The first 5 goals finished each day pay +25 XP
 - **Break moment**: XP earned, streak, damage dealt to the boss, and "did you finish your goal?"
-- **Game layer**: XP and levels with no daily cap, a combo multiplier for focusing together, a weekly built-in boss with its own strength, weekly quests, 49 medals to collect (some secret) and card styles that unlock with level
+- **Game layer**: XP and levels with no daily cap, a combo multiplier for focusing together, a weekly built-in boss with its own strength, weekly quests, over 60 medals to collect (some secret, some in their own colors) and card styles that unlock with level
+- **Big moments**: badge unlocks are short cinematics with recorded orchestral music for each tier, and when the room defeats the weekly boss everyone sees it shatter and a gold boss slayer medal rise
 - **Leaderboard** by focus minutes or XP, for this week, month, year or all time. Members can hide themselves
 - **Streaks without guilt**: one finished session counts the day, one free freeze per week, and days start at 4am so late nights count
 - **Keep going?** at the end of each cycle, so a forgotten timer can't farm XP all day
@@ -156,4 +160,4 @@ See [PRIVACY.md](PRIVACY.md) for what the app stores and how members delete it (
 
 ## License
 
-[MIT](LICENSE). Fonts in `client/src/assets/fonts` are under the SIL Open Font License (see `OFL.txt` there). The sounds in `client/src/assets/sounds` are by other artists under CC0 and CC BY 4.0 (see [CREDITS.md](CREDITS.md)). The Root SDK packages are © Root Communications, Inc. and are installed from npm, not redistributed here.
+[MIT](LICENSE). Fonts in `client/src/assets/fonts` are under the SIL Open Font License (see `OFL.txt` there). The sounds in `client/src/assets/sounds` are by other artists under CC0 and CC BY 4.0 (see [CREDITS.md](CREDITS.md)). The music and ambience in `client/src/assets/music` and `client/src/assets/ambient` are CC0 (see the CREDITS.md in each folder). The Root SDK packages are © Root Communications, Inc. and are installed from npm, not redistributed here.

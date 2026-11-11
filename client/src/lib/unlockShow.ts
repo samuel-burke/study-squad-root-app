@@ -18,7 +18,7 @@ export type Build =
   | "beam"
   /** Stars trace the gem's outline, then collapse into the medal (secret). */
   | "constellation"
-  /** The weekly boss's card shakes as its HP drains, shatters, and a trophy rises. */
+  /** The weekly boss's card shakes as its HP drains, shatters, and a sword rises. */
   | "boss";
 
 export interface Show {
@@ -554,7 +554,7 @@ export class ShowPainter {
 
   /**
    * The boss show: its card shakes harder as the last hit drains the HP bar,
-   * breaks apart on the hit, and a gold trophy rises in its place.
+   * breaks apart on the hit, and a sword rises in its place (drawn by `medal`).
    */
   private bossFight(t: number, cx: number, cy: number, R: number): void {
     const { ctx, show: s } = this;
@@ -612,48 +612,14 @@ export class ShowPainter {
     ctx.globalCompositeOperation = "lighter";
     this.dot(tx, ty, R * 2.4, "#f3b52d", 0.45 * p);
     ctx.globalCompositeOperation = "source-over";
+    // The sword rises out of the wreck with one turn, then sways gently.
+    const tilt = (1 - p) * Math.PI * 2 + Math.sin(dt * 0.8) * 0.25;
     ctx.globalAlpha = p;
-    const gold = ctx.createConicGradient(t * 0.35, tx, ty - R * 0.3);
-    const stops = ["#7a5208", "#fff1c2", "#e2a72a", "#7a5208", "#fff1c2", "#e2a72a", "#7a5208"];
-    stops.forEach((c, i) => gold.addColorStop(i / (stops.length - 1), c));
-    // Handles, cup, stem and base.
-    ctx.lineWidth = R * 0.09;
-    ctx.strokeStyle = gold;
-    ctx.beginPath();
-    ctx.arc(tx - R * 0.72, ty - R * 0.45, R * 0.27, Math.PI * 0.5, Math.PI * 1.5);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.arc(tx + R * 0.72, ty - R * 0.45, R * 0.27, -Math.PI * 0.5, Math.PI * 0.5);
-    ctx.stroke();
-    const cup = () => {
-      ctx.beginPath();
-      ctx.moveTo(tx - R * 0.72, ty - R * 0.82);
-      ctx.lineTo(tx + R * 0.72, ty - R * 0.82);
-      ctx.quadraticCurveTo(tx + R * 0.68, ty + R * 0.15, tx, ty + R * 0.3);
-      ctx.quadraticCurveTo(tx - R * 0.68, ty + R * 0.15, tx - R * 0.72, ty - R * 0.82);
-    };
-    ctx.fillStyle = gold;
-    cup();
-    ctx.fill();
-    ctx.fillRect(tx - R * 0.09, ty + R * 0.28, R * 0.18, R * 0.34);
-    const base = ctx.createLinearGradient(0, ty + R * 0.6, 0, ty + R * 0.8);
-    base.addColorStop(0, "#3a2a12");
-    base.addColorStop(1, "#1a120a");
-    ctx.fillStyle = base;
-    ctx.fillRect(tx - R * 0.5, ty + R * 0.6, R, R * 0.2);
-    ctx.fillStyle = "#e2a72a";
-    ctx.fillRect(tx - R * 0.5, ty + R * 0.6, R, R * 0.025);
-    const shine = ctx.createLinearGradient(tx - R * 0.7, 0, tx + R * 0.7, 0);
-    shine.addColorStop(0, "rgba(255,255,255,0)");
-    shine.addColorStop(0.3, "rgba(255,255,255,.35)");
-    shine.addColorStop(0.38, "rgba(255,255,255,0)");
-    ctx.fillStyle = shine;
-    cup();
-    ctx.fill();
+    this.medal(ctx, tx, ty, R, t, tilt);
     ctx.globalAlpha = 1;
     if (dt > 1) {
       const gp = ((dt - 1) % 3) / 0.5;
-      if (gp < 1) this.glint(tx + R * 0.5, ty - R * 0.7, R * 0.5, Math.sin(gp * Math.PI));
+      if (gp < 1) this.glint(tx, ty - R * 1.25, R * 0.5, Math.sin(gp * Math.PI));
     }
   }
 
@@ -743,3 +709,33 @@ export class ShowPainter {
     ctx.restore();
   }
 }
+
+/** A flat sword, point up, for the boss show without 3D: turned `tilt` radians about its length. */
+export const drawFlatSword: DrawMedal = (ctx, x, y, r, _t, tilt) => {
+  const w = Math.max(0.08, Math.abs(Math.cos(tilt)));
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(w, 1);
+  const steel = ctx.createLinearGradient(-r * 0.12, 0, r * 0.12, 0);
+  steel.addColorStop(0, "#9aa6b4");
+  steel.addColorStop(0.5, "#ffffff");
+  steel.addColorStop(1, "#7d8896");
+  ctx.fillStyle = steel;
+  ctx.beginPath();
+  ctx.moveTo(-r * 0.12, r * 0.3);
+  ctx.lineTo(r * 0.12, r * 0.3);
+  ctx.lineTo(r * 0.1, -r * 1.15);
+  ctx.lineTo(0, -r * 1.42);
+  ctx.lineTo(-r * 0.1, -r * 1.15);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = "#e2a72a";
+  ctx.fillRect(-r * 0.62, r * 0.28, r * 1.24, r * 0.12);
+  ctx.fillStyle = "#3a2418";
+  ctx.fillRect(-r * 0.06, r * 0.4, r * 0.12, r * 0.42);
+  ctx.fillStyle = "#e2a72a";
+  ctx.beginPath();
+  ctx.arc(0, r * 0.9, r * 0.11, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+};

@@ -126,6 +126,13 @@ export const ChevronIcon = (p: IconProps) => (
   </Svg>
 );
 
+export const CalendarIcon = (p: IconProps) => (
+  <Svg {...p}>
+    <rect x="3" y="5" width="18" height="16" rx="2" />
+    <path d="M16 3v4M8 3v4M3 10h18" />
+  </Svg>
+);
+
 export const ChartIcon = (p: IconProps) => (
   <Svg {...p}>
     <path d="M4 20V10M10 20V4M16 20v-7M22 20H2" />

@@ -7,6 +7,7 @@ import { MemberProfileSheet } from "./components/MemberProfileSheet";
 import { BreakMoment } from "./components/BreakMoment";
 import { Celebration } from "./components/Celebration";
 import { FeedbackSheet } from "./components/FeedbackSheet";
+import { ScheduleSheet, UpNext } from "./components/Schedule";
 import type { GoalActions } from "./components/GoalList";
 import { GoalsSheet } from "./components/GoalsSheet";
 import { LeaderboardPodium } from "./components/LeaderboardPodium";
@@ -17,6 +18,7 @@ import { StartSessionSheet } from "./components/StartSessionSheet";
 import { Toast } from "./components/Toast";
 import { useMediaQuery } from "./state/useMediaQuery";
 import { useNow } from "./state/useNow";
+import { useSchedule } from "./state/useSchedule";
 import { useProfiles } from "./state/useProfiles";
 import { useCountdownChirps } from "./state/useCountdownChirps";
 import { useEventSounds } from "./state/useEventSounds";
@@ -28,6 +30,7 @@ type Overlay =
   | { kind: "goals" }
   | { kind: "settings" }
   | { kind: "feedback" }
+  | { kind: "schedule" }
   | { kind: "member"; userId: string }
   | null;
 
@@ -37,6 +40,7 @@ export function App({ gateway }: { gateway: StudyRoomGateway }) {
   const compact = useMediaQuery("(max-width: 760px)");
   const [screen, setScreen] = useState<"room" | "progress">("room");
   const [overlay, setOverlay] = useState<Overlay>(null);
+  const schedule = useSchedule(gateway);
   // A badge the member asked to see unlock again, from the progress screen.
   const [replayBadge, setReplayBadge] = useState<string | null>(null);
   const sounds = useSoundCues(state.me?.status ?? null);
@@ -70,8 +74,9 @@ export function App({ gateway }: { gateway: StudyRoomGateway }) {
     () => [
       ...(state.room?.members.map((m) => m.userId) ?? []),
       ...(state.breakMoment?.finisherIds ?? []),
+      ...schedule.sessions.map((s) => s.byUserId),
     ],
-    [state.room, state.breakMoment],
+    [state.room, state.breakMoment, schedule.sessions],
   );
   const profiles = useProfiles(gateway, userIds);
 
@@ -155,6 +160,19 @@ export function App({ gateway }: { gateway: StudyRoomGateway }) {
             onOpenMember={(userId) => setOverlay({ kind: "member", userId })}
             onChallengeDone={() => void actions.completeBreakChallenge()}
             onHighFive={actions.sendHighFive}
+            upNext={
+              <UpNext
+                sessions={schedule.sessions}
+                youId={me.userId}
+                profiles={profiles}
+                compact={compact}
+                busy={busy}
+                onOpen={() => setOverlay({ kind: "schedule" })}
+                onRsvp={(id, going) =>
+                  void gateway.rsvpSession(id, going).then(schedule.setSessions, () => {})
+                }
+              />
+            }
             podium={
               <LeaderboardPodium
                 gateway={gateway}
@@ -205,6 +223,17 @@ export function App({ gateway }: { gateway: StudyRoomGateway }) {
           gateway={gateway}
           onClose={() => setOverlay(null)}
           onSendFeedback={() => setOverlay({ kind: "feedback" })}
+        />
+      )}
+      {overlay?.kind === "schedule" && (
+        <ScheduleSheet
+          gateway={gateway}
+          sessions={schedule.sessions}
+          youId={me.userId}
+          profiles={profiles}
+          channelName={room.features.postChannelName}
+          onChange={schedule.setSessions}
+          onClose={() => setOverlay(null)}
         />
       )}
       {overlay?.kind === "feedback" && (

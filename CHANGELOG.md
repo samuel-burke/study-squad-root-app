@@ -6,6 +6,7 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ### Added
 
+- Scheduled sessions (#11). Anyone can schedule a study session, like "Sunday exam cram, 7pm", from the new **Up next** card in the room. Study Squad posts it in the bot messages channel, members tap **I'm in**, and when it starts a reminder posts in the channel and @mentions everyone who's in. Only the person who scheduled a session can cancel it.
 - Developer chat commands, for the developer only: `!smoke` runs the self-test from chat, `!preview …` plays a badge, level-up, break, high-five, "Keep going?" or celebration on the developer's own screen, and, with the new **Developer test mode** app setting on, commands set XP, level, streak and badges, drive the boss and the room timer, start a 1-minute test round, post the recap, jump the game clock forward and wipe a test community's data with `!reset confirm`. See docs/TESTING.md.
 - Self-test checks can now be skipped (shown as –) when they don't apply, such as the push check when the app isn't open.
 - Days a streak freeze covered show in ice blue on the Progress heatmap, with a small key underneath.

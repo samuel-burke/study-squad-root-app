@@ -9,6 +9,7 @@ import type {
   RoomStateDto,
   SnapshotDto,
   VoiceChannelChoiceDto,
+  ScheduledSessionDto,
 } from "@studyroom/core";
 import {
   Leaderboard,
@@ -22,6 +23,7 @@ import {
   Progress,
   RoomSnapshot,
   VoiceChannelChoice,
+  Schedule,
 } from "@studyroom/gen-shared";
 import {
   leaderboardFromProto,
@@ -45,6 +47,8 @@ import {
   snapshotToProto,
   voiceChannelChoiceFromProto,
   voiceChannelChoiceToProto,
+  scheduleFromProto,
+  scheduleToProto,
 } from "../src";
 
 const room: RoomStateDto = {
@@ -376,6 +380,23 @@ describe("contract round trip", () => {
       channels: [],
       status: "",
     });
+  });
+});
+
+describe("scheduled sessions", () => {
+  it("preserves the schedule and its RSVPs", () => {
+    const sessions: ScheduledSessionDto[] = [
+      {
+        id: "s1",
+        title: "Sunday exam cram",
+        startsAtMs: 1_763_334_000_000,
+        byUserId: "devon",
+        goingUserIds: ["devon", "ana"],
+      },
+    ];
+    const bytes = Schedule.toBinary(scheduleToProto(sessions));
+    expect(scheduleFromProto(Schedule.fromBinary(bytes))).toEqual(sessions);
+    expect(scheduleFromProto(Schedule.fromBinary(new Uint8Array()))).toEqual([]);
   });
 });
 

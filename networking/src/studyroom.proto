@@ -497,6 +497,45 @@ message SelfTestPingEvent {
   string nonce = 1;
 }
 
+// ---------------------------------------------------------------- scheduled sessions
+
+// A study session a member scheduled. A reminder posts in the channel when it starts.
+message ScheduledSession {
+  string id = 1;
+  string title = 2;
+  double starts_at_ms = 3;
+  string by_user_id = 4;
+  // Tapped "I'm in", so they're @mentioned in the reminder.
+  repeated string going_user_ids = 5;
+}
+
+// Upcoming sessions, soonest first.
+message Schedule {
+  repeated ScheduledSession sessions = 1;
+}
+
+message GetScheduleRequest {}
+
+message ScheduleSessionRequest {
+  string title = 1;
+  double starts_at_ms = 2;
+}
+
+message RsvpSessionRequest {
+  string id = 1;
+  bool going = 2;
+}
+
+// Sent to everyone when a session is scheduled, cancelled or RSVP'd.
+message ScheduleUpdatedEvent {
+  Schedule schedule = 1;
+}
+
+// Only the member who scheduled it can cancel it.
+message CancelScheduledSessionRequest {
+  string id = 1;
+}
+
 // ---------------------------------------------------------------- service
 
 service StudyRoomService {
@@ -528,6 +567,10 @@ service StudyRoomService {
   rpc GetSelfTest(GetSelfTestRequest) returns (SelfTest);
   rpc RunSelfTest(RunSelfTestRequest) returns (SelfTest);
   rpc ConfirmSelfTestPing(ConfirmSelfTestPingRequest) returns (SelfTest);
+  rpc GetSchedule(GetScheduleRequest) returns (Schedule);
+  rpc ScheduleSession(ScheduleSessionRequest) returns (Schedule);
+  rpc CancelScheduledSession(CancelScheduledSessionRequest) returns (Schedule);
+  rpc RsvpSession(RsvpSessionRequest) returns (Schedule);
 
   // Server-to-client pushes.
   rpc BroadcastRoomUpdated(RoomUpdatedEvent) returns (rootsdk.Void);
@@ -537,4 +580,5 @@ service StudyRoomService {
   rpc BroadcastBadgesEarned(BadgesEarnedEvent) returns (rootsdk.Void);
   rpc BroadcastHighFive(HighFiveEvent) returns (rootsdk.Void);
   rpc BroadcastSelfTestPing(SelfTestPingEvent) returns (rootsdk.Void);
+  rpc BroadcastScheduleUpdated(ScheduleUpdatedEvent) returns (rootsdk.Void);
 }

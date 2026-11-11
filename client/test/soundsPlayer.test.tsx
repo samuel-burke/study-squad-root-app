@@ -1,10 +1,10 @@
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
-import { act, render, renderHook, screen, waitFor, within } from "@testing-library/react";
+import { act, render, renderHook, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { MyStatusKind } from "@studyroom/core";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { fetchTracks, trackUrl, type Track } from "../src/lib/library";
+import { TRACKS as BUNDLED, type Track } from "../src/lib/library";
 import { nextTrack, queueOf, useSounds } from "../src/state/useSounds";
 import { MiniPlayer, SoundsSheet, clock } from "../src/components/SoundsSheet";
 
@@ -27,7 +27,7 @@ const track = (id: string, genre = "Lo-fi"): Track => ({
   artist: "HoliznaCC0",
   album: "Public Domain Lofi",
   genre,
-  file: `music/${id}.mp3`,
+  src: `/music/${id}.mp3`,
   seconds: 125,
 });
 const TRACKS = [track("a"), track("b"), track("c", "Piano")];
@@ -38,27 +38,18 @@ beforeEach(() => {
 afterEach(() => window.localStorage.clear());
 
 describe("library", () => {
-  it("keeps good tracks and drops bad entries", async () => {
-    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
-      new Response(JSON.stringify([TRACKS[0], { id: "x" }, null])),
-    );
-    expect(await fetchTracks("https://music.test/")).toEqual([TRACKS[0]]);
-    expect(fetch).toHaveBeenCalledWith("https://music.test/tracks.json");
+  it("bundles every music file with a title, mood and length", () => {
+    expect(BUNDLED.length).toBeGreaterThanOrEqual(20);
+    for (const t of BUNDLED) {
+      expect(t.src).toBeTruthy();
+      expect(t.title).toBeTruthy();
+      expect(t.seconds).toBeGreaterThan(60);
+    }
+    expect(new Set(BUNDLED.map((t) => t.genre)).size).toBeGreaterThan(1);
   });
 
-  it("gives an empty list when the site is down", async () => {
-    vi.spyOn(globalThis, "fetch").mockRejectedValueOnce(new TypeError("offline"));
-    expect(await fetchTracks()).toEqual([]);
-    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(new Response("", { status: 404 }));
-    expect(await fetchTracks()).toEqual([]);
-  });
-
-  it("builds track URLs from the site", () => {
-    expect(trackUrl(TRACKS[0]!, "https://music.test/")).toBe("https://music.test/music/a.mp3");
-  });
-
-  it("credits every bundled ambience file", () => {
-    const dir = join(__dirname, "../src/assets/ambient");
+  it.each(["ambient", "music"])("credits every bundled %s file", (folder) => {
+    const dir = join(__dirname, "../src/assets", folder);
     const credits = readFileSync(join(dir, "CREDITS.md"), "utf8");
     for (const f of readdirSync(dir).filter((n) => n.endsWith(".mp3"))) {
       expect(credits).toContain(`\`${f}\``);
@@ -87,27 +78,21 @@ describe("queue", () => {
 
 describe("useSounds", () => {
   function setup(initial: MyStatusKind | null) {
-    const load = vi.fn(() => Promise.resolve(TRACKS));
-    const hook = renderHook(({ status }) => useSounds(status, load), {
+    const hook = renderHook(({ status }) => useSounds(status, TRACKS), {
       initialProps: { status: initial },
     });
     const [music, ambience] = calls.channels;
-    return { load, music: music!, ambience: ambience!, ...hook };
+    return { music: music!, ambience: ambience!, ...hook };
   }
   const lastSet = (c: { set: ReturnType<typeof vi.fn> }) => c.set.mock.calls.at(-1);
 
   it("stays silent until you press play", async () => {
     const { result, music, ambience } = setup("roomFocus");
     expect(lastSet(ambience)?.[2]).toBe(false);
-    await act(async () => result.current.loadTracks());
     expect(result.current.track?.id).toBe("a");
     expect(lastSet(music)?.[2]).toBe(false);
     act(() => result.current.togglePlay());
-    expect(lastSet(music)).toEqual([
-      "https://samuel-burke.github.io/study-squad-music/music/a.mp3",
-      0.5,
-      true,
-    ]);
+    expect(lastSet(music)).toEqual(["/music/a.mp3", 0.5, true]);
   });
 
   it("plays ambience only while focusing, and pauses everything on breaks", async () => {
@@ -116,7 +101,6 @@ describe("useSounds", () => {
     expect(lastSet(ambience)?.[2]).toBe(false);
     rerender({ status: "soloFocus" });
     expect(lastSet(ambience)?.slice(1)).toEqual([0.3, true, true]);
-    await act(async () => result.current.loadTracks());
     act(() => result.current.togglePlay());
     rerender({ status: "roomBreak" });
     expect(lastSet(ambience)?.[2]).toBe(false);
@@ -128,7 +112,6 @@ describe("useSounds", () => {
 
   it("moves to the next track when one ends", async () => {
     const { result, music } = setup("idle");
-    await act(async () => result.current.loadTracks());
     act(() => music.onEnded());
     expect(result.current.track?.id).toBe("b");
   });
@@ -153,8 +136,8 @@ describe("useSounds", () => {
 });
 
 describe("SoundsSheet", () => {
-  function Harness({ load }: { load: () => Promise<Track[]> }) {
-    const sounds = useSounds("roomFocus", load);
+  function Harness({ tracks }: { tracks: Track[] }) {
+    const sounds = useSounds("roomFocus", tracks);
     return (
       <>
         <MiniPlayer sounds={sounds} />
@@ -171,7 +154,7 @@ describe("SoundsSheet", () => {
 
   it("lists tracks, plays one, and shows the mini player", async () => {
     const user = userEvent.setup();
-    render(<Harness load={() => Promise.resolve(TRACKS)} />);
+    render(<Harness tracks={TRACKS} />);
     const tracks = await screen.findByRole("list", { name: "Tracks" });
     expect(within(tracks).getAllByRole("button")).toHaveLength(3);
     expect(screen.queryByRole("region", { name: "Now playing" })).not.toBeInTheDocument();
@@ -185,14 +168,6 @@ describe("SoundsSheet", () => {
 
     await user.click(screen.getByRole("button", { name: "Storm" }));
     expect(screen.getByRole("button", { name: "Storm" })).toHaveAttribute("aria-pressed", "true");
-  });
-
-  it("says when music can't load, and ambience still works", async () => {
-    render(<Harness load={() => Promise.resolve([])} />);
-    await waitFor(() =>
-      expect(screen.getByText(/Music isn't available right now/)).toBeInTheDocument(),
-    );
-    expect(screen.getByRole("button", { name: "Rain" })).toBeEnabled();
   });
 
   it("formats times", () => {

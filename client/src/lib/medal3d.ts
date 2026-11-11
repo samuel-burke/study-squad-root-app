@@ -7,7 +7,7 @@ import { SVGLoader } from "three/examples/jsm/loaders/SVGLoader.js";
  * A badge medal as a solid, minted 3D piece for the unlock show: its frame
  * shape extruded with a bevelled edge in metal, with the flat medal art laid
  * on the front and back. Loaded only when a badge unlocks (three.js is big),
- * and the show falls back to the flat art if WebGL isn't available.
+ * and the show falls back to the flat art without hardware WebGL.
  */
 interface Build {
   /** Thickness, in the medal's 64-unit grid. */
@@ -43,18 +43,33 @@ export interface Medal3D {
 /**
  * Builds the medal. `frame` is the medal's outline as an SVG path on a 64 by
  * 64 grid, `metal` its tier's mid colour, and `art` the flat medal drawn on an
- * 88 by 88 box centred on that grid. Returns null without WebGL.
+ * 88 by 88 box centred on that grid. Returns null without hardware WebGL.
  */
 export function createMedal3D(
   tier: BadgeTier,
   frame: string,
   metal: string,
-  art: HTMLImageElement,
+  art: HTMLCanvasElement,
 ): Medal3D | null {
   let renderer: THREE.WebGLRenderer;
   try {
-    renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+    // Software rendering (no GPU) is too slow for a frame every 16 ms, so it
+    // counts as no WebGL and the flat medal shows instead.
+    renderer = new THREE.WebGLRenderer({
+      alpha: true,
+      antialias: true,
+      failIfMajorPerformanceCaveat: true,
+    });
   } catch {
+    return null;
+  }
+  // Some browsers report software rendering only through the renderer's name.
+  const gl = renderer.getContext();
+  const info = gl.getExtension("WEBGL_debug_renderer_info");
+  const name = String(info ? gl.getParameter(info.UNMASKED_RENDERER_WEBGL) : "");
+  if (/swiftshader|llvmpipe|softpipe|software/i.test(name)) {
+    renderer.dispose();
+    renderer.forceContextLoss();
     return null;
   }
   renderer.toneMapping = THREE.ACESFilmicToneMapping;

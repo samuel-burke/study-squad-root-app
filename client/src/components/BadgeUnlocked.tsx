@@ -95,13 +95,20 @@ export function BadgeUnlocked({
     const img = medalImage(svg);
     let medal3d: Medal3D | null = null;
     let closed = false;
+    // Drawing an SVG image re-rasterizes it every time, so it is drawn once
+    // onto a canvas, and that canvas is drawn each frame.
+    let flat: HTMLCanvasElement | null = null;
     img.onerror = () => setPlain(true);
     img.onload = () => {
+      const c = document.createElement("canvas");
+      c.width = c.height = 1024;
+      c.getContext("2d")?.drawImage(img, 0, 0, 1024, 1024);
+      flat = c;
       if (still) paint();
       import("../lib/medal3d")
         .then(({ createMedal3D }) => {
           if (closed) return;
-          medal3d = createMedal3D(tier, FRAMES[badge.category], METALS[tier].rim[1]!, img);
+          medal3d = createMedal3D(tier, FRAMES[badge.category], METALS[tier].rim[1]!, c);
           if (still) paint();
         })
         .catch(() => {
@@ -121,12 +128,12 @@ export function BadgeUnlocked({
           fill: dt > 0 ? 1.2 : 0.6,
         });
         c.drawImage(frame, x - size / 2, y - size / 2, size, size);
-      } else if (img.complete && img.naturalWidth) {
+      } else if (flat) {
         const size = r * 4;
         c.save();
         c.translate(x, y);
         c.scale(Math.max(0.06, Math.abs(Math.cos(tilt))), 1);
-        c.drawImage(img, -size / 2, -size / 2, size, size);
+        c.drawImage(flat, -size / 2, -size / 2, size, size);
         c.restore();
       }
     };

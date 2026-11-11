@@ -184,6 +184,9 @@ test.describe("game rules", () => {
       await wait(page, MINUTE + SECOND);
       await expect(boss(page)).toHaveAttribute("data-defeated", "true");
       await expect(boss(page)).toContainText("Defeated!");
+      // The boss gets its own moment, before the badges it earned.
+      await expect(page.locator(".unlock")).toHaveAttribute("data-tier", "boss");
+      await expect(page.locator(".unlock")).toContainText("Boss defeated!");
       await expectEarned(page, ["First Boss", "Final Blow", "One-Person Army"]);
     });
 

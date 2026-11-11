@@ -75,6 +75,7 @@ describe("time travel on the real database", () => {
   }
 
   const me = async () => (await engine.getSnapshot("ana")).me;
+  const badgeIds = async () => (await engine.getProgress("ana")).badges.map((b) => b.id);
 
   beforeEach(async () => {
     db = await freshDatabase();
@@ -97,8 +98,10 @@ describe("time travel on the real database", () => {
     // Skip Friday. Saturday's session spends this week's freeze.
     await jumpTo(ny(10, 31, 9));
     expect(await me()).toMatchObject({ streak: 2, freezeAvailable: false });
+    expect(await badgeIds()).not.toContain("freeze-saved");
     await study(ny(10, 31, 10));
     expect(await me()).toMatchObject({ streak: 3, freezeAvailable: false });
+    expect(await badgeIds()).toContain("freeze-saved");
 
     // The server restarts. Everything comes back from the database.
     boot();

@@ -20,7 +20,7 @@ export const CLIPS: Record<Clip, { url: string; seconds: number }> = {
   gold: { url: gold, seconds: 11.5 },
   platinum: { url: platinum, seconds: 12.2 },
   secret: { url: secret, seconds: 12.2 },
-  boss: { url: boss, seconds: 8 },
+  boss: { url: boss, seconds: 15.6 },
 };
 
 /** The clips are loudness matched, and sit a little under full volume. */

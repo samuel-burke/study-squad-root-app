@@ -4,6 +4,10 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ## [Unreleased]
 
+### Added
+
+- A full-screen moment when the room defeats the weekly boss, set to about 15 seconds of its orchestral swell: the boss card shakes as the last hit drains its HP, shatters on the hit, and a gold trophy rises. Badges the boss earned unlock right after it.
+
 ### Fixed
 
 - On the 3D badge medals, the number bubble no longer sinks behind the raised rim.

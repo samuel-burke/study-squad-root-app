@@ -2343,6 +2343,10 @@ textarea.input {
   --glow: #a77bff;
 }
 
+.unlock[data-tier="boss"] {
+  --glow: #e04848;
+}
+
 .unlock-canvas {
   position: absolute;
   inset: 0;

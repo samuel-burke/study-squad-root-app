@@ -23,7 +23,12 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ## [0.4.1] - 2026-11-11
 
-Cinematic badge unlocks with recorded orchestral music.
+Cinematic badge unlocks with recorded orchestral music, plus a preview of the music player for the test server.
+
+### Added
+
+- Preview, test server only (#12): a new Sounds sheet behind the speaker button. It has a music player (play/pause, next/previous, shuffle, genres, a track list) and ambience you can layer under the music (rain, storm, café, fireplace, forest), each with its own volume. Both fade out on breaks unless you turn off **Pause on breaks**. A small now-playing bar sits under the timer while music plays. Settings are saved per device. Not ready for public release: the ambience files are silent placeholders, the music site has no track list yet (the player shows "Music isn't available right now"), and the privacy policy and SECURITY.md don't mention the music site yet. The music site is only requested when someone opens the Sounds sheet.
+- An owner-only **Test hosted audio** button in the self-test panel checks whether Root lets the app play audio from the music site (samuel-burke.github.io/study-squad-music).
 
 ### Changed
 

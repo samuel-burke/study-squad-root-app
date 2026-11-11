@@ -1,156 +1,157 @@
 import { badgeById, type BadgeTier } from "@studyroom/core";
-import { useEffect, useId, useMemo, useRef, type CSSProperties } from "react";
-import { playBadgeSound } from "../lib/badgeSounds";
-import { BadgeMedal } from "./BadgeMedal";
+import { useEffect, useId, useRef, useState, type CSSProperties } from "react";
+import { playClip } from "../lib/clips";
+import type { Medal3D } from "../lib/medal3d";
+import { clamp, SHOWS, ShowPainter, type DrawMedal } from "../lib/unlockShow";
+import { BadgeMedal, FRAMES, METALS } from "./BadgeMedal";
 
-interface TierShow {
-  eyebrow: string;
-  /** How long the moment stays up before moving on by itself. */
-  ms: number;
-  sparks: number;
-  confetti: number;
-  twinkles: number;
-  waves: number;
-  palette: string[];
-}
-
-/**
- * Each tier gets a bigger moment than the one before it. Bronze pops,
- * silver adds light rays, gold spins in with a shockwave and confetti,
- * platinum arrives down a beam of light with a double shockwave and
- * twinkling stars, and a secret badge shakes as a mystery gem before it
- * bursts open in holographic colour.
- */
-const SHOWS: Record<BadgeTier, TierShow> = {
-  bronze: {
-    eyebrow: "Badge unlocked",
-    ms: 3_500,
-    sparks: 10,
-    confetti: 0,
-    twinkles: 0,
-    waves: 0,
-    palette: ["#f6c79b", "#c27a3e"],
-  },
-  silver: {
-    eyebrow: "Silver badge unlocked",
-    ms: 4_500,
-    sparks: 16,
-    confetti: 0,
-    twinkles: 0,
-    waves: 1,
-    palette: ["#f7f9fc", "#b3bdcb"],
-  },
-  gold: {
-    eyebrow: "Gold badge unlocked!",
-    ms: 6_000,
-    sparks: 24,
-    confetti: 40,
-    twinkles: 0,
-    waves: 1,
-    palette: ["#fff0b0", "#f3b52d", "#ffd75e", "#3d63dd"],
-  },
-  platinum: {
-    eyebrow: "Platinum badge unlocked!",
-    ms: 7_500,
-    sparks: 32,
-    confetti: 60,
-    twinkles: 18,
-    waves: 2,
-    palette: ["#effcff", "#9edcec", "#8f5bff", "#ffffff"],
-  },
-  secret: {
-    eyebrow: "Secret badge found!",
-    ms: 8_000,
-    sparks: 32,
-    confetti: 60,
-    twinkles: 18,
-    waves: 2,
-    palette: ["#ffb3ec", "#a77bff", "#5fd0ff", "#8affc8"],
-  },
+const EYEBROWS: Record<BadgeTier, string> = {
+  bronze: "Badge unlocked",
+  silver: "Silver badge unlocked",
+  gold: "Gold badge unlocked!",
+  platinum: "Platinum badge unlocked!",
+  secret: "Secret badge found!",
 };
 
-/** A small seeded generator, so a badge's burst looks the same each time it renders. */
-function seeded(seed: string) {
-  let state = 1;
-  for (const ch of seed) state = (state * 31 + ch.charCodeAt(0)) % 2147483647;
-  return () => {
-    state = (state * 16807) % 2147483647;
-    return state / 2147483647;
-  };
+/** Seconds the moment stays up after the music ends, before moving on by itself. */
+const LINGER = 1.5;
+
+/** The show's length in milliseconds, before it moves on by itself. */
+export function showMs(tier: BadgeTier): number {
+  return Math.round((SHOWS[tier].end + LINGER) * 1000);
 }
 
-type Vars = CSSProperties & Record<`--${string}`, string>;
+/** The flat medal art as an image, on an 88 by 88 box so the ribbons and wreath fit. */
+function medalImage(svg: SVGSVGElement): HTMLImageElement {
+  const copy = svg.cloneNode(true) as SVGSVGElement;
+  copy.setAttribute("viewBox", "-12 -12 88 88");
+  copy.setAttribute("width", "1024");
+  copy.setAttribute("height", "1024");
+  const img = new Image();
+  img.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(new XMLSerializer().serializeToString(copy))}`;
+  return img;
+}
 
 /**
- * The full-screen moment for a badge you just earned, with a sound that
- * matches its tier unless sounds are muted. It moves on by itself, or with a
- * tap anywhere, the button, or Escape.
+ * The full-screen moment for a badge you just earned: a short cinematic for
+ * its tier (see lib/unlockShow.ts) set to its music, unless sounds are muted.
+ * The medal is a 3D minted piece where WebGL allows, and the flat medal
+ * otherwise. It moves on by itself, or with a tap anywhere, the button, or
+ * Escape.
  */
 export function BadgeUnlocked({
   badgeId,
   muted = false,
   onDismiss,
-  play = playBadgeSound,
+  play = playClip,
 }: {
   badgeId: string;
   muted?: boolean;
   onDismiss(): void;
-  play?: (tier: BadgeTier) => void;
+  /** Starts the tier's music, and returns a function that stops it. */
+  play?: (tier: BadgeTier) => (() => void) | void;
 }) {
   const badge = badgeById(badgeId);
+  const tier = badge?.tier;
   const titleId = useId();
   const button = useRef<HTMLButtonElement>(null);
-  const show = SHOWS[badge?.tier ?? "bronze"];
+  const canvas = useRef<HTMLCanvasElement>(null);
+  const art = useRef<HTMLDivElement>(null);
+  // If the page can't load the medal art as an image, the plain medal shows instead.
+  const [plain, setPlain] = useState(false);
+  const ms = showMs(tier ?? "bronze");
 
-  const pieces = useMemo(() => {
-    const random = seeded(badgeId);
-    const sparks = Array.from({ length: show.sparks }, (_, i) => {
-      const angle = (Math.PI * 2 * i) / show.sparks + random() * 0.3;
-      const distance = 110 + random() * 120;
-      return {
-        "--x": `${Math.cos(angle) * distance}px`,
-        "--y": `${Math.sin(angle) * distance}px`,
-        "--delay": `${random() * 0.15}s`,
-        background: show.palette[i % show.palette.length],
-      } as Vars;
-    });
-    const confetti = Array.from({ length: show.confetti }, (_, i) => ({
-      left: `${random() * 100}%`,
-      "--delay": `${random() * 0.9}s`,
-      "--spin": `${random() * 360}deg`,
-      background: show.palette[i % show.palette.length],
-    })) as Vars[];
-    const twinkles = Array.from({ length: show.twinkles }, () => ({
-      left: `${5 + random() * 90}%`,
-      top: `${5 + random() * 90}%`,
-      "--delay": `${random() * 2}s`,
-      "--size": `${6 + random() * 10}px`,
-    })) as Vars[];
-    return { sparks, confetti, twinkles };
-  }, [badgeId, show]);
-
-  // The sound plays once per badge, even if the mute setting changes mid-show.
-  const tier = badge?.tier;
+  // The music plays once per badge, even if the mute setting changes mid-show,
+  // and fades out when the moment closes.
   const mutedAtStart = useRef(muted);
   useEffect(() => {
     if (!tier || mutedAtStart.current) return;
+    let stop: (() => void) | void;
     try {
-      play(tier);
+      stop = play(tier);
     } catch {
       // A sound must never break the moment.
     }
+    return () => stop?.();
   }, [tier, play]);
 
   useEffect(() => {
     button.current?.focus();
-    const timer = setTimeout(onDismiss, show.ms);
+    const timer = setTimeout(onDismiss, ms);
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onDismiss();
     window.addEventListener("keydown", onKey);
     return () => {
       clearTimeout(timer);
       window.removeEventListener("keydown", onKey);
     };
-  }, [onDismiss, show.ms]);
+  }, [onDismiss, ms]);
+
+  // The show, drawn every frame from the moment it opens.
+  useEffect(() => {
+    const ctx = canvas.current?.getContext("2d");
+    const svg = art.current?.querySelector("svg");
+    if (!badge || !tier || !ctx || !svg) return;
+    const show = SHOWS[tier];
+    const img = medalImage(svg);
+    let medal3d: Medal3D | null = null;
+    let closed = false;
+    img.onerror = () => setPlain(true);
+    img.onload = () => {
+      import("../lib/medal3d")
+        .then(({ createMedal3D }) => {
+          if (closed) return;
+          medal3d = createMedal3D(tier, FRAMES[badge.category], METALS[tier].rim[1]!, img);
+        })
+        .catch(() => {
+          // No 3D: the flat medal stays.
+        });
+    };
+    let dpr = 1;
+    const drawMedal: DrawMedal = (c, x, y, r, t, tilt) => {
+      if (medal3d) {
+        const dt = t - show.land;
+        const size = r * 4.9;
+        const lit = show.build === "herald" && dt < 0 ? 0.2 + 1.2 * clamp(t / show.land) ** 2 : 1.4;
+        const flash = dt > 0 && dt < 1 ? 3 * Math.exp(-dt * 4) : 0;
+        const frame = medal3d.render(t, tilt, Math.round(size * dpr), {
+          key: lit + flash,
+          fill: dt > 0 ? 1.2 : 0.6,
+        });
+        c.drawImage(frame, x - size / 2, y - size / 2, size, size);
+      } else if (img.complete && img.naturalWidth) {
+        const size = r * 4;
+        c.save();
+        c.translate(x, y);
+        c.scale(Math.max(0.06, Math.abs(Math.cos(tilt))), 1);
+        c.drawImage(img, -size / 2, -size / 2, size, size);
+        c.restore();
+      }
+    };
+    const reduce =
+      typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const painter = new ShowPainter(ctx, show, drawMedal, reduce);
+    const start = performance.now();
+    let raf = 0;
+    const frame = () => {
+      const el = ctx.canvas;
+      const W = el.clientWidth;
+      const H = el.clientHeight;
+      dpr = Math.min(2, window.devicePixelRatio || 1);
+      if (el.width !== Math.round(W * dpr) || el.height !== Math.round(H * dpr)) {
+        el.width = Math.round(W * dpr);
+        el.height = Math.round(H * dpr);
+      }
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      painter.draw((performance.now() - start) / 1000, W, H);
+      raf = requestAnimationFrame(frame);
+    };
+    raf = requestAnimationFrame(frame);
+    return () => {
+      closed = true;
+      cancelAnimationFrame(raf);
+      medal3d?.dispose();
+    };
+  }, [badge, tier]);
 
   if (!badge || !tier) return null;
 
@@ -161,36 +162,17 @@ export function BadgeUnlocked({
       role="dialog"
       aria-modal="true"
       aria-labelledby={titleId}
+      style={{ "--land": `${SHOWS[tier].land + 0.45}s` } as CSSProperties}
       onClick={onDismiss}
     >
-      <div className="unlock-backdrop" aria-hidden="true" />
-      <div className="unlock-fx" aria-hidden="true">
-        {tier === "platinum" && <div className="unlock-beam" />}
-        {(tier === "platinum" || tier === "secret") && <div className="unlock-flash" />}
-        {pieces.twinkles.map((style, i) => (
-          <span key={i} className="unlock-twinkle" style={style} />
-        ))}
-        {pieces.confetti.map((style, i) => (
-          <span key={i} className="unlock-confetti" style={style} />
-        ))}
+      <canvas ref={canvas} className="unlock-canvas" aria-hidden="true" />
+      <div ref={art} hidden>
+        <BadgeMedal badge={badge} size={512} />
       </div>
-
-      <div className="unlock-stage" aria-hidden="true">
-        {tier !== "bronze" && <div className="unlock-rays" />}
-        {Array.from({ length: show.waves }, (_, i) => (
-          <span key={i} className="unlock-wave" style={{ "--n": String(i) } as Vars} />
-        ))}
-        {pieces.sparks.map((style, i) => (
-          <span key={i} className="unlock-spark" style={style} />
-        ))}
-        {tier === "secret" && (
-          <BadgeMedal badge={badge} size={168} locked className="unlock-mystery" />
-        )}
-        <BadgeMedal badge={badge} size={168} className="unlock-medal" />
-      </div>
+      {plain && <BadgeMedal badge={badge} size={168} className="unlock-plain" />}
 
       <div className="unlock-text">
-        <span className="unlock-eyebrow">{show.eyebrow}</span>
+        <span className="unlock-eyebrow">{EYEBROWS[tier]}</span>
         <h2 id={titleId} className="unlock-name">
           {badge.name}
         </h2>

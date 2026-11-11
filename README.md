@@ -156,4 +156,4 @@ See [PRIVACY.md](PRIVACY.md) for what the app stores and how members delete it (
 
 ## License
 
-[MIT](LICENSE). Fonts in `client/src/assets/fonts` are under the SIL Open Font License (see `OFL.txt` there). The Root SDK packages are © Root Communications, Inc. and are installed from npm, not redistributed here.
+[MIT](LICENSE). Fonts in `client/src/assets/fonts` are under the SIL Open Font License (see `OFL.txt` there). The sounds in `client/src/assets/sounds` are by other artists under CC0 and CC BY 4.0 (see [CREDITS.md](CREDITS.md)). The Root SDK packages are © Root Communications, Inc. and are installed from npm, not redistributed here.

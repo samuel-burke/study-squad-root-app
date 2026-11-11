@@ -149,7 +149,10 @@ const GLYPHS: Record<BadgeGlyph | "question", ReactNode> = {
 type MedalLook = BadgeTier | "locked";
 
 /** Rim gradient stops (light to dark), face colour and glyph colour for each metal. */
-const METALS: Record<MedalLook, { rim: string[]; face: string; ink: string; stampInk: string }> = {
+export const METALS: Record<
+  MedalLook,
+  { rim: string[]; face: string; ink: string; stampInk: string }
+> = {
   bronze: {
     rim: ["#f6c79b", "#c27a3e", "#7a4119"],
     face: "#2b1d14",
@@ -219,7 +222,7 @@ function rosettePath(bumps: number, radius: number, bump: number): string {
  * Each family of badges has its own silhouette, so a streak badge never
  * looks like a boss badge even at a glance. All fit a 64 by 64 box.
  */
-const FRAMES: Record<BadgeCategory, string> = {
+export const FRAMES: Record<BadgeCategory, string> = {
   // A heater shield.
   streak: "M32 3 54 10v20c0 15-10 24-22 31C20 54 10 45 10 30V10z",
   // A tall hexagon, like a rank insignia.

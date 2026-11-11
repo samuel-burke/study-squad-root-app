@@ -1,6 +1,5 @@
 import { useEffect, useRef } from "react";
-import { fanfareLength } from "../lib/badgeSounds";
-import { EVENT_SOUNDS, playEventSound, type EventSound } from "../lib/eventSounds";
+import { eventSoundLength, playEventSound, type EventSound } from "../lib/eventSounds";
 
 /** The parts of room state that can set off a room-moment sound. */
 export interface EventSoundState {
@@ -49,7 +48,7 @@ export function useEventSounds(
     for (const sound of eventSoundsFor(prev, state)) {
       const now = Date.now();
       const startAt = Math.max(now, busyUntil.current);
-      busyUntil.current = startAt + fanfareLength(EVENT_SOUNDS[sound]) * 1000 + GAP_MS;
+      busyUntil.current = startAt + eventSoundLength(sound) * 1000 + GAP_MS;
       const fire = () => {
         try {
           play(sound);

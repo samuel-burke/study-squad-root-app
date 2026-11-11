@@ -10,9 +10,9 @@ import type { BadgeTier } from "@studyroom/core";
 export type Build =
   /** The medal is there from the start (bronze). */
   | "none"
-  /** Light gathers in the dark, then the medal appears on the hit (silver). */
+  /** Light gathers in the dark, then the medal appears on the hit (gold). */
   | "gather"
-  /** The medal rises from below, spinning faster and faster (gold). */
+  /** The medal rises from below, spinning faster and faster (silver). */
   | "herald"
   /** The medal comes down a beam of light (platinum). */
   | "beam"
@@ -50,7 +50,7 @@ export const SHOWS: Record<BadgeTier, Show> = {
   silver: {
     land: 4.1,
     end: 6.4,
-    build: "gather",
+    build: "herald",
     colors: ["#6c7686", "#c9d3e2", "#ffffff"],
     shake: 5,
     sparks: 40,
@@ -60,7 +60,7 @@ export const SHOWS: Record<BadgeTier, Show> = {
   gold: {
     land: 2.38,
     end: 11.4,
-    build: "herald",
+    build: "gather",
     colors: ["#8f600a", "#f3b52d", "#fff0b0"],
     shake: 7,
     sparks: 60,
@@ -392,13 +392,8 @@ export class ShowPainter {
     // Embers rising, with a few soft out-of-focus ones.
     if (dt > 0) {
       ctx.globalCompositeOperation = "lighter";
-      const n = s.legendary
-        ? 110
-        : s.build === "herald" || s.build === "boss"
-          ? 80
-          : s.build === "gather"
-            ? 40
-            : 20;
+      // More embers for harder tiers.
+      const n = s.legendary ? 110 : s.build === "boss" ? 80 : Math.round(s.sparks * 1.3);
       for (let i = 0; i < n; i++) {
         const x0 = this.rnd() * W;
         const delay = this.rnd() * 2.5;

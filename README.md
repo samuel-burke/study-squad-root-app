@@ -23,7 +23,7 @@ Study Squad is a group study timer for [Root](https://www.rootapp.com) communiti
   <img src="docs/screenshots/break-moment-mobile-light.png" alt="The break moment in the light theme" width="200">
 </p>
 
-## Features (v0.5.0)
+## Features (v0.5.1)
 
 - **Shared room timer** (25/5, 50/10 or custom, rounds of 4 with a long break) and **solo timers** that still show on the board
 - **Live focus board**: who's focusing, on what, how long is left, their rank and who's in voice. Goals can be private ("Focusing")

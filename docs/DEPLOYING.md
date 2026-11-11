@@ -8,7 +8,7 @@ Every push to `main` that passes CI uploads the app to Root, through the **Deplo
 - With no `ROOT_AUTH_TOKEN` secret, it skips the upload and says so in the run summary.
 - It always builds from a clean `networking/gen`, since stale generated code once crashed the app on Root.
 
-So to ship: bump the version (in `root-manifest.json`, every `package.json`, and the workspace entries in `package-lock.json`), merge `dev` into `main`, and the job does the rest.
+So to ship: bump the version (in `root-manifest.json`, every `package.json`, and the workspace entries in `package-lock.json`), date the CHANGELOG entry, update the README (the version in "Features (vX.Y.Z)" and any new or changed features), merge `dev` into `main`, and the job does the rest.
 
 ## One-time setup
 

@@ -11,6 +11,9 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 ### Changed
 
 - After a badge lands, it sways gently instead of turning, and gold no longer does a second full spin.
+- Gold and platinum badges no longer have ribbon tails.
+- On the 3D medal in a badge unlock, the badge's icon is engraved into the face.
+- Platinum unlocks start almost dark: the medal is a silhouette in the beam until the hit lights it up.
 
 ## [0.4.1] - 2026-11-11
 

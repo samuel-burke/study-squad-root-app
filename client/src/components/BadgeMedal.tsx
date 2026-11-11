@@ -255,10 +255,8 @@ const LAUREL = Array.from({ length: 6 }, (_, i) => {
   return { x, y, tilt };
 });
 
-/** Ribbon colours for the gold and platinum tails. */
+/** Ribbon colours for the tails. Only secret badges wear them. */
 const RIBBONS: Partial<Record<MedalLook, [string, string]>> = {
-  gold: ["#3d63dd", "#22398a"],
-  platinum: ["#8f5bff", "#4b2aa6"],
   secret: ["#ff7ad9", "#8a3fd1"],
 };
 
@@ -267,9 +265,9 @@ const GLINT = "M0 -4 1 -1 4 0 1 1 0 4-1 1-4 0-1-1z";
 
 /**
  * A badge drawn as a minted piece in its family's shape. The metal shows the
- * tier, and harder tiers get more dressing: silver adds a bevel, gold hangs
- * ribbon tails, and platinum adds a laurel wreath, glints and a passing shine.
- * Secret badges are holographic gems. Locked badges keep their shape in plain
+ * tier, and harder tiers get more dressing: silver and gold add a bevel, and
+ * platinum adds a laurel wreath, glints and a passing shine. Secret badges are
+ * holographic gems with ribbon tails. Locked badges keep their shape in plain
  * grey; secret ones you haven't found show a question mark.
  */
 export function BadgeMedal({
@@ -411,6 +409,7 @@ export function BadgeMedal({
       )}
 
       <g
+        className="medal-glyph"
         transform={`translate(32 ${glyphY}) scale(${glyphScale}) translate(-12 -12)`}
         fill="none"
         style={{ stroke: metal.ink }}

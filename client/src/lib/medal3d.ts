@@ -29,13 +29,17 @@ const BUILDS: Record<BadgeTier, Build> = {
   secret: { depth: 8, bevel: 2.2, roughness: 0.1, ring: 0, plate: 1.12 },
 };
 
+/** How deep the icon is cut into the face, as a bump map scale. */
+const ENGRAVE_DEPTH = 8;
+
 export interface Medal3D {
   /** Renders the medal turned `tilt` radians, and returns the canvas it drew on. */
   render(
     t: number,
     tilt: number,
     sizePx: number,
-    light: { key: number; fill: number },
+    /** Light strengths. `env` scales the reflected room, 1 by default. */
+    light: { key: number; fill: number; env?: number },
   ): HTMLCanvasElement;
   dispose(): void;
 }
@@ -52,6 +56,8 @@ export function createMedal3D(
   art: HTMLCanvasElement,
   /** The number bubble alone, on the same box as `art`, laid over the rim. */
   stamp: HTMLCanvasElement | null = null,
+  /** A height map for the face, dark where the icon is cut in. */
+  engraving: HTMLCanvasElement | null = null,
 ): Medal3D | null {
   let renderer: THREE.WebGLRenderer;
   try {
@@ -148,14 +154,16 @@ export function createMedal3D(
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.anisotropy = 4;
   texture.needsUpdate = true;
+  const height = engraving ? new THREE.Texture(engraving) : texture;
+  height.needsUpdate = true;
   const face = new THREE.MeshStandardMaterial({
     map: texture,
     transparent: true,
     alphaTest: 0.03,
     metalness: 0.6,
     roughness: Math.max(0.2, b.roughness + 0.1),
-    bumpMap: texture,
-    bumpScale: 0.5,
+    bumpMap: height,
+    bumpScale: engraving ? ENGRAVE_DEPTH : 0.5,
     envMapIntensity: 1.1,
   });
   const plane = new THREE.Mesh(new THREE.PlaneGeometry(88, 88), face);
@@ -194,6 +202,7 @@ export function createMedal3D(
       medal.rotation.set(Math.sin(t * 0.7) * 0.08, tilt, 0);
       key.intensity = light.key * Math.PI;
       fill.intensity = light.fill * Math.PI;
+      scene.environmentIntensity = light.env ?? 1;
       renderer.render(scene, camera);
       return renderer.domElement;
     },
@@ -203,6 +212,7 @@ export function createMedal3D(
           o.geometry.dispose();
           const material = o.material as THREE.MeshStandardMaterial;
           material.map?.dispose();
+          material.bumpMap?.dispose();
           material.dispose();
         }
       });

@@ -57,10 +57,25 @@ const room: RoomStateDto = {
     phaseEndsAt: 1_793_149_900_000,
     preset: { focusMinutes: 0.25, breakMinutes: 5, longBreakMinutes: 15, rounds: 4 },
   },
+  tables: [
+    {
+      id: "t1",
+      name: "Calc II",
+      timer: {
+        phase: "focus",
+        round: 2,
+        rounds: 4,
+        phaseStartedAt: 1_793_149_000_000,
+        phaseEndsAt: 1_793_152_000_000,
+        preset: { focusMinutes: 50, breakMinutes: 10, longBreakMinutes: 20, rounds: 4 },
+      },
+    },
+  ],
   members: [
     {
       userId: "u1",
       status: "roomFocus",
+      tableId: "main",
       endsAt: 1,
       goalText: "Orgo ch. 4 notes",
       goalPrivate: false,
@@ -76,6 +91,7 @@ const room: RoomStateDto = {
     {
       userId: "u2",
       status: "roomBreak",
+      tableId: "main",
       endsAt: 2,
       goalText: "",
       goalPrivate: true,
@@ -91,6 +107,7 @@ const room: RoomStateDto = {
     {
       userId: "u3",
       status: "soloFocus",
+      tableId: "",
       endsAt: 3,
       goalText: "",
       goalPrivate: false,
@@ -106,6 +123,7 @@ const room: RoomStateDto = {
     {
       userId: "u4",
       status: "soloBreak",
+      tableId: "",
       endsAt: 4,
       goalText: "Lab report",
       goalPrivate: false,
@@ -151,6 +169,7 @@ const me: MyStatusDto = {
   status: "roomFocus",
   endsAt: 1_793_150_900_000,
   onRoomTimer: true,
+  tableId: "main",
   xpTotal: 2365,
   level: 7,
   xpIntoLevel: 415,

@@ -36,6 +36,29 @@ test.describe("focus room", () => {
     await expect(page.getByRole("img", { name: "In voice" })).toHaveCount(2);
   });
 
+  test("starts a study table, splits the board by table and moves between tables", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page.getByRole("button", { name: "+ New table" }).click();
+    await page.getByPlaceholder("Table name, e.g. Calc II").fill("Calc II");
+    await page.getByRole("radio", { name: "50 / 10" }).click();
+    await page.getByRole("button", { name: "Start focusing" }).click();
+    const board = page.getByRole("region", { name: "Who is in the room" });
+    const calc = board.getByRole("region", { name: "Calc II" });
+    await expect(calc.getByText("Your table")).toBeVisible();
+    await expect(page.getByRole("timer")).toHaveText(/^(49:\d\d|50:00)$/);
+    await expect(board.getByRole("region", { name: "Main table" })).toContainText("Ana R.");
+    await expect(page.getByText(/6 (people )?at 2 tables/)).toBeVisible();
+    // Sitting at the main table closes the now empty Calc II.
+    await board
+      .getByRole("region", { name: "Main table" })
+      .getByRole("button", { name: "Sit here" })
+      .click();
+    await expect(calc).toBeHidden();
+    await expect(page.getByText(/at 2 tables/)).toBeHidden();
+  });
+
   test("joining adds your card and raises the combo", async ({ page }) => {
     await page.goto("/");
     const sheet = await openStartSheet(page);

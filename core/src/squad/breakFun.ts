@@ -37,9 +37,9 @@ export function isHighFiveEmoji(value: unknown): value is HighFiveEmoji {
   return typeof value === "string" && (HIGH_FIVE_EMOJI as readonly string[]).includes(value);
 }
 
-/** Everyone on the room timer shares a break, named by when it started. */
-export function roomBreakKey(phaseStartedAt: number): string {
-  return `room:${phaseStartedAt}`;
+/** Everyone at a table shares a break, named by the table and when it started. */
+export function roomBreakKey(tableId: string, phaseStartedAt: number): string {
+  return `room:${tableId}:${phaseStartedAt}`;
 }
 
 /** A solo break belongs to one member, named by when it ends. */

@@ -109,6 +109,13 @@ async function capture(browser, viewport, theme, shots) {
     await page.keyboard.press("Escape");
     await settle(page);
   }
+  if (want("sounds")) {
+    await page.getByRole("button", { name: "Sounds", exact: true }).click();
+    await settle(page);
+    await shot("sounds");
+    await page.keyboard.press("Escape");
+    await settle(page);
+  }
   if (want("progress")) {
     await page.getByRole("button", { name: "Your progress" }).click();
     await settle(page);
@@ -120,16 +127,18 @@ async function capture(browser, viewport, theme, shots) {
 await mkdir(out, { recursive: true });
 const browser = await chromium.launch();
 try {
-  await capture(browser, DESKTOP, "dark", ["room"]);
-  await capture(browser, DESKTOP, "light", ["room"]);
-  await capture(browser, PHONE, "dark", [
+  // Desktop in dark mode first; one light room shot and one phone shot.
+  await capture(browser, DESKTOP, "dark", [
     "start-session",
     "break-moment",
     "room",
     "goals",
     "settings",
+    "sounds",
+    "progress",
   ]);
-  await capture(browser, PHONE, "light", ["room", "break-moment", "progress"]);
+  await capture(browser, DESKTOP, "light", ["room"]);
+  await capture(browser, PHONE, "dark", ["room"]);
 } finally {
   await browser.close();
 }

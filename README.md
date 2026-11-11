@@ -6,21 +6,26 @@ Study Squad is a group study timer for [Root](https://www.rootapp.com) communiti
 
 <picture>
   <source media="(prefers-color-scheme: light)" srcset="docs/screenshots/room-desktop-light.png">
-  <img src="docs/screenshots/room-desktop.png" alt="Study Squad focus room on desktop: the room timer, everyone focusing, the weekly boss, the combo and your goals">
+  <img src="docs/screenshots/room-desktop.png" alt="Study Squad focus room on desktop: the room timer, everyone focusing, Up next, the weekly leaderboard and the weekly boss">
 </picture>
 
 <p>
-  <img src="docs/screenshots/room-mobile.png" alt="Focus room on a phone, dark theme" width="200">
-  <img src="docs/screenshots/room-mobile-light.png" alt="Focus room on a phone, light theme" width="200">
-  <img src="docs/screenshots/start-session-mobile.png" alt="Start a session: goals, private toggle, room or solo timer" width="200">
-  <img src="docs/screenshots/break-moment-mobile.png" alt="The break moment: XP earned, streak, boss damage and did you finish your goal" width="200">
+  <img src="docs/screenshots/break-moment-desktop.png" alt="The break moment: XP earned, streak, boss damage and did you finish your goal" width="49%">
+  <img src="docs/screenshots/sounds-desktop.png" alt="The Sounds sheet: a lo-fi music player with moods and a track list, plus ambience under the music" width="49%">
 </p>
 
 <p>
-  <img src="docs/screenshots/goals-mobile.png" alt="Your goals: edit, drag to reorder, finished goals folded with how long they took" width="200">
-  <img src="docs/screenshots/progress-mobile-light.png" alt="Your progress: level, streak calendar, weekly quests and badges" width="200">
-  <img src="docs/screenshots/settings-mobile.png" alt="Room settings: the room's rules, the voice channel dropdown for admins and Send feedback" width="200">
-  <img src="docs/screenshots/break-moment-mobile-light.png" alt="The break moment in the light theme" width="200">
+  <img src="docs/screenshots/start-session-desktop.png" alt="Start a session: goals, private toggle, room or solo timer" width="49%">
+  <img src="docs/screenshots/goals-desktop.png" alt="Your goals: edit, drag to reorder, finished goals folded with how long they took" width="49%">
+</p>
+
+<p>
+  <img src="docs/screenshots/progress-desktop.png" alt="Your progress: the weekly leaderboard, level, streak calendar, quests and badges" width="49%">
+  <img src="docs/screenshots/settings-desktop.png" alt="Room settings: the room's rules, the voice channel dropdown for admins and Send feedback" width="49%">
+</p>
+
+<p>
+  <img src="docs/screenshots/room-mobile.png" alt="Focus room on a phone, dark theme" width="200">
 </p>
 
 ## Features (v0.5.1)

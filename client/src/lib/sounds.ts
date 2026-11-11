@@ -2,14 +2,14 @@ import type { MyStatusKind } from "@studyroom/core";
 
 /**
  * Short chimes for the moments a member's own session changes. They are
- * synthesised with the Web Audio API, so the app ships no audio files and
- * there is nothing to license.
+ * synthesised with the Web Audio API. (The big moments use recorded clips:
+ * see clips.ts.)
  */
 export type SoundCue = "focusStart" | "focusEnd" | "breakStart" | "breakEnd";
 
 type Phase = "idle" | "focus" | "break";
 
-function phaseOf(status: MyStatusKind): Phase {
+export function phaseOf(status: MyStatusKind): Phase {
   switch (status) {
     case "idle":
       return "idle";

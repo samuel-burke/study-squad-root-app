@@ -23,6 +23,8 @@ import { useProfiles } from "./state/useProfiles";
 import { useCountdownChirps } from "./state/useCountdownChirps";
 import { useEventSounds } from "./state/useEventSounds";
 import { useSoundCues } from "./state/useSoundCues";
+import { useSounds } from "./state/useSounds";
+import { MiniPlayer, SoundsSheet } from "./components/SoundsSheet";
 import { useStudyRoom } from "./state/useStudyRoom";
 import { myTableView } from "./lib/view";
 
@@ -30,6 +32,7 @@ type Overlay =
   | { kind: "start"; mode: "room" | "solo" | "table" }
   | { kind: "goals" }
   | { kind: "settings" }
+  | { kind: "sounds" }
   | { kind: "feedback" }
   | { kind: "schedule" }
   | { kind: "member"; userId: string }
@@ -45,6 +48,7 @@ export function App({ gateway }: { gateway: StudyRoomGateway }) {
   // A badge the member asked to see unlock again, from the progress screen.
   const [replayBadge, setReplayBadge] = useState<string | null>(null);
   const sounds = useSoundCues(state.me?.status ?? null);
+  const player = useSounds(state.me?.status ?? null);
   const serverNow = useCallback(() => gateway.now(), [gateway]);
   // Room timer members follow the room clock, which every phase change updates.
   const myEndsAt =
@@ -152,7 +156,9 @@ export function App({ gateway }: { gateway: StudyRoomGateway }) {
             busy={busy}
             compact={compact}
             soundsMuted={sounds.muted}
-            onToggleSounds={() => sounds.setMuted(!sounds.muted)}
+            ambientOn={player.musicOn || player.ambienceOn}
+            miniPlayer={<MiniPlayer sounds={player} />}
+            onOpenSounds={() => setOverlay({ kind: "sounds" })}
             onStart={(mode) => setOverlay({ kind: "start", mode })}
             onLeave={() => void actions.leaveRoomTimer()}
             onEndSolo={() => void actions.endSolo()}
@@ -221,6 +227,15 @@ export function App({ gateway }: { gateway: StudyRoomGateway }) {
           userId={overlay.userId}
           you={overlay.userId === me.userId}
           xpEnabled={room.features.xpEnabled}
+          onClose={() => setOverlay(null)}
+        />
+      )}
+      {overlay?.kind === "sounds" && (
+        <SoundsSheet
+          sounds={player}
+          wide={!compact}
+          effectsOn={!sounds.muted}
+          onEffects={(on) => sounds.setMuted(!on)}
           onClose={() => setOverlay(null)}
         />
       )}

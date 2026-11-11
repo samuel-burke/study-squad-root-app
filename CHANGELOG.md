@@ -4,6 +4,16 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-11-11
+
+Cinematic badge unlocks with recorded orchestral music.
+
+### Changed
+
+- Badge unlocks are now short cinematics set to recorded orchestral music, one track per tier, from 5 seconds for bronze to about 12 for platinum and secret. Each tier builds up its own way before the music hits: light gathers for silver, gold rises spinning from below, platinum comes down a beam of light, and stars trace a secret badge's gem before collapsing into it. The medal is now a solid 3D piece in metal, thicker and shinier for harder tiers.
+- The weekly boss going down plays an orchestral victory swell instead of the synth fanfare.
+- Sound credits are in CREDITS.md.
+
 ## [0.4.0] - 2026-11-11
 
 Study tables, scheduled sessions, streak freeze fixes and developer chat commands.

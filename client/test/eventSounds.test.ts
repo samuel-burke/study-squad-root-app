@@ -1,7 +1,11 @@
 import { act, renderHook } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { fanfareLength } from "../src/lib/badgeSounds";
-import { EVENT_SOUNDS, type EventSound } from "../src/lib/eventSounds";
+import {
+  EVENT_SOUNDS,
+  eventSoundLength,
+  fanfareLength,
+  type EventSound,
+} from "../src/lib/eventSounds";
 import { eventSoundsFor, useEventSounds, type EventSoundState } from "../src/state/useEventSounds";
 
 const base: EventSoundState = {
@@ -72,6 +76,17 @@ describe("useEventSounds", () => {
     expect(play).not.toHaveBeenCalled();
   });
 
+  it("waits for the whole boss music before the next sound", () => {
+    vi.useFakeTimers();
+    const { play, rerender } = setup(base);
+    rerender({ state: { ...base, bossDefeated: true, level: 4 }, muted: false });
+    expect(play.mock.calls).toEqual([["bossDefeat"]]);
+    act(() => vi.advanceTimersByTime(eventSoundLength("bossDefeat") * 1000 - 100));
+    expect(play).toHaveBeenCalledTimes(1);
+    act(() => vi.advanceTimersByTime(300));
+    expect(play.mock.calls).toEqual([["bossDefeat"], ["levelUp"]]);
+  });
+
   it("plays sounds that land together one after another", () => {
     vi.useFakeTimers();
     const { play, rerender } = setup(base);
@@ -135,18 +150,15 @@ describe("event sound synthesis", () => {
     });
   }
 
-  it.each(["celebration", "bossDefeat", "levelUp"] as const)(
-    "schedules every note of %s",
-    async (sound) => {
-      vi.stubGlobal("AudioContext", FakeAudioContext);
-      vi.resetModules();
-      const { playEventSound } = await import("../src/lib/eventSounds");
-      FakeAudioContext.started = 0;
-      playEventSound(sound);
-      const fanfare = EVENT_SOUNDS[sound];
-      expect(FakeAudioContext.started).toBe(fanfare.tones.length + (fanfare.noises?.length ?? 0));
-    },
-  );
+  it.each(["celebration", "levelUp"] as const)("schedules every note of %s", async (sound) => {
+    vi.stubGlobal("AudioContext", FakeAudioContext);
+    vi.resetModules();
+    const { playEventSound } = await import("../src/lib/eventSounds");
+    FakeAudioContext.started = 0;
+    playEventSound(sound);
+    const fanfare = EVENT_SOUNDS[sound];
+    expect(FakeAudioContext.started).toBe(fanfare.tones.length + (fanfare.noises?.length ?? 0));
+  });
 
   it("does nothing without Web Audio", async () => {
     vi.stubGlobal("AudioContext", undefined);

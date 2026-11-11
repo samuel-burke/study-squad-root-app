@@ -2,8 +2,9 @@ import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { BADGES } from "@studyroom/core";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { BadgeUnlocked } from "../src/components/BadgeUnlocked";
-import { FANFARES } from "../src/lib/badgeSounds";
+import { BadgeUnlocked, showMs } from "../src/components/BadgeUnlocked";
+import { CLIPS } from "../src/lib/clips";
+import { SHOWS } from "../src/lib/unlockShow";
 
 afterEach(() => {
   vi.useRealTimers();
@@ -35,18 +36,30 @@ describe("BadgeUnlocked", () => {
     const { unmount } = render(
       <BadgeUnlocked badgeId="streak-3" play={() => {}} onDismiss={bronze} />,
     );
-    act(() => vi.advanceTimersByTime(3_500));
+    act(() => vi.advanceTimersByTime(showMs("bronze") - 100));
+    expect(bronze).not.toHaveBeenCalled();
+    act(() => vi.advanceTimersByTime(100));
     expect(bronze).toHaveBeenCalledTimes(1);
     unmount();
 
     const platinum = vi.fn();
     render(<BadgeUnlocked badgeId="streak-365" play={() => {}} onDismiss={platinum} />);
-    act(() => vi.advanceTimersByTime(3_500));
+    act(() => vi.advanceTimersByTime(showMs("bronze")));
     expect(platinum).not.toHaveBeenCalled();
     act(() => {
       window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
     });
     expect(platinum).toHaveBeenCalledTimes(1);
+  });
+
+  it("fades its music out when the moment closes early", async () => {
+    const stop = vi.fn();
+    const { unmount } = render(
+      <BadgeUnlocked badgeId="streak-365" play={() => stop} onDismiss={() => {}} />,
+    );
+    expect(stop).not.toHaveBeenCalled();
+    unmount();
+    expect(stop).toHaveBeenCalledTimes(1);
   });
 
   it("does not break when the sound fails", () => {
@@ -82,15 +95,21 @@ describe("every badge's unlock moment", () => {
   });
 });
 
-describe("badge fanfares", () => {
-  it("get bigger with each tier", () => {
-    const order = ["bronze", "silver", "gold", "platinum", "secret"] as const;
-    const notes = order.map((tier) => FANFARES[tier].tones.length);
-    const tails = order.map((tier) => FANFARES[tier].reverb);
-    for (let i = 1; i < order.length - 1; i++) {
-      expect(notes[i]!, order[i]).toBeGreaterThan(notes[i - 1]!);
-      expect(tails[i]!, order[i]).toBeGreaterThan(tails[i - 1]!);
+describe("tier shows", () => {
+  const order = ["bronze", "silver", "gold", "platinum", "secret"] as const;
+
+  it("land inside their music and last at least 5 seconds", () => {
+    for (const tier of order) {
+      const show = SHOWS[tier];
+      expect(show.land, tier).toBeLessThan(show.end);
+      expect(show.end, tier).toBeLessThanOrEqual(CLIPS[tier].seconds);
+      expect(showMs(tier), tier).toBeGreaterThanOrEqual(5_000);
     }
-    expect(tails[4]).toBeGreaterThanOrEqual(tails[3]!);
+  });
+
+  it("never get shorter for a rarer tier", () => {
+    for (let i = 1; i < order.length; i++) {
+      expect(showMs(order[i]!), order[i]).toBeGreaterThanOrEqual(showMs(order[i - 1]!));
+    }
   });
 });

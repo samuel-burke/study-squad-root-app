@@ -6,7 +6,7 @@ import { SHOWS } from "./unlockShow";
 /**
  * Quiet sound effects under each show's music, on its actions: swooshes as a
  * medal moves, a thud when it lands, crackle in the platinum beam, a spotlight
- * clunk for silver, twinkles as the secret stars light, and the boss card's
+ * clunk for gold, twinkles as the secret stars light, and the boss card's
  * rumble and shatter. Synthesised, so there is nothing to load and they start
  * in time with the show. Timings follow lib/unlockShow.ts.
  */
@@ -83,22 +83,22 @@ const stars = Array.from({ length: 9 }, (_, i) => ({
 export const SHOW_EFFECTS: Record<Clip, Fanfare> = {
   bronze: { ...merge(thud(0.06, 0.8)), reverb: 0.6, volume: 0.35 },
   silver: {
+    // Light gathers into the middle, then the medal appears on the hit.
     ...merge(
-      // The spotlight snaps on, then the medal spins up into it.
-      {
-        noises: [{ at: 0, length: 0.05, volume: 0.5, from: 2500, to: 1200 }],
-        tones: [{ freq: 70, at: 0, length: 1.2, wave: "sine", volume: 0.25, attack: 0.01 }],
-      },
-      { noises: spins(SHOWS.silver.land) },
+      { noises: [whoosh(SHOWS.silver.land - 1.7, 1.75, 0.45, 200, 3000)] },
       thud(SHOWS.silver.land),
     ),
     reverb: 0.8,
     volume: 0.25,
   },
   gold: {
-    // Light gathers into the middle, then the medal appears on the hit.
     ...merge(
-      { noises: [whoosh(SHOWS.gold.land - 1.7, 1.75, 0.45, 200, 3000)] },
+      // The spotlight snaps on, then the medal spins up into it.
+      {
+        noises: [{ at: 0, length: 0.05, volume: 0.5, from: 2500, to: 1200 }],
+        tones: [{ freq: 70, at: 0, length: 1.2, wave: "sine", volume: 0.25, attack: 0.01 }],
+      },
+      { noises: spins(SHOWS.gold.land) },
       thud(SHOWS.gold.land),
     ),
     reverb: 1,

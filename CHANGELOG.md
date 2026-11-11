@@ -4,6 +4,10 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-11-11
+
+A music player with bundled lo-fi tracks and ambience, a boss defeated moment, and colored badges.
+
 ### Added
 
 - Some badges now come in their own colors: Saved by the Freeze is ice, Night Owl is purple, Early Bird is sunrise orange, Comeback is green and Power Day is electric blue, and their unlock moment is lit to match. Rarity is unchanged.

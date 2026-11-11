@@ -2312,254 +2312,73 @@ textarea.input {
 /* ---------------------------------------------------------------- badge unlock */
 
 /*
- * The full-screen unlock moment. --enter is when the medal starts to arrive
- * and --land is when it lands; sparks, waves, confetti and text key off
- * --land. The fanfares in lib/badgeSounds.ts hit on the same times.
+ * The full-screen unlock moment. The show itself is drawn on the canvas (see
+ * lib/unlockShow.ts); the text fades in at --land, just after the medal lands.
  */
 .unlock {
-  --enter: 0s;
-  --land: 0.55s;
-  --flash: 0s;
+  --land: 0.5s;
   --glow: #c27a3e;
   position: fixed;
   inset: 0;
   z-index: 45;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 28px;
-  padding: 24px 16px;
-  text-align: center;
   overflow: hidden;
+  background: #050409;
   cursor: pointer;
 }
 
 .unlock[data-tier="silver"] {
-  --land: 0.65s;
   --glow: #c9d3e2;
 }
 
 .unlock[data-tier="gold"] {
-  --enter: 0.15s;
-  --land: 1.05s;
   --glow: #f3b52d;
 }
 
 .unlock[data-tier="platinum"] {
-  --enter: 0.7s;
-  --land: 1.7s;
-  --flash: 1.65s;
   --glow: #9edcec;
 }
 
 .unlock[data-tier="secret"] {
-  --enter: 1.4s;
-  --land: 2s;
-  --flash: 1.3s;
   --glow: #a77bff;
 }
 
-.unlock-backdrop {
+.unlock-canvas {
   position: absolute;
   inset: 0;
-  background:
-    radial-gradient(
-      circle at 50% 40%,
-      color-mix(in srgb, var(--glow) 30%, transparent),
-      transparent 60%
-    ),
-    rgba(6, 9, 15, 0.88);
-  backdrop-filter: blur(6px);
-  animation: fade-in 0.35s both;
-}
-
-.unlock[data-tier="platinum"] .unlock-backdrop,
-.unlock[data-tier="secret"] .unlock-backdrop {
-  background:
-    radial-gradient(
-      circle at 50% 40%,
-      color-mix(in srgb, var(--glow) 34%, transparent),
-      transparent 65%
-    ),
-    rgba(3, 4, 9, 0.95);
-}
-
-.unlock-fx {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-}
-
-.unlock-stage {
-  position: relative;
-  display: grid;
-  place-items: center;
-  width: min(168px, 42vw);
-  aspect-ratio: 1;
-}
-
-.unlock-stage > * {
-  grid-area: 1 / 1;
-}
-
-.unlock-stage .badge-medal {
   width: 100%;
   height: 100%;
 }
 
-.unlock-medal {
-  filter: drop-shadow(0 0 28px var(--glow));
-  animation:
-    unlock-pop calc(var(--land) - var(--enter)) var(--enter) cubic-bezier(0.2, 1.4, 0.4, 1) both,
-    unlock-float 3.2s var(--land) ease-in-out infinite;
-}
-
-.unlock[data-tier="silver"] .unlock-medal {
-  animation-name: unlock-pop-turn, unlock-float;
-}
-
-.unlock[data-tier="gold"] .unlock-medal {
-  animation-name: unlock-spin, unlock-float;
-  animation-timing-function: cubic-bezier(0.3, 0.6, 0.4, 1), ease-in-out;
-}
-
-.unlock[data-tier="platinum"] .unlock-medal {
-  animation-name: unlock-rise, unlock-float;
-  animation-timing-function: cubic-bezier(0.25, 0.7, 0.35, 1), ease-in-out;
-}
-
-.unlock[data-tier="secret"] .unlock-medal {
-  animation-name: unlock-reveal, unlock-float;
-}
-
-.unlock-mystery {
-  animation: unlock-shake var(--flash) ease-in both;
-}
-
-.unlock-rays {
+.unlock-plain {
   position: absolute;
+  top: 36%;
   left: 50%;
-  top: 50%;
-  width: 160vmax;
-  height: 160vmax;
-  margin: -80vmax 0 0 -80vmax;
-  background: repeating-conic-gradient(
-    color-mix(in srgb, var(--glow) 32%, transparent) 0deg 5deg,
-    transparent 5deg 15deg
-  );
-  mask-image: radial-gradient(circle, #000 0, transparent 30%);
-  -webkit-mask-image: radial-gradient(circle, #000 0, transparent 30%);
-  opacity: 0;
-  animation:
-    unlock-appear 0.8s var(--enter) forwards,
-    unlock-turn 30s linear infinite;
+  width: 26vmin;
+  height: 26vmin;
+  transform: translate(-50%, -50%);
+  animation: fade-in 0.5s calc(var(--land) - 0.45s) both;
 }
 
-.unlock[data-tier="gold"] .unlock-rays,
-.unlock[data-tier="platinum"] .unlock-rays {
-  mask-image: radial-gradient(circle, #000 0, transparent 42%);
-  -webkit-mask-image: radial-gradient(circle, #000 0, transparent 42%);
-}
-
-.unlock[data-tier="secret"] .unlock-rays {
-  background: repeating-conic-gradient(
-    #ff7ad966 0deg 5deg,
-    transparent 5deg 15deg,
-    #5fd0ff66 15deg 20deg,
-    transparent 20deg 30deg,
-    #8affc866 30deg 35deg,
-    transparent 35deg 45deg
-  );
-  mask-image: radial-gradient(circle, #000 0, transparent 45%);
-  -webkit-mask-image: radial-gradient(circle, #000 0, transparent 45%);
-  animation:
-    unlock-appear 0.6s var(--enter) forwards,
-    unlock-turn 18s linear infinite,
-    unlock-holo 4s linear infinite;
-}
-
-.unlock-wave {
-  width: 70%;
-  height: 70%;
-  border-radius: 50%;
-  border: 3px solid var(--glow);
-  box-shadow:
-    0 0 24px var(--glow),
-    inset 0 0 24px var(--glow);
-  opacity: 0;
-  animation: unlock-wave 1.1s calc(var(--land) + var(--n) * 0.3s) ease-out both;
-}
-
-.unlock-spark {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  opacity: 0;
-  animation: unlock-spark 0.9s calc(var(--land) - 0.1s + var(--delay))
-    cubic-bezier(0.1, 0.7, 0.3, 1) both;
-}
-
-.unlock-beam {
-  position: absolute;
-  left: 50%;
-  top: 0;
-  width: 240px;
-  height: 62%;
-  margin-left: -120px;
-  background: linear-gradient(
-    to bottom,
-    rgba(210, 248, 255, 0),
-    rgba(210, 248, 255, 0.55) 75%,
-    rgba(210, 248, 255, 0)
-  );
-  filter: blur(14px);
-  opacity: 0;
-  animation: unlock-beam 2.6s ease-out both;
-}
-
-.unlock-flash {
-  position: absolute;
-  inset: 0;
-  background: #fff;
-  opacity: 0;
-  animation: unlock-flash 0.6s var(--flash) ease-out both;
-}
-
-.unlock-confetti {
-  position: absolute;
-  top: -14px;
-  width: 10px;
-  height: 5px;
-  border-radius: 2px;
-  opacity: 0;
-  animation: unlock-confetti 2.8s calc(var(--land) + var(--delay)) ease-in forwards;
-}
-
-.unlock-twinkle {
-  position: absolute;
-  width: var(--size);
-  height: var(--size);
-  background: #fff;
-  clip-path: polygon(50% 0, 60% 40%, 100% 50%, 60% 60%, 50% 100%, 40% 60%, 0 50%, 40% 40%);
-  opacity: 0;
-  animation: unlock-twinkle 1.8s calc(var(--land) + var(--delay)) ease-in-out infinite;
-}
-
+/* The medal sits at 36% down with a radius of 13vmin; the text starts below it. */
 .unlock-text {
-  position: relative;
+  position: absolute;
+  top: calc(36% + 13vmin * 1.9);
+  left: 16px;
+  right: 16px;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 8px;
   max-width: 420px;
-  animation: unlock-rise-text 0.5s calc(var(--land) + 0.05s) both;
+  margin: 0 auto;
+  text-align: center;
+  animation: unlock-rise-text 0.9s var(--land) both;
 }
 
 .unlock-eyebrow {
   font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 0.14em;
+  font-weight: 600;
+  letter-spacing: 0.3em;
   text-transform: uppercase;
   color: var(--glow);
 }
@@ -2568,6 +2387,7 @@ textarea.input {
   margin: 0;
   font-family: var(--font-display);
   font-size: clamp(28px, 8vw, 40px);
+  font-weight: 600;
   line-height: 1.1;
 }
 
@@ -2595,215 +2415,9 @@ textarea.input {
   min-width: 140px;
 }
 
-@keyframes unlock-appear {
-  to {
-    opacity: 1;
-  }
-}
-
-@keyframes unlock-turn {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@keyframes unlock-holo {
-  to {
-    filter: hue-rotate(360deg);
-  }
-}
-
-@keyframes unlock-pop {
-  0% {
-    transform: scale(0.2);
-    opacity: 0;
-  }
-  60% {
-    transform: scale(1.15);
-    opacity: 1;
-  }
-}
-
-@keyframes unlock-pop-turn {
-  0% {
-    transform: scale(0.2) rotate(-35deg);
-    opacity: 0;
-  }
-  60% {
-    transform: scale(1.12) rotate(8deg);
-    opacity: 1;
-  }
-}
-
-@keyframes unlock-spin {
-  0% {
-    transform: perspective(600px) translateY(-160px) rotateY(0) scale(0.3);
-    opacity: 0;
-  }
-  15% {
-    opacity: 1;
-  }
-  80% {
-    transform: perspective(600px) translateY(0) rotateY(1080deg) scale(1.12);
-  }
-  100% {
-    transform: perspective(600px) rotateY(1080deg) scale(1);
-  }
-}
-
-@keyframes unlock-rise {
-  0% {
-    transform: perspective(600px) translateY(180px) rotateY(0) scale(0.2);
-    opacity: 0;
-  }
-  20% {
-    opacity: 1;
-  }
-  85% {
-    transform: perspective(600px) translateY(-12px) rotateY(1440deg) scale(1.2);
-  }
-  100% {
-    transform: perspective(600px) rotateY(1440deg) scale(1);
-  }
-}
-
-@keyframes unlock-reveal {
-  0% {
-    transform: scale(0.6);
-    opacity: 0;
-    filter: brightness(3) drop-shadow(0 0 40px #fff);
-  }
-  40% {
-    transform: scale(1.25);
-    opacity: 1;
-  }
-  100% {
-    filter: drop-shadow(0 0 28px var(--glow));
-  }
-}
-
-@keyframes unlock-shake {
-  0% {
-    transform: scale(0.4);
-    opacity: 0;
-  }
-  12% {
-    transform: scale(1);
-    opacity: 1;
-  }
-  30% {
-    transform: rotate(-3deg);
-  }
-  40% {
-    transform: rotate(4deg);
-  }
-  50% {
-    transform: rotate(-6deg) scale(1.02);
-  }
-  60% {
-    transform: rotate(7deg) scale(1.04);
-  }
-  70% {
-    transform: rotate(-9deg) scale(1.06);
-  }
-  80% {
-    transform: rotate(10deg) scale(1.08);
-  }
-  92% {
-    transform: rotate(0) scale(1.12);
-    opacity: 1;
-    filter: brightness(2.5);
-  }
-  100% {
-    transform: scale(1.5);
-    opacity: 0;
-    filter: brightness(4);
-  }
-}
-
-@keyframes unlock-float {
-  50% {
-    transform: translateY(-6px);
-  }
-}
-
-@keyframes unlock-wave {
-  0% {
-    transform: scale(0.5);
-    opacity: 0.9;
-  }
-  100% {
-    transform: scale(3.4);
-    opacity: 0;
-  }
-}
-
-@keyframes unlock-spark {
-  0% {
-    transform: translate(0, 0) scale(1);
-    opacity: 1;
-  }
-  100% {
-    transform: translate(var(--x), var(--y)) scale(0.3);
-    opacity: 0;
-  }
-}
-
-@keyframes unlock-beam {
-  0% {
-    transform: scaleX(0.2);
-    opacity: 0;
-  }
-  25% {
-    transform: scaleX(1);
-    opacity: 1;
-  }
-  70% {
-    opacity: 0.7;
-  }
-  100% {
-    opacity: 0.3;
-  }
-}
-
-@keyframes unlock-flash {
-  0% {
-    opacity: 0;
-  }
-  15% {
-    opacity: 0.85;
-  }
-  100% {
-    opacity: 0;
-  }
-}
-
-@keyframes unlock-confetti {
-  0% {
-    transform: translateY(0) rotate(var(--spin));
-    opacity: 1;
-  }
-  100% {
-    transform: translateY(110vh) rotate(calc(var(--spin) + 720deg));
-    opacity: 0.3;
-  }
-}
-
-@keyframes unlock-twinkle {
-  0%,
-  100% {
-    transform: scale(0.3);
-    opacity: 0;
-  }
-  50% {
-    transform: scale(1);
-    opacity: 0.9;
-  }
-}
-
 @keyframes unlock-rise-text {
   from {
-    transform: translateY(14px);
+    transform: translateY(10px);
     opacity: 0;
   }
 }

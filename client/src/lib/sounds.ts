@@ -2,8 +2,8 @@ import type { MyStatusKind } from "@studyroom/core";
 
 /**
  * Short chimes for the moments a member's own session changes. They are
- * synthesised with the Web Audio API, so the app ships no audio files and
- * there is nothing to license.
+ * synthesised with the Web Audio API. (The big moments use recorded clips:
+ * see clips.ts.)
  */
 export type SoundCue = "focusStart" | "focusEnd" | "breakStart" | "breakEnd";
 

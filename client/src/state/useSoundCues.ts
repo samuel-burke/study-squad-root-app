@@ -1,5 +1,6 @@
 import type { MyStatusKind } from "@studyroom/core";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { preloadClips } from "../lib/clips";
 import { cueFor, playCue, unlockAudio, type SoundCue } from "../lib/sounds";
 
 const MUTED_KEY = "studysquad.soundsMuted";
@@ -36,8 +37,12 @@ export function useSoundCues(
   // Audio stays locked until an interaction, and Safari only counts some
   // events (a touch's pointerdown isn't one). Unlock on every kind, every
   // time, since Safari can lock audio again after a call or an app switch.
+  // The recorded clips load on the first one, so they're ready on the beat.
   useEffect(() => {
-    const unlock = () => unlockAudio();
+    const unlock = () => {
+      unlockAudio();
+      preloadClips();
+    };
     for (const type of UNLOCK_EVENTS) window.addEventListener(type, unlock, true);
     return () => {
       for (const type of UNLOCK_EVENTS) window.removeEventListener(type, unlock, true);

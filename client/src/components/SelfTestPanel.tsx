@@ -5,7 +5,6 @@ import {
   type SelfTestCheck,
   type SelfTestState,
 } from "../api/gateway";
-import { checkHostedAudio } from "../lib/hostedAudioCheck";
 
 const POLL_MS = 3_000;
 const ICON: Record<SelfTestCheck["status"], string> = {
@@ -32,14 +31,7 @@ const TONE: Record<SelfTestCheck["status"], string> = {
  * Admins see their own Root user id here while nobody is on the list, so the
  * developer can find theirs.
  */
-export function SelfTestPanel({
-  selfTest,
-  checkAudio = checkHostedAudio,
-}: {
-  selfTest: SelfTestApi;
-  checkAudio?: () => Promise<string>;
-}) {
-  const [audioResult, setAudioResult] = useState<string | null>(null);
+export function SelfTestPanel({ selfTest }: { selfTest: SelfTestApi }) {
   const [state, setState] = useState<SelfTestState | null>(null);
   const [testPost, setTestPost] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -124,21 +116,6 @@ export function SelfTestPanel({
       <button type="button" className="btn btn-teal" onClick={() => void run()} disabled={busy}>
         {busy ? "Running…" : report ? "Run again" : "Run self-test"}
       </button>
-      <button
-        type="button"
-        className="btn btn-quiet"
-        onClick={() => {
-          setAudioResult("Testing…");
-          void checkAudio().then(setAudioResult);
-        }}
-      >
-        Test hosted audio
-      </button>
-      {audioResult && (
-        <div className="tiny dim" role="status">
-          {audioResult}
-        </div>
-      )}
       {error && (
         <div role="alert" className="tiny" style={{ color: "var(--coral)" }}>
           {error}

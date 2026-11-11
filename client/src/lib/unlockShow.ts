@@ -4,7 +4,8 @@ import type { BadgeTier } from "@studyroom/core";
  * The cinematic behind a badge unlock, drawn on a canvas frame by frame and
  * timed to the tier's sound (see clips.ts). Each tier builds up its own way
  * until `land`, when the music hits and the medal arrives with a flash,
- * light rays, shockwaves and sparks. Embers drift until `end`.
+ * light rays, shockwaves and sparks. Embers drift until `end`. The weekly
+ * boss going down (BOSS_SHOW) uses the same stage.
  */
 export type Build =
   /** The medal is there from the start (bronze). */
@@ -16,7 +17,9 @@ export type Build =
   /** The medal comes down a beam of light (platinum). */
   | "beam"
   /** Stars trace the gem's outline, then collapse into the medal (secret). */
-  | "constellation";
+  | "constellation"
+  /** The weekly boss's card shakes as its HP drains, shatters, and a trophy rises. */
+  | "boss";
 
 export interface Show {
   /** Seconds until the music hits and the medal lands. */
@@ -84,6 +87,18 @@ export const SHOWS: Record<BadgeTier, Show> = {
     rings: 4,
     legendary: true,
   },
+};
+
+/** The weekly boss going down, timed to its clip (see clips.ts). */
+export const BOSS_SHOW: Show = {
+  land: 2.5,
+  end: 7.9,
+  build: "boss",
+  colors: ["#8a1f1f", "#e04848", "#ffd2a8"],
+  shake: 12,
+  sparks: 80,
+  rings: 3,
+  legendary: false,
 };
 
 /** Draws the medal centred on (x, y) with radius r, turned `tilt` radians about its vertical axis. */
@@ -177,6 +192,8 @@ export class ShowPainter {
     private show: Show,
     private medal: DrawMedal,
     private reduceMotion: boolean,
+    /** The boss's name and full HP, for the boss show's card. */
+    private boss?: { name: string; maxHp: number },
   ) {
     this.grain = canvas(160);
     const g = this.grain.getContext("2d");
@@ -305,7 +322,7 @@ export class ShowPainter {
     }
 
     // Motes of light drawn in towards the middle during the build.
-    if (s.build !== "none" && dt < 0) {
+    if (s.build !== "none" && s.build !== "boss" && dt < 0) {
       const n = s.legendary ? 120 : 80;
       for (let i = 0; i < n; i++) {
         const born = this.rnd() * L * 0.95;
@@ -369,12 +386,19 @@ export class ShowPainter {
     ctx.globalCompositeOperation = "source-over";
     ctx.globalAlpha = 1;
 
-    this.subject(t, cx, cy, R, H);
+    if (s.build === "boss") this.bossFight(t, cx, cy, R);
+    else this.subject(t, cx, cy, R, H);
 
     // Embers rising, with a few soft out-of-focus ones.
     if (dt > 0) {
       ctx.globalCompositeOperation = "lighter";
-      const n = s.legendary ? 110 : s.build === "herald" ? 80 : s.build === "gather" ? 40 : 20;
+      const n = s.legendary
+        ? 110
+        : s.build === "herald" || s.build === "boss"
+          ? 80
+          : s.build === "gather"
+            ? 40
+            : 20;
       for (let i = 0; i < n; i++) {
         const x0 = this.rnd() * W;
         const delay = this.rnd() * 2.5;
@@ -523,6 +547,143 @@ export class ShowPainter {
     if (dt > 0.6) {
       const gp = ((dt - 0.6) % 3.2) / 0.5;
       if (gp < 1) this.glint(cx + mr * 0.62, my - mr * 0.62, mr * 0.55, Math.sin(gp * Math.PI));
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  /**
+   * The boss show: its card shakes harder as the last hit drains the HP bar,
+   * breaks apart on the hit, and a gold trophy rises in its place.
+   */
+  private bossFight(t: number, cx: number, cy: number, R: number): void {
+    const { ctx, show: s } = this;
+    const [c0, c1] = s.colors;
+    const L = s.land;
+    const dt = t - L;
+    ctx.globalAlpha = 1;
+    if (dt < 0) {
+      const p = clamp(t / L);
+      const a = this.reduceMotion ? 0 : 1 + p * p * 5;
+      const bx = cx + Math.sin(t * 55) * a;
+      const by = cy + Math.cos(t * 43) * a * 0.5;
+      const w = R * 3.4;
+      const h = R * 2.1;
+      ctx.save();
+      ctx.shadowColor = hex(c1, 0.4 + p * 0.4);
+      ctx.shadowBlur = 20 + p * 30;
+      const bg = ctx.createLinearGradient(0, by - h / 2, 0, by + h / 2);
+      bg.addColorStop(0, "#1e1519");
+      bg.addColorStop(1, "#120c10");
+      ctx.fillStyle = bg;
+      ctx.beginPath();
+      ctx.roundRect(bx - w / 2, by - h / 2, w, h, 10);
+      ctx.fill();
+      ctx.restore();
+      ctx.strokeStyle = hex(c1, 0.6);
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.roundRect(bx - w / 2, by - h / 2, w, h, 10);
+      ctx.stroke();
+      ctx.fillStyle = "#f2eef4";
+      ctx.textAlign = "center";
+      ctx.font = `600 ${R * 0.3}px "Space Grotesk", sans-serif`;
+      ctx.fillText(this.boss?.name ?? "", bx, by - h * 0.1, w * 0.9);
+      // The last hit takes the final sliver of HP.
+      const hp = Math.max(0, 0.18 * (1 - ease((t - 0.4) / (L - 0.5))));
+      ctx.fillStyle = "#2a1a20";
+      ctx.fillRect(bx - w * 0.4, by + h * 0.08, w * 0.8, R * 0.12);
+      const hg = ctx.createLinearGradient(bx - w * 0.4, 0, bx + w * 0.4, 0);
+      hg.addColorStop(0, c0);
+      hg.addColorStop(1, c1);
+      ctx.fillStyle = hg;
+      ctx.fillRect(bx - w * 0.4, by + h * 0.08, w * 0.8 * hp, R * 0.12);
+      ctx.fillStyle = "#a99aa6";
+      ctx.font = `500 ${R * 0.15}px Inter, sans-serif`;
+      const left = Math.ceil(hp * (this.boss?.maxHp ?? 0));
+      ctx.fillText(`${left.toLocaleString()} HP left`, bx, by + h * 0.36);
+      return;
+    }
+    this.shards(cx, cy, R * 1.4, dt, "#1e1519", c1);
+    const p = ease((dt - 0.25) / 0.8);
+    if (p <= 0) return;
+    const tx = cx;
+    const ty = cy + R * (1 - p) * 1.2 + Math.sin(dt * 1.6) * R * 0.04;
+    ctx.globalCompositeOperation = "lighter";
+    this.dot(tx, ty, R * 2.4, "#f3b52d", 0.45 * p);
+    ctx.globalCompositeOperation = "source-over";
+    ctx.globalAlpha = p;
+    const gold = ctx.createConicGradient(t * 0.35, tx, ty - R * 0.3);
+    const stops = ["#7a5208", "#fff1c2", "#e2a72a", "#7a5208", "#fff1c2", "#e2a72a", "#7a5208"];
+    stops.forEach((c, i) => gold.addColorStop(i / (stops.length - 1), c));
+    // Handles, cup, stem and base.
+    ctx.lineWidth = R * 0.09;
+    ctx.strokeStyle = gold;
+    ctx.beginPath();
+    ctx.arc(tx - R * 0.72, ty - R * 0.45, R * 0.27, Math.PI * 0.5, Math.PI * 1.5);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(tx + R * 0.72, ty - R * 0.45, R * 0.27, -Math.PI * 0.5, Math.PI * 0.5);
+    ctx.stroke();
+    const cup = () => {
+      ctx.beginPath();
+      ctx.moveTo(tx - R * 0.72, ty - R * 0.82);
+      ctx.lineTo(tx + R * 0.72, ty - R * 0.82);
+      ctx.quadraticCurveTo(tx + R * 0.68, ty + R * 0.15, tx, ty + R * 0.3);
+      ctx.quadraticCurveTo(tx - R * 0.68, ty + R * 0.15, tx - R * 0.72, ty - R * 0.82);
+    };
+    ctx.fillStyle = gold;
+    cup();
+    ctx.fill();
+    ctx.fillRect(tx - R * 0.09, ty + R * 0.28, R * 0.18, R * 0.34);
+    const base = ctx.createLinearGradient(0, ty + R * 0.6, 0, ty + R * 0.8);
+    base.addColorStop(0, "#3a2a12");
+    base.addColorStop(1, "#1a120a");
+    ctx.fillStyle = base;
+    ctx.fillRect(tx - R * 0.5, ty + R * 0.6, R, R * 0.2);
+    ctx.fillStyle = "#e2a72a";
+    ctx.fillRect(tx - R * 0.5, ty + R * 0.6, R, R * 0.025);
+    const shine = ctx.createLinearGradient(tx - R * 0.7, 0, tx + R * 0.7, 0);
+    shine.addColorStop(0, "rgba(255,255,255,0)");
+    shine.addColorStop(0.3, "rgba(255,255,255,.35)");
+    shine.addColorStop(0.38, "rgba(255,255,255,0)");
+    ctx.fillStyle = shine;
+    cup();
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    if (dt > 1) {
+      const gp = ((dt - 1) % 3) / 0.5;
+      if (gp < 1) this.glint(tx + R * 0.5, ty - R * 0.7, R * 0.5, Math.sin(gp * Math.PI));
+    }
+  }
+
+  /** Pieces of the boss card flying apart. */
+  private shards(cx: number, cy: number, R: number, dt: number, c1: string, c2: string): void {
+    const { ctx } = this;
+    if (dt > 1.6) return;
+    for (let i = 0; i < 26; i++) {
+      const ang = this.rnd() * 7;
+      const sp = R * (1.4 + this.rnd() * 3.4);
+      const rot = this.rnd() * 8 - 4;
+      const size = 0.5 + this.rnd() * 0.8;
+      const d = sp * ease(dt / 1.6);
+      ctx.save();
+      ctx.translate(cx + Math.cos(ang) * d, cy + Math.sin(ang) * d + dt * dt * R * 0.9);
+      ctx.rotate(rot * dt);
+      ctx.globalAlpha = 1 - dt / 1.6;
+      const g = ctx.createLinearGradient(-R * 0.15, -R * 0.15, R * 0.15, R * 0.15);
+      g.addColorStop(0, "#6d6782");
+      g.addColorStop(1, c1);
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.moveTo(0, -R * 0.2 * size);
+      ctx.lineTo(R * 0.13 * size, R * 0.1 * size);
+      ctx.lineTo(-R * 0.11 * size, R * 0.13 * size);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = hex(c2, 0.8);
+      ctx.lineWidth = 0.8;
+      ctx.stroke();
+      ctx.restore();
     }
     ctx.globalAlpha = 1;
   }

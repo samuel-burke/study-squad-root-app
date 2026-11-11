@@ -422,7 +422,7 @@ export function BadgeMedal({
       </g>
 
       {stamp && (
-        <g>
+        <g className="medal-stamp">
           <rect
             x={32 - stampWidth / 2}
             y="44"

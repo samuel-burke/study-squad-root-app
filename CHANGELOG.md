@@ -4,6 +4,14 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ## [Unreleased]
 
+### Fixed
+
+- On the 3D badge medals, the number bubble no longer sinks behind the raised rim.
+
+### Changed
+
+- After a badge lands, it sways gently instead of turning, and gold no longer does a second full spin.
+
 ## [0.4.1] - 2026-11-11
 
 Cinematic badge unlocks with recorded orchestral music.

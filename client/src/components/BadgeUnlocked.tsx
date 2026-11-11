@@ -32,6 +32,24 @@ function medalImage(svg: SVGSVGElement): HTMLImageElement {
   return img;
 }
 
+/** The medal's number bubble on its own, or null when it has none. */
+function stampOnly(svg: SVGSVGElement): SVGSVGElement | null {
+  if (!svg.querySelector(".medal-stamp")) return null;
+  const copy = svg.cloneNode(true) as SVGSVGElement;
+  for (const child of [...copy.children]) {
+    if (child.tagName !== "defs" && !child.classList.contains("medal-stamp")) child.remove();
+  }
+  return copy;
+}
+
+/** Draws a loaded image onto a 1024 pixel canvas. */
+function rasterize(img: HTMLImageElement): HTMLCanvasElement {
+  const c = document.createElement("canvas");
+  c.width = c.height = 1024;
+  c.getContext("2d")?.drawImage(img, 0, 0, 1024, 1024);
+  return c;
+}
+
 /**
  * The full-screen moment for a badge you just earned: a short cinematic for
  * its tier (see lib/unlockShow.ts) set to its music, unless sounds are muted.
@@ -99,16 +117,23 @@ export function BadgeUnlocked({
     // onto a canvas, and that canvas is drawn each frame.
     let flat: HTMLCanvasElement | null = null;
     img.onerror = () => setPlain(true);
+    // The 3D medal lays its number bubble on top as its own layer, so the
+    // raised rim can't cover it.
+    const stampSvg = stampOnly(svg);
+    const stamp = new Promise<HTMLCanvasElement | null>((resolve) => {
+      if (!stampSvg) return resolve(null);
+      const s = medalImage(stampSvg);
+      s.onload = () => resolve(rasterize(s));
+      s.onerror = () => resolve(null);
+    });
     img.onload = () => {
-      const c = document.createElement("canvas");
-      c.width = c.height = 1024;
-      c.getContext("2d")?.drawImage(img, 0, 0, 1024, 1024);
+      const c = rasterize(img);
       flat = c;
       if (still) paint();
-      import("../lib/medal3d")
-        .then(({ createMedal3D }) => {
+      Promise.all([import("../lib/medal3d"), stamp])
+        .then(([{ createMedal3D }, bubble]) => {
           if (closed) return;
-          medal3d = createMedal3D(tier, FRAMES[badge.category], METALS[tier].rim[1]!, c);
+          medal3d = createMedal3D(tier, FRAMES[badge.category], METALS[tier].rim[1]!, c, bubble);
           if (still) paint();
         })
         .catch(() => {

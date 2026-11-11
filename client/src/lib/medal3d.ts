@@ -50,6 +50,8 @@ export function createMedal3D(
   frame: string,
   metal: string,
   art: HTMLCanvasElement,
+  /** The number bubble alone, on the same box as `art`, laid over the rim. */
+  stamp: HTMLCanvasElement | null = null,
 ): Medal3D | null {
   let renderer: THREE.WebGLRenderer;
   try {
@@ -163,6 +165,27 @@ export function createMedal3D(
   back.rotation.y = Math.PI;
   back.position.z = -(front + 0.05) - (b.plate ? b.depth * 0.6 : 0);
   medal.add(back);
+  if (stamp) {
+    const bubbleTexture = new THREE.Texture(stamp);
+    bubbleTexture.colorSpace = THREE.SRGBColorSpace;
+    bubbleTexture.needsUpdate = true;
+    const bubble = new THREE.Mesh(
+      plane.geometry,
+      new THREE.MeshStandardMaterial({
+        map: bubbleTexture,
+        transparent: true,
+        alphaTest: 0.03,
+        metalness: 0.6,
+        roughness: face.roughness,
+        bumpMap: bubbleTexture,
+        bumpScale: 0.5,
+        envMapIntensity: 1.1,
+      }),
+    );
+    // Just in front of the raised rim, where there is one.
+    bubble.position.z = front + (b.ring ? b.ring + 0.6 : 0) + 0.3;
+    medal.add(bubble);
+  }
   scene.add(medal);
 
   return {
@@ -178,10 +201,11 @@ export function createMedal3D(
       scene.traverse((o) => {
         if (o instanceof THREE.Mesh) {
           o.geometry.dispose();
-          (o.material as THREE.Material).dispose();
+          const material = o.material as THREE.MeshStandardMaterial;
+          material.map?.dispose();
+          material.dispose();
         }
       });
-      texture.dispose();
       env.dispose();
       pmrem.dispose();
       renderer.dispose();

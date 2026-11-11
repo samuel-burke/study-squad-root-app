@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { BossDto } from "@studyroom/core";
 import type { StudyRoomGateway } from "./api/gateway";
 import { BadgeUnlocked } from "./components/BadgeUnlocked";
+import { BossDefeated } from "./components/BossDefeated";
 import { KeepGoing } from "./components/KeepGoing";
 import { HighFiveFloats } from "./components/BreakFun";
 import { MemberProfileSheet } from "./components/MemberProfileSheet";
@@ -74,6 +76,21 @@ export function App({ gateway }: { gateway: StudyRoomGateway }) {
     [celebrationAt, boss, level],
   );
   useEventSounds(eventSoundState, sounds.muted);
+
+  // The boss going down gets its own full-screen moment, at the same time as
+  // its music. Not for a boss that was already beaten when the app opened.
+  const [bossDown, setBossDown] = useState<BossDto | null>(null);
+  const closeBoss = useCallback(() => setBossDown(null), []);
+  const bossSeen = useRef<{ key: string; defeated: boolean } | null>(null);
+  useEffect(() => {
+    if (!boss) return;
+    const key = `${boss.name}:${boss.endsAt}`;
+    const prev = bossSeen.current;
+    bossSeen.current = { key, defeated: boss.defeated };
+    if (prev && prev.key === key && !prev.defeated && boss.defeated && boss.enabled) {
+      setBossDown(boss);
+    }
+  }, [boss]);
 
   const userIds = useMemo(
     () => [
@@ -281,7 +298,9 @@ export function App({ gateway }: { gateway: StudyRoomGateway }) {
           onClose={actions.dismissBreak}
         />
       )}
-      {state.newBadges[0] && (
+      {bossDown && <BossDefeated boss={bossDown} onDismiss={closeBoss} />}
+      {/* The boss moment goes first; badges it earned unlock after it. */}
+      {!bossDown && state.newBadges[0] && (
         <BadgeUnlocked
           key={state.newBadges[0]}
           badgeId={state.newBadges[0]}
@@ -290,7 +309,7 @@ export function App({ gateway }: { gateway: StudyRoomGateway }) {
         />
       )}
       {/* A freshly earned badge always goes first; a replay waits behind it. */}
-      {!state.newBadges[0] && replayBadge && (
+      {!bossDown && !state.newBadges[0] && replayBadge && (
         <BadgeUnlocked
           key={`replay-${replayBadge}`}
           badgeId={replayBadge}

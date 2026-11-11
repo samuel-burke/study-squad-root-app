@@ -110,6 +110,9 @@ export interface BadgeFacts {
 
 export type BadgeTier = "bronze" | "silver" | "gold" | "platinum" | "secret";
 
+/** A themed metal some badges use instead of their tier colours, like ice for the freeze badge. */
+export type BadgeColor = "ice" | "purple" | "sunrise" | "green" | "electric";
+
 export type BadgeGlyph =
   | "alarm"
   | "bolt"
@@ -168,6 +171,8 @@ export interface BadgeDefinition {
   tier: BadgeTier;
   /** A short number or label stamped on the medal, such as a streak length. */
   stamp?: string;
+  /** Tints the medal in a themed metal. The tier still sets its shape and dressing. */
+  color?: BadgeColor;
   category: BadgeCategory;
   secret?: boolean;
   requires?: BadgeFeature;
@@ -239,6 +244,7 @@ export const BADGES: readonly BadgeDefinition[] = [
     description: "Start studying again after a streak ends.",
     glyph: "sprout",
     tier: "bronze",
+    color: "green",
     category: "streak",
     earned: (f) => (f.streak?.comebackFrom ?? 0) >= 2,
   },
@@ -248,6 +254,7 @@ export const BADGES: readonly BadgeDefinition[] = [
     description: "Keep a streak alive with a freeze.",
     glyph: "snowflake",
     tier: "silver",
+    color: "ice",
     category: "streak",
     earned: (f) => f.streak?.freezeSaved === true,
   },
@@ -280,6 +287,7 @@ export const BADGES: readonly BadgeDefinition[] = [
     description: "Finish a session that starts between 4am and 8am.",
     glyph: "sunrise",
     tier: "silver",
+    color: "sunrise",
     category: "focus",
     earned: (f) => {
       const s = finished(f);
@@ -292,6 +300,7 @@ export const BADGES: readonly BadgeDefinition[] = [
     description: "Finish a session that starts between 10pm and 4am.",
     glyph: "moon",
     tier: "silver",
+    color: "purple",
     category: "focus",
     earned: (f) => {
       const s = finished(f);
@@ -314,6 +323,7 @@ export const BADGES: readonly BadgeDefinition[] = [
     description: "Focus for 4 hours in one day.",
     glyph: "bolt",
     tier: "gold",
+    color: "electric",
     category: "focus",
     earned: (f) => (f.today?.focusMinutes ?? 0) >= 240,
   },

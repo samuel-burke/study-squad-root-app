@@ -4,9 +4,35 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-11-11
+
+A music player with bundled lo-fi tracks and ambience, a boss defeated moment, and colored badges.
+
+### Added
+
+- Some badges now come in their own colors: Saved by the Freeze is ice, Night Owl is purple, Early Bird is sunrise orange, Comeback is green and Power Day is electric blue, and their unlock moment is lit to match. Rarity is unchanged.
+- A full-screen moment when the room defeats the weekly boss, set to about 15 seconds of its orchestral swell: the boss card shakes as the last hit drains its HP, shatters on the hit, and a gold boss slayer medal rises in 3D. Badges the boss earned unlock right after it.
+- Sounds sheet behind the speaker button: a music player with 20 calm lo-fi tracks by HoliznaCC0 (CC0), with play/pause, skip, shuffle, mood chips and a track list, plus ambience you can layer under the music (rain, storm, café, fireplace, forest), each with its own volume. Both fade out on breaks unless "Pause on breaks" is off. A small now-playing bar sits under the timer while music plays. Everything ships inside the app, so no outside requests are made. Credits are in client/src/assets/music/CREDITS.md and client/src/assets/ambient/CREDITS.md.
+
+### Fixed
+
+- On the 3D badge medals, the number bubble no longer sinks behind the raised rim.
+
+### Changed
+
+- After a badge lands, it sways gently instead of turning, and gold no longer does a second full spin.
+- Gold and platinum badges no longer have ribbon tails.
+- On the 3D medal in a badge unlock, the badge's icon is engraved into the face.
+- Platinum unlocks start almost dark: the medal is a silhouette in the beam until the hit lights it up.
+
 ## [0.4.1] - 2026-11-11
 
-Cinematic badge unlocks with recorded orchestral music.
+Cinematic badge unlocks with recorded orchestral music, plus a preview of the music player for the test server.
+
+### Added
+
+- Preview, test server only (#12): a new Sounds sheet behind the speaker button. It has a music player (play/pause, next/previous, shuffle, genres, a track list) and ambience you can layer under the music (rain, storm, café, fireplace, forest), each with its own volume. Both fade out on breaks unless you turn off **Pause on breaks**. A small now-playing bar sits under the timer while music plays. Settings are saved per device. Not ready for public release: the ambience files are silent placeholders, the music site has no track list yet (the player shows "Music isn't available right now"), and the privacy policy and SECURITY.md don't mention the music site yet. The music site is only requested when someone opens the Sounds sheet.
+- An owner-only **Test hosted audio** button in the self-test panel checks whether Root lets the app play audio from the music site (samuel-burke.github.io/study-squad-music).
 
 ### Changed
 

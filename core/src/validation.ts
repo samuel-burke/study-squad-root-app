@@ -64,6 +64,16 @@ export function validateSoloMinutes(input: unknown): number {
   return input;
 }
 
+export function validateTableName(input: unknown): string {
+  if (typeof input !== "string") throw validationError("Table name must be text.");
+  const name = cleanText(input);
+  if (name.length === 0) throw validationError("Give the table a name.");
+  if (name.length > LIMITS.tableNameMaxLength) {
+    throw validationError(`Keep table names under ${LIMITS.tableNameMaxLength} characters.`);
+  }
+  return name;
+}
+
 /** Ids are opaque, but they still get a sanity check before touching storage. */
 export function validateId(input: unknown, what = "id"): string {
   if (typeof input !== "string" || !/^[A-Za-z0-9_-]{1,64}$/.test(input)) {

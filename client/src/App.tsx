@@ -24,9 +24,10 @@ import { useCountdownChirps } from "./state/useCountdownChirps";
 import { useEventSounds } from "./state/useEventSounds";
 import { useSoundCues } from "./state/useSoundCues";
 import { useStudyRoom } from "./state/useStudyRoom";
+import { myTableView } from "./lib/view";
 
 type Overlay =
-  | { kind: "start"; mode: "room" | "solo" }
+  | { kind: "start"; mode: "room" | "solo" | "table" }
   | { kind: "goals" }
   | { kind: "settings" }
   | { kind: "feedback" }
@@ -50,7 +51,7 @@ export function App({ gateway }: { gateway: StudyRoomGateway }) {
     !state.me || state.me.status === "idle"
       ? null
       : state.me.onRoomTimer && state.room
-        ? state.room.timer.phaseEndsAt
+        ? myTableView(state.room, state.me).timer.phaseEndsAt
         : state.me.endsAt;
   useCountdownChirps(myEndsAt, serverNow, sounds.muted);
   const celebrationAt = state.celebration?.startedAt ?? null;
@@ -122,7 +123,9 @@ export function App({ gateway }: { gateway: StudyRoomGateway }) {
     );
   }
 
-  const { room, me } = state;
+  const { me } = state;
+  // The timer you see is your own table's.
+  const room = myTableView(state.room, me);
   const busy = state.pending > 0;
 
   return (
@@ -173,6 +176,10 @@ export function App({ gateway }: { gateway: StudyRoomGateway }) {
                 }
               />
             }
+            onJoinTable={(tableId) =>
+              void actions.joinRoomTimer({ goals: [], goalsPrivate: me.goalsPrivate, tableId })
+            }
+            onNewTable={() => setOverlay({ kind: "start", mode: "table" })}
             podium={
               <LeaderboardPodium
                 gateway={gateway}
@@ -219,7 +226,7 @@ export function App({ gateway }: { gateway: StudyRoomGateway }) {
       )}
       {overlay?.kind === "settings" && (
         <SettingsSheet
-          room={room}
+          room={state.room}
           gateway={gateway}
           onClose={() => setOverlay(null)}
           onSendFeedback={() => setOverlay({ kind: "feedback" })}

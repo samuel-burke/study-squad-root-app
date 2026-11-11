@@ -27,8 +27,8 @@ describe("migrations", () => {
         "member_cards",
         "members",
         "quest_rewards",
-        "room_cycle",
         "room_participants",
+        "room_tables",
         "session_log",
         "solo_sessions",
       ]);
@@ -51,6 +51,7 @@ describe("migrations", () => {
       });
       await migrateToLatest(db);
       expect(await db("bosses").first()).toMatchObject({ max_hp_xp: 12_000, damage_xp: 3001 });
+      await db.migrate.down(migratorConfig); // 011_study_tables
       await db.migrate.down(migratorConfig); // 010_goal_order
       await db.migrate.down(migratorConfig); // 009_feedback
       await db.migrate.down(migratorConfig); // 008_live_stats
@@ -60,6 +61,51 @@ describe("migrations", () => {
         max_hp_minutes: 6000,
         damage_minutes: 1500.5,
       });
+    } finally {
+      await db.destroy();
+    }
+  });
+
+  it("turns a running room cycle into the main table, and back", async () => {
+    const db = openDatabase(":memory:");
+    try {
+      await db.migrate.up({ ...migratorConfig, name: "001_initial" });
+      // Up to 010_goal_order, one migration at a time.
+      for (let i = 2; i <= 10; i++) await db.migrate.up(migratorConfig);
+      await db("room_cycle").insert({
+        id: 1,
+        cycle_started_at: 1_000,
+        preset: '{"focusMinutes":25}',
+        settled_count: 2,
+      });
+      await db("room_participants").insert({ user_id: "ana", joined_at: 1_000 });
+      await migrateToLatest(db);
+      expect(await db("room_tables").select()).toEqual([
+        {
+          table_id: "main",
+          name: "",
+          cycle_started_at: 1_000,
+          preset: '{"focusMinutes":25}',
+          settled_count: 2,
+        },
+      ]);
+      expect(await db("room_participants").first()).toMatchObject({
+        user_id: "ana",
+        table_id: "main",
+      });
+      await db("room_tables").insert({
+        table_id: "t1",
+        name: "Calc II",
+        cycle_started_at: 2_000,
+        preset: "{}",
+        settled_count: 0,
+      });
+      await db("room_participants").insert({ user_id: "kai", joined_at: 2_000, table_id: "t1" });
+      await db.migrate.down(migratorConfig);
+      expect(await db("room_cycle").select()).toEqual([
+        { id: 1, cycle_started_at: 1_000, preset: '{"focusMinutes":25}', settled_count: 2 },
+      ]);
+      expect(await db("room_participants").select("user_id")).toEqual([{ user_id: "ana" }]);
     } finally {
       await db.destroy();
     }

@@ -256,6 +256,9 @@ export class StudyRoomHandlers {
         await this.engine.joinRoomTimer(userId, {
           goals: request.goals,
           goalsPrivate: request.goalsPrivate,
+          tableId: request.tableId,
+          newTableName: request.newTableName,
+          newTablePreset: request.newTablePreset,
         }),
       ),
     );

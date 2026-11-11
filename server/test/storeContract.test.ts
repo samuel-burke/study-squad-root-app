@@ -152,18 +152,24 @@ describe.each(implementations)("%s", (_name, open) => {
     expect(await store.solos.get("priya")).toBeUndefined();
   });
 
-  it("stores the room cycle and participants", async () => {
-    expect(await store.room.getCycle()).toBeUndefined();
+  it("stores each table's cycle and its participants", async () => {
+    expect(await store.room.listCycles()).toEqual([]);
     const preset = { focusMinutes: 25, breakMinutes: 5, longBreakMinutes: 15, rounds: 4 };
-    await store.room.saveCycle({ cycleStartedAt: 1_793_150_000_000, preset, settledCount: 0 });
-    await store.room.saveCycle({ cycleStartedAt: 1_793_150_000_000, preset, settledCount: 3 });
-    expect(await store.room.getCycle()).toEqual({
-      cycleStartedAt: 1_793_150_000_000,
-      preset,
-      settledCount: 3,
-    });
+    const main = { tableId: "main", name: "", cycleStartedAt: 1_793_150_000_000, preset };
+    await store.room.saveCycle({ ...main, settledCount: 0 });
+    await store.room.saveCycle({ ...main, settledCount: 3 });
+    const calc = {
+      tableId: "t1",
+      name: "Calc II",
+      cycleStartedAt: 1_793_150_060_000,
+      preset: { ...preset, focusMinutes: 50 },
+      settledCount: 0,
+    };
+    await store.room.saveCycle(calc);
+    expect(await store.room.listCycles()).toEqual([{ ...main, settledCount: 3 }, calc]);
     await store.room.addParticipant({
       userId: "b",
+      tableId: "main",
       joinedAt: 20,
       keepGoing: false,
       bossXpDealt: 0,
@@ -172,6 +178,7 @@ describe.each(implementations)("%s", (_name, open) => {
     });
     await store.room.addParticipant({
       userId: "a",
+      tableId: "t1",
       joinedAt: 10,
       keepGoing: false,
       bossXpDealt: 0,
@@ -180,6 +187,7 @@ describe.each(implementations)("%s", (_name, open) => {
     });
     await store.room.addParticipant({
       userId: "b",
+      tableId: "main",
       joinedAt: 30,
       keepGoing: true,
       bossXpDealt: 8,
@@ -187,12 +195,28 @@ describe.each(implementations)("%s", (_name, open) => {
       liveXp: 8,
     });
     expect(await store.room.listParticipants()).toEqual([
-      { userId: "a", joinedAt: 10, keepGoing: false, bossXpDealt: 0, liveMinutes: 0, liveXp: 0 },
-      { userId: "b", joinedAt: 30, keepGoing: true, bossXpDealt: 8, liveMinutes: 4, liveXp: 8 },
+      {
+        userId: "a",
+        tableId: "t1",
+        joinedAt: 10,
+        keepGoing: false,
+        bossXpDealt: 0,
+        liveMinutes: 0,
+        liveXp: 0,
+      },
+      {
+        userId: "b",
+        tableId: "main",
+        joinedAt: 30,
+        keepGoing: true,
+        bossXpDealt: 8,
+        liveMinutes: 4,
+        liveXp: 8,
+      },
     ]);
     await store.room.removeParticipant("a");
-    await store.room.saveCycle(null);
-    expect(await store.room.getCycle()).toBeUndefined();
+    await store.room.deleteCycle("t1");
+    expect(await store.room.listCycles()).toEqual([{ ...main, settledCount: 3 }]);
     expect(await store.room.listParticipants()).toHaveLength(1);
   });
 
@@ -367,6 +391,7 @@ describe.each(implementations)("%s", (_name, open) => {
       });
       await store.room.addParticipant({
         userId: id,
+        tableId: "main",
         joinedAt: 1,
         keepGoing: false,
         bossXpDealt: 0,

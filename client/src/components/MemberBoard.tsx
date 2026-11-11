@@ -1,6 +1,13 @@
-import { badgeById, type MemberCardDto } from "@studyroom/core";
+import {
+  badgeById,
+  formatCountdown,
+  MAIN_TABLE_ID,
+  type MemberCardDto,
+  type TableDto,
+} from "@studyroom/core";
+import type { ReactNode } from "react";
 import type { Profile } from "../api/gateway";
-import { isFocusing, rowTime, statusChip } from "../lib/view";
+import { isFocusing, phasePill, rowTime, statusChip, tableName } from "../lib/view";
 import { Avatar } from "./Avatar";
 import { BreakMarks, HighFiveButtons, onBreak } from "./BreakFun";
 import { BadgeMedal } from "./BadgeMedal";
@@ -19,6 +26,13 @@ interface BoardProps {
   onOpenMember?(userId: string): void;
   /** Set while you're on a break, so you can high-five teammates on one too. */
   highFive?: HighFiveProps;
+  /** Running tables. With more than the main one, the board is split by table. */
+  tables?: TableDto[];
+  /** The table you sit at, if any. */
+  myTableId?: string;
+  busy?: boolean;
+  onJoinTable?(tableId: string): void;
+  onNewTable?(): void;
 }
 
 export interface HighFiveProps {
@@ -117,24 +131,20 @@ export function RankChip({ rank }: { rank: number }) {
   );
 }
 
-function MemberCard({
-  member,
-  profile,
-  you,
-  voice,
-  now,
-  onOpen,
-  highFive,
-}: {
+interface MemberProps {
   member: MemberCardDto;
   profile?: Profile;
   you: boolean;
   voice: boolean;
   now: number;
+  /** Names of the tables other than the main one, for the status chip. */
+  tables: ReadonlyMap<string, string>;
   onOpen?(): void;
   highFive?: HighFiveProps;
-}) {
-  const chip = statusChip(member, now);
+}
+
+function MemberCard({ member, profile, you, voice, now, tables, onOpen, highFive }: MemberProps) {
+  const chip = statusChip(member, now, tables);
   const name = profile?.name ?? (you ? "You" : "Member");
   const label = `${name}, ${chip.label}${voice ? ", in voice" : ""}`;
   const goal = goalText(member);
@@ -181,28 +191,12 @@ function MemberCard({
   );
 }
 
-function MemberRow({
-  member,
-  profile,
-  you,
-  voice,
-  now,
-  onOpen,
-  highFive,
-}: {
-  member: MemberCardDto;
-  profile?: Profile;
-  you: boolean;
-  voice: boolean;
-  now: number;
-  onOpen?(): void;
-  highFive?: HighFiveProps;
-}) {
-  const chip = statusChip(member, now);
+function MemberRow({ member, profile, you, voice, now, tables, onOpen, highFive }: MemberProps) {
+  const chip = statusChip(member, now, tables);
   const name = profile?.name ?? (you ? "You" : "Member");
   const label = `${name}, ${chip.label}${voice ? ", in voice" : ""}`;
   const goal = goalText(member) ?? (member.goalPrivate ? "Focusing (private)" : "Focusing");
-  const time = rowTime(member, now);
+  const time = rowTime(member, now, tables);
   return (
     <li className="member-row" data-style={member.cardStyle} aria-label={label}>
       <OpenProfileButton name={name} you={you} onOpen={onOpen} />
@@ -238,62 +232,107 @@ export function MemberBoard({
   compact,
   onOpenMember,
   highFive,
+  tables = [],
+  myTableId = "",
+  busy,
+  onJoinTable,
+  onNewTable,
 }: BoardProps) {
-  const ordered = orderMembers(members, youId);
   const voice = new Set(inVoice);
   const focusing = members.filter(isFocusing).length;
   const onBreak = members.length - focusing;
+  const names = new Map(tables.filter((t) => t.id !== MAIN_TABLE_ID).map((t) => [t.id, t.name]));
+  const Item = compact ? MemberRow : MemberCard;
+  const list = (people: MemberCardDto[]) => (
+    <ul className={compact ? "goal-list" : "board"} style={compact ? { gap: 8 } : undefined}>
+      {orderMembers(people, youId).map((m) => (
+        <Item
+          key={m.userId}
+          member={m}
+          profile={profiles.get(m.userId)}
+          you={m.userId === youId}
+          voice={voice.has(m.userId)}
+          now={now}
+          tables={names}
+          onOpen={onOpenMember && (() => onOpenMember(m.userId))}
+          highFive={highFive}
+        />
+      ))}
+    </ul>
+  );
+  const newTable = onNewTable && (
+    <button type="button" className="btn btn-quiet btn-sm" onClick={onNewTable} disabled={busy}>
+      + New table
+    </button>
+  );
 
-  if (compact) {
-    return (
-      <section aria-label="Who is in the room" className="mobile-board">
-        <h2>Focusing now · {focusing}</h2>
-        <ul className="goal-list" style={{ gap: 8 }}>
-          {ordered.map((m) => (
-            <MemberRow
-              key={m.userId}
-              member={m}
-              profile={profiles.get(m.userId)}
-              you={m.userId === youId}
-              voice={voice.has(m.userId)}
-              now={now}
-              onOpen={onOpenMember && (() => onOpenMember(m.userId))}
-              highFive={highFive}
-            />
-          ))}
-        </ul>
-        {members.length === 0 && <EmptyBoard />}
-      </section>
+  // Only the main table running: one board, as before tables existed.
+  let body: ReactNode = members.length === 0 ? <EmptyBoard /> : list(members);
+  if (tables.some((t) => t.id !== MAIN_TABLE_ID)) {
+    const solo = members.filter((m) => !m.tableId);
+    body = (
+      <>
+        {/* Your table first. Colours stay with each table's place in the room. */}
+        {tables
+          .map((table, i) => ({ table, i }))
+          .sort((a, b) => Number(b.table.id === myTableId) - Number(a.table.id === myTableId))
+          .map(({ table, i }) => {
+            const mine = table.id === myTableId;
+            const { timer } = table;
+            return (
+              <section key={table.id} className="table-section" aria-label={tableName(table)}>
+                <div className="table-head">
+                  <span className="table-dot" data-color={i % 4} />
+                  <h3>{tableName(table)}</h3>
+                  <span className="small muted">
+                    {compact ? "" : `${phasePill(timer)} · `}
+                    {formatCountdown(timer.phaseEndsAt - now)}
+                  </span>
+                  <span style={{ flex: 1 }} />
+                  {mine ? (
+                    <span className="table-you">Your table</span>
+                  ) : (
+                    onJoinTable && (
+                      <button
+                        type="button"
+                        className="btn btn-quiet btn-sm"
+                        onClick={() => onJoinTable(table.id)}
+                        disabled={busy}
+                      >
+                        Sit here
+                      </button>
+                    )
+                  )}
+                </div>
+                {list(members.filter((m) => m.tableId === table.id))}
+              </section>
+            );
+          })}
+        {solo.length > 0 && (
+          <section className="table-section" aria-label="Solo timers">
+            <div className="table-head">
+              <h3>Solo</h3>
+              <span className="small muted">Own timer, not in the combo</span>
+            </div>
+            {list(solo)}
+          </section>
+        )}
+      </>
     );
   }
 
   return (
     <section
       aria-label="Who is in the room"
-      style={{ display: "flex", flexDirection: "column", gap: 14 }}
+      className={compact ? "mobile-board" : undefined}
+      style={compact ? undefined : { display: "flex", flexDirection: "column", gap: 14 }}
     >
       <div className="board-head">
         <h2>Focusing now · {focusing}</h2>
-        {onBreak > 0 && <div className="small muted">{onBreak} on break</div>}
+        {!compact && onBreak > 0 && <div className="small muted">{onBreak} on break</div>}
+        {newTable}
       </div>
-      {members.length === 0 ? (
-        <EmptyBoard />
-      ) : (
-        <ul className="board">
-          {ordered.map((m) => (
-            <MemberCard
-              key={m.userId}
-              member={m}
-              profile={profiles.get(m.userId)}
-              you={m.userId === youId}
-              voice={voice.has(m.userId)}
-              now={now}
-              onOpen={onOpenMember && (() => onOpenMember(m.userId))}
-              highFive={highFive}
-            />
-          ))}
-        </ul>
-      )}
+      {body}
     </section>
   );
 }

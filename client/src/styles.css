@@ -870,6 +870,61 @@ h3 {
   color: var(--text-muted);
 }
 
+/* ---------------------------------------------------------------- study tables */
+
+.btn-sm {
+  padding: 0 14px;
+  font-size: 13px;
+}
+
+.table-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.table-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.table-head h3 {
+  font-size: 17px;
+}
+
+.table-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex: none;
+  background: var(--amber);
+}
+
+.table-dot[data-color="1"] {
+  background: #a98bff;
+}
+
+.table-dot[data-color="2"] {
+  background: #7fd38a;
+}
+
+.table-dot[data-color="3"] {
+  background: var(--blue);
+}
+
+.table-you {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--amber-text);
+  border: 1px solid var(--amber-you);
+  border-radius: 999px;
+  padding: 2px 8px;
+}
+
 /* ---------------------------------------------------------------- boss + combo */
 
 .boss {

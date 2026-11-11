@@ -32,6 +32,8 @@ export interface RoomScreenProps {
   onChallengeDone(): void;
   /** Resolves true once the high-five went through. */
   onHighFive(userId: string, emoji: string): Promise<boolean>;
+  onJoinTable(tableId: string): void;
+  onNewTable(): void;
   /** This week's top three, which opens the full leaderboard. */
   podium?: ReactNode;
   /** The next scheduled session. */
@@ -149,6 +151,11 @@ export function RoomScreen(props: RoomScreenProps) {
       compact={compact}
       onOpenMember={props.onOpenMember}
       highFive={highFive}
+      tables={room.tables}
+      myTableId={me.tableId}
+      busy={busy}
+      onJoinTable={props.onJoinTable}
+      onNewTable={props.onNewTable}
     />
   );
 
@@ -165,7 +172,11 @@ export function RoomScreen(props: RoomScreenProps) {
         {props.upNext}
         {room.features.comboEnabled && (
           <div style={{ display: "flex", justifyContent: "center", marginBottom: 12 }}>
-            <ComboPill combo={room.combo} participants={room.roomParticipantCount} />
+            <ComboPill
+              combo={room.combo}
+              participants={room.roomParticipantCount}
+              tables={room.tables.length}
+            />
           </div>
         )}
         {board}
@@ -210,7 +221,11 @@ export function RoomScreen(props: RoomScreenProps) {
           {props.podium}
           {room.boss.enabled && <BossCard boss={room.boss} combo={room.combo} now={now} />}
           {room.features.comboEnabled && (
-            <ComboCard combo={room.combo} participants={room.roomParticipantCount} />
+            <ComboCard
+              combo={room.combo}
+              participants={room.roomParticipantCount}
+              tables={room.tables.length}
+            />
           )}
           <SessionPanel
             me={me}

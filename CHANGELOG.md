@@ -6,7 +6,7 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ### Added
 
-- A full-screen moment when the room defeats the weekly boss, set to its orchestral swell: the boss card shakes as the last hit drains its HP, shatters on the hit, and a gold trophy rises. Badges the boss earned unlock right after it.
+- A full-screen moment when the room defeats the weekly boss, set to about 15 seconds of its orchestral swell: the boss card shakes as the last hit drains its HP, shatters on the hit, and a gold trophy rises. Badges the boss earned unlock right after it.
 
 ## [0.4.1] - 2026-11-11
 

@@ -92,7 +92,7 @@ export const SHOWS: Record<BadgeTier, Show> = {
 /** The weekly boss going down, timed to its clip (see clips.ts). */
 export const BOSS_SHOW: Show = {
   land: 2.5,
-  end: 7.9,
+  end: 15.4,
   build: "boss",
   colors: ["#8a1f1f", "#e04848", "#ffd2a8"],
   shake: 12,
@@ -409,10 +409,11 @@ export class ShowPainter {
         const et = dt - delay + (i < n * 0.4 ? 2.5 : 0);
         const y0 = H * (0.95 - this.rnd() * 0.5);
         if (et <= 0) continue;
-        const y = y0 - et * speed;
+        // An ember that leaves the top starts again at the bottom, so long shows stay lit.
+        const rise = et % ((y0 + 20) / speed);
+        const y = y0 - rise * speed;
         const x = x0 + Math.sin(et * 0.8 + ph) * W * 0.02;
-        if (y < -20) continue;
-        const fade = Math.min(1, et * 1.5) * clamp((s.end - t) * 1.2 + 0.3);
+        const fade = Math.min(1, rise * 1.5) * clamp((s.end - t) * 1.2 + 0.3);
         const flicker = 0.6 + 0.4 * Math.sin(t * 6 + ph);
         if (bokeh) this.dot(x, y, size * 9, c1, 0.08 * fade);
         else this.dot(x, y, size * 3, i % 4 ? c2 : c1, 0.85 * fade * flicker);

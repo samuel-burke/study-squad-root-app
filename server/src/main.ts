@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import {
+  ChannelMessageEvent,
   ChannelType,
   ChannelWebRtcEvent,
   ClientEvent,
@@ -9,6 +10,7 @@ import {
   rootServer,
   WellKnownRootGuids,
   type ChannelGuid,
+  type ChannelMessageCreatedEvent,
   type GlobalSettings,
   type JobData,
   type RootAppStartState,
@@ -20,14 +22,18 @@ import { loadFeedbackDestination, RelayFeedbackInbox } from "./adapters/feedback
 import { createLogger } from "./adapters/logger";
 import { PushNotifier } from "./adapters/pushNotifier";
 import { TimeoutScheduler } from "./adapters/timeoutScheduler";
-import { VoiceChannelPicker } from "./adapters/voiceChannelPicker";
+import { VOICE_PICK_KEY, VoiceChannelPicker } from "./adapters/voiceChannelPicker";
 import { VoiceRoster } from "./adapters/voiceRoster";
 import { StudyRoomHandlers } from "./handlers";
 import { RecapScheduler } from "./jobs/recapScheduler";
+import { SessionSchedule } from "./jobs/sessionSchedule";
 import { openDatabase } from "./persistence/database";
 import { KnexStore } from "./persistence/knexStore";
 import { migrateToLatest, migratorConfig } from "./persistence/migrations";
+import { phaseCompletedToProto, scheduleToProto } from "@studyroom/contract";
+import { DevClock } from "./adapters/devClock";
 import { loadBuildInfo, loadedGenVersion } from "./buildInfo";
+import { DevCommands } from "./devCommands";
 import { SelfTest } from "./selfTest";
 import { studyRoomService } from "./studyRoomService";
 import {
@@ -107,6 +113,9 @@ async function onStarting(state: RootAppStartState): Promise<void> {
   logger.info(feedback ? "feedback goes to the relay" : "feedback not configured, box hidden");
 
   const store = new KnexStore(db);
+  // The game clock: real time, unless the developer jumped it (Developer test mode).
+  const devClock = new DevClock(store.kv);
+  await devClock.load();
   // Set once the engine and voice roster exist; the picker only applies after start.
   let applyVoicePick: () => Promise<void> = async () => {};
   const voicePicker = new VoiceChannelPicker({
@@ -118,13 +127,14 @@ async function onStarting(state: RootAppStartState): Promise<void> {
     logger,
   });
 
+  const findClient = (userId: string) =>
+    findAttachedClient(() => rootServer.clients.getClients(), userId);
+  const notifier = new PushNotifier(studyRoomService, findClient);
   const engine = new StudyRoomEngine({
     store,
-    clock: { now: Date.now },
-    scheduler: new TimeoutScheduler(),
-    notifier: new PushNotifier(studyRoomService, (userId) =>
-      findAttachedClient(() => rootServer.clients.getClients(), userId),
-    ),
+    clock: { now: devClock.now },
+    scheduler: new TimeoutScheduler(devClock.now),
+    notifier,
     announcer: new ChannelAnnouncer({
       postMessage: async (channelId, content) => {
         await rootServer.community.channelMessages.create({
@@ -208,9 +218,87 @@ async function onStarting(state: RootAppStartState): Promise<void> {
     now: Date.now,
     logger,
   });
-  studyRoomService.bind(new StudyRoomHandlers(engine, logger, { voicePicker, selfTest }));
+  const schedule = new SessionSchedule({
+    store: store.kv,
+    scheduleOnce: async (tag, at) => {
+      await rootServer.jobScheduler.create({
+        resourceId: tag,
+        tag,
+        start: at,
+        jobInterval: JobInterval.OneTime,
+      });
+    },
+    cancelByTag: (tag) => rootServer.jobScheduler.deleteByTag(tag),
+    post: async (content) => {
+      const channelId = engine.getConfig().postChannelId;
+      if (!channelId) return;
+      await rootServer.community.channelMessages.create({
+        channelId: channelId as ChannelGuid,
+        content,
+      });
+    },
+    nickname: async (userId) =>
+      (await rootServer.community.communityMembers.get({ userId: userId as UserGuid })).nickname,
+    changed: (sessions) =>
+      studyRoomService.broadcastScheduleUpdated({ schedule: scheduleToProto(sessions) }, "all"),
+    timeZone: () => engine.getConfig().timeZone,
+    newId: randomUUID,
+    now: Date.now,
+    logger,
+  });
+  // Missed jobs too (say, the app restarted): the schedule skips stale reminders.
+  rootServer.jobScheduler.on(JobScheduleEvent.Job, (job: JobData) => void schedule.onJob(job.tag));
+  rootServer.jobScheduler.on(
+    JobScheduleEvent.JobMissed,
+    (job: JobData) => void schedule.onJob(job.tag),
+  );
+  studyRoomService.bind(new StudyRoomHandlers(engine, logger, { voicePicker, selfTest, schedule }));
   rootServer.lifecycle.addService(studyRoomService);
   await engine.start();
+
+  // The developer's chat commands (!help). Only listed user ids get an answer;
+  // messages are read to spot a command and never stored or logged.
+  const postTo = async (channelId: string, content: string) => {
+    await rootServer.community.channelMessages.create({
+      channelId: channelId as ChannelGuid,
+      content,
+    });
+  };
+  const devCommands = new DevCommands({
+    allowed: (userId) => selfTest.allowed(userId),
+    testMode: () => engine.getConfig().devTestMode,
+    reply: postTo,
+    smoke: (userId, channelId) => selfTest.runFromChat(userId, channelId),
+    admin: (action) => engine.devAdmin(action),
+    startTestRound: (userId) => engine.startTestRound(userId),
+    snapshot: (userId) => engine.getSnapshot(userId),
+    advanceClock: async (ms) => {
+      const offset = await devClock.advance(ms);
+      await engine.tick();
+      return offset;
+    },
+    clockOffset: () => devClock.offset(),
+    reset: async () => {
+      const done = await engine.devAdmin({ kind: "reset", keepKv: [VOICE_PICK_KEY] });
+      await devClock.reset();
+      return `${done} The game clock is back to real time.`;
+    },
+    notifier,
+    celebrate: (userId, event) => {
+      const client = findClient(userId);
+      if (client) studyRoomService.broadcastPhaseCompleted(phaseCompletedToProto(event), [client]);
+    },
+    logger,
+  });
+  rootServer.community.channelMessages.on(
+    ChannelMessageEvent.ChannelMessageCreated,
+    (event: ChannelMessageCreatedEvent) =>
+      void devCommands.handle({
+        userId: event.userId,
+        channelId: event.channelId,
+        content: event.messageContent,
+      }),
+  );
 
   // Presence: who has Study Squad open right now.
   await engine.setPresence(rootServer.clients.getClients().map((c) => c.userId));

@@ -177,7 +177,7 @@ describe("StudyRoomHandlers", () => {
     expect((await handlers.clearDoneGoals("priya")).goals).toEqual([]);
     const added = (await handlers.addGoal("priya", { text: "One more" })).goals[0]!;
     expect((await handlers.deleteGoal("priya", { goalId: added.id })).goals).toEqual([]);
-    expect((await handlers.getProgress("priya")).days).toHaveLength(35);
+    expect((await handlers.getProgress("priya")).days).toHaveLength(31);
     expect((await handlers.getLeaderboard("priya", { by: 0, period: 0 })).startDay).toBe(
       "2026-10-26",
     );
@@ -205,5 +205,44 @@ describe("StudyRoomHandlers", () => {
     const me = await handlers.deleteMyData("ana");
     expect(me.goals).toEqual([]);
     expect((await handlers.getRoom("kai")).me?.goals.map((g) => g.text)).toEqual(["Kai's"]);
+  });
+
+  it("passes scheduling through and forgets the caller's sessions on delete", async () => {
+    const session = {
+      id: "s1",
+      title: "Cram",
+      startsAtMs: 5,
+      byUserId: "ana",
+      goingUserIds: ["ana"],
+    };
+    const schedule = {
+      list: vi.fn(async () => [session]),
+      add: vi.fn(async () => [session]),
+      cancel: vi.fn(async () => {
+        throw new DomainError(
+          CoreErrorCode.Forbidden,
+          "Only the person who scheduled it can cancel it.",
+        );
+      }),
+      rsvp: vi.fn(async () => [session]),
+      forget: vi.fn(async () => {}),
+    };
+    const { handlers } = setup({ schedule });
+    expect((await handlers.getSchedule("kai")).sessions).toEqual([session]);
+    await handlers.scheduleSession("ana", { title: "Cram", startsAtMs: 5 });
+    expect(schedule.add).toHaveBeenCalledWith("ana", "Cram", 5);
+    await handlers.rsvpSession("kai", { id: "s1", going: true });
+    expect(schedule.rsvp).toHaveBeenCalledWith("kai", "s1", true);
+    const refused = await failure(handlers.cancelScheduledSession("kai", { id: "s1" }));
+    expect(refused.code).toBe(CoreErrorCode.Forbidden);
+    await handlers.deleteMyData("ana");
+    expect(schedule.forget).toHaveBeenCalledWith("ana");
+  });
+
+  it("shows an empty schedule when scheduling isn't wired up", async () => {
+    const { handlers } = setup();
+    expect((await handlers.getSchedule("ana")).sessions).toEqual([]);
+    const off = await failure(handlers.scheduleSession("ana", { title: "x", startsAtMs: 5 }));
+    expect(off.code).toBe(CoreErrorCode.NotFound);
   });
 });

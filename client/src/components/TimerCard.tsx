@@ -1,4 +1,10 @@
-import { formatCountdown, presetLabel, type MyStatusDto, type RoomStateDto } from "@studyroom/core";
+import {
+  formatCountdown,
+  MAIN_TABLE_ID,
+  presetLabel,
+  type MyStatusDto,
+  type RoomStateDto,
+} from "@studyroom/core";
 import { nextLabel, phaseCaption, remainingFraction } from "../lib/view";
 import { TimerRing } from "./TimerRing";
 
@@ -36,7 +42,9 @@ export function TimerCard({
     timer.phase === "idle"
       ? formatCountdown(timer.preset.focusMinutes * 60_000)
       : formatCountdown(timer.phaseEndsAt - now);
-  const label = `Room timer · ${presetLabel(timer.preset)}`;
+  // At a table other than the main one, the timer is that table's.
+  const table = room.tables.find((t) => t.id === me.tableId && t.id !== MAIN_TABLE_ID);
+  const label = `${table ? table.name : "Room timer"} · ${presetLabel(timer.preset)}`;
   const onSoloTimer = me.status === "soloFocus" || me.status === "soloBreak";
   const ring = (
     <TimerRing
@@ -61,7 +69,7 @@ export function TimerCard({
           <div className="small muted" style={{ fontWeight: 500 }}>
             {label}
           </div>
-          <h1 className="timer-title">Deep work, together</h1>
+          <h1 className="timer-title">{table ? table.name : "Deep work, together"}</h1>
         </div>
         <div className="rounds">
           {Array.from({ length: timer.rounds }, (_, i) => (
@@ -76,7 +84,7 @@ export function TimerCard({
         <div className="actions">
           {me.onRoomTimer ? (
             <button type="button" className="btn" onClick={onLeave} disabled={busy}>
-              Leave room timer
+              {table ? "Leave table" : "Leave room timer"}
             </button>
           ) : (
             <button

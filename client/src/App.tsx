@@ -7,6 +7,7 @@ import { MemberProfileSheet } from "./components/MemberProfileSheet";
 import { BreakMoment } from "./components/BreakMoment";
 import { Celebration } from "./components/Celebration";
 import { FeedbackSheet } from "./components/FeedbackSheet";
+import { ScheduleSheet, UpNext } from "./components/Schedule";
 import type { GoalActions } from "./components/GoalList";
 import { GoalsSheet } from "./components/GoalsSheet";
 import { LeaderboardPodium } from "./components/LeaderboardPodium";
@@ -17,17 +18,20 @@ import { StartSessionSheet } from "./components/StartSessionSheet";
 import { Toast } from "./components/Toast";
 import { useMediaQuery } from "./state/useMediaQuery";
 import { useNow } from "./state/useNow";
+import { useSchedule } from "./state/useSchedule";
 import { useProfiles } from "./state/useProfiles";
 import { useCountdownChirps } from "./state/useCountdownChirps";
 import { useEventSounds } from "./state/useEventSounds";
 import { useSoundCues } from "./state/useSoundCues";
 import { useStudyRoom } from "./state/useStudyRoom";
+import { myTableView } from "./lib/view";
 
 type Overlay =
-  | { kind: "start"; mode: "room" | "solo" }
+  | { kind: "start"; mode: "room" | "solo" | "table" }
   | { kind: "goals" }
   | { kind: "settings" }
   | { kind: "feedback" }
+  | { kind: "schedule" }
   | { kind: "member"; userId: string }
   | null;
 
@@ -37,6 +41,7 @@ export function App({ gateway }: { gateway: StudyRoomGateway }) {
   const compact = useMediaQuery("(max-width: 760px)");
   const [screen, setScreen] = useState<"room" | "progress">("room");
   const [overlay, setOverlay] = useState<Overlay>(null);
+  const schedule = useSchedule(gateway);
   // A badge the member asked to see unlock again, from the progress screen.
   const [replayBadge, setReplayBadge] = useState<string | null>(null);
   const sounds = useSoundCues(state.me?.status ?? null);
@@ -46,7 +51,7 @@ export function App({ gateway }: { gateway: StudyRoomGateway }) {
     !state.me || state.me.status === "idle"
       ? null
       : state.me.onRoomTimer && state.room
-        ? state.room.timer.phaseEndsAt
+        ? myTableView(state.room, state.me).timer.phaseEndsAt
         : state.me.endsAt;
   useCountdownChirps(myEndsAt, serverNow, sounds.muted);
   const celebrationAt = state.celebration?.startedAt ?? null;
@@ -70,8 +75,9 @@ export function App({ gateway }: { gateway: StudyRoomGateway }) {
     () => [
       ...(state.room?.members.map((m) => m.userId) ?? []),
       ...(state.breakMoment?.finisherIds ?? []),
+      ...schedule.sessions.map((s) => s.byUserId),
     ],
-    [state.room, state.breakMoment],
+    [state.room, state.breakMoment, schedule.sessions],
   );
   const profiles = useProfiles(gateway, userIds);
 
@@ -117,7 +123,9 @@ export function App({ gateway }: { gateway: StudyRoomGateway }) {
     );
   }
 
-  const { room, me } = state;
+  const { me } = state;
+  // The timer you see is your own table's.
+  const room = myTableView(state.room, me);
   const busy = state.pending > 0;
 
   return (
@@ -155,6 +163,23 @@ export function App({ gateway }: { gateway: StudyRoomGateway }) {
             onOpenMember={(userId) => setOverlay({ kind: "member", userId })}
             onChallengeDone={() => void actions.completeBreakChallenge()}
             onHighFive={actions.sendHighFive}
+            upNext={
+              <UpNext
+                sessions={schedule.sessions}
+                youId={me.userId}
+                profiles={profiles}
+                compact={compact}
+                busy={busy}
+                onOpen={() => setOverlay({ kind: "schedule" })}
+                onRsvp={(id, going) =>
+                  void gateway.rsvpSession(id, going).then(schedule.setSessions, () => {})
+                }
+              />
+            }
+            onJoinTable={(tableId) =>
+              void actions.joinRoomTimer({ goals: [], goalsPrivate: me.goalsPrivate, tableId })
+            }
+            onNewTable={() => setOverlay({ kind: "start", mode: "table" })}
             podium={
               <LeaderboardPodium
                 gateway={gateway}
@@ -201,10 +226,21 @@ export function App({ gateway }: { gateway: StudyRoomGateway }) {
       )}
       {overlay?.kind === "settings" && (
         <SettingsSheet
-          room={room}
+          room={state.room}
           gateway={gateway}
           onClose={() => setOverlay(null)}
           onSendFeedback={() => setOverlay({ kind: "feedback" })}
+        />
+      )}
+      {overlay?.kind === "schedule" && (
+        <ScheduleSheet
+          gateway={gateway}
+          sessions={schedule.sessions}
+          youId={me.userId}
+          profiles={profiles}
+          channelName={room.features.postChannelName}
+          onChange={schedule.setSessions}
+          onClose={() => setOverlay(null)}
         />
       )}
       {overlay?.kind === "feedback" && (

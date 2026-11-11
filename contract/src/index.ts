@@ -20,6 +20,8 @@ import type {
   QuestUnit as QuestUnitDto,
   RoomPhase,
   RoomStateDto,
+  ScheduledSessionDto,
+  RoomTimerDto,
   SnapshotDto,
   TimerPreset as TimerPresetDto,
   VoiceChannelChoiceDto,
@@ -46,6 +48,8 @@ import {
   type Quest,
   type RoomSnapshot,
   type RoomState,
+  type Schedule,
+  type RoomTimer,
   type TimerPreset,
   type VoiceChannelChoice,
 } from "@studyroom/gen-shared";
@@ -198,21 +202,25 @@ const memberToProto = (m: MemberCardDto): MemberCard => ({
   cardStyle: m.cardStyle,
   weeklyRank: m.weeklyRank,
   challenge: m.challenge,
+  tableId: m.tableId,
   challengeDone: m.challengeDone,
   highFives: m.highFives,
+});
+
+const timerToProto = (timer: RoomTimerDto): RoomTimer => ({
+  phase: PHASE_TO_PROTO[timer.phase],
+  round: timer.round,
+  rounds: timer.rounds,
+  phaseStartedAtMs: timer.phaseStartedAt,
+  phaseEndsAtMs: timer.phaseEndsAt,
+  preset: presetToProto(timer.preset),
 });
 
 export function roomToProto(room: RoomStateDto): RoomState {
   return {
     serverNowMs: room.serverNow,
-    timer: {
-      phase: PHASE_TO_PROTO[room.timer.phase],
-      round: room.timer.round,
-      rounds: room.timer.rounds,
-      phaseStartedAtMs: room.timer.phaseStartedAt,
-      phaseEndsAtMs: room.timer.phaseEndsAt,
-      preset: presetToProto(room.timer.preset),
-    },
+    timer: timerToProto(room.timer),
+    tables: room.tables.map((t) => ({ id: t.id, name: t.name, timer: timerToProto(t.timer) })),
     members: room.members.map(memberToProto),
     presentCount: room.presentCount,
     roomParticipantCount: room.roomParticipantCount,
@@ -243,6 +251,7 @@ export function myStatusToProto(me: MyStatusDto): MyStatus {
     status: STATUS_TO_PROTO[me.status],
     endsAtMs: me.endsAt,
     onRoomTimer: me.onRoomTimer,
+    tableId: me.tableId,
     xpTotal: me.xpTotal,
     level: me.level,
     xpIntoLevel: me.xpIntoLevel,
@@ -404,23 +413,30 @@ const memberFromProto = (m: MemberCard): MemberCardDto => ({
   cardStyle: m.cardStyle || "classic",
   weeklyRank: m.weeklyRank ?? 0,
   challenge: m.challenge ?? "",
+  tableId: m.tableId ?? "",
   challengeDone: m.challengeDone ?? false,
   highFives: m.highFives ?? 0,
 });
 
+const timerFromProto = (timer: RoomTimer | undefined): RoomTimerDto => ({
+  phase: phaseFromProto(timer?.phase ?? Phase.IDLE),
+  round: timer?.round ?? 0,
+  rounds: timer?.rounds ?? 4,
+  phaseStartedAt: timer?.phaseStartedAtMs ?? 0,
+  phaseEndsAt: timer?.phaseEndsAtMs ?? 0,
+  preset: presetFromProto(timer?.preset),
+});
+
 export function roomFromProto(room: RoomState | undefined): RoomStateDto {
-  const timer = room?.timer;
   const features = room?.features;
   return {
     serverNow: room?.serverNowMs ?? 0,
-    timer: {
-      phase: phaseFromProto(timer?.phase ?? Phase.IDLE),
-      round: timer?.round ?? 0,
-      rounds: timer?.rounds ?? 4,
-      phaseStartedAt: timer?.phaseStartedAtMs ?? 0,
-      phaseEndsAt: timer?.phaseEndsAtMs ?? 0,
-      preset: presetFromProto(timer?.preset),
-    },
+    timer: timerFromProto(room?.timer),
+    tables: (room?.tables ?? []).map((t) => ({
+      id: t.id,
+      name: t.name,
+      timer: timerFromProto(t.timer),
+    })),
     members: (room?.members ?? []).map(memberFromProto),
     presentCount: room?.presentCount ?? 0,
     roomParticipantCount: room?.roomParticipantCount ?? 0,
@@ -451,6 +467,7 @@ export function myStatusFromProto(me: MyStatus | undefined): MyStatusDto {
     status: statusFromProto(me?.status ?? MemberStatus.IDLE),
     endsAt: me?.endsAtMs ?? 0,
     onRoomTimer: me?.onRoomTimer ?? false,
+    tableId: me?.tableId ?? "",
     xpTotal: me?.xpTotal ?? 0,
     level: me?.level ?? 1,
     xpIntoLevel: me?.xpIntoLevel ?? 0,
@@ -582,4 +599,18 @@ export function voiceChannelChoiceFromProto(choice: VoiceChannelChoice): VoiceCh
     channels: (choice.channels ?? []).map((c) => ({ id: c.id, name: c.name })),
     status: choice.status ?? "",
   };
+}
+
+export function scheduleToProto(sessions: ScheduledSessionDto[]): Schedule {
+  return { sessions: sessions.map((s) => ({ ...s, goingUserIds: [...s.goingUserIds] })) };
+}
+
+export function scheduleFromProto(schedule: Schedule): ScheduledSessionDto[] {
+  return (schedule.sessions ?? []).map((s) => ({
+    id: s.id ?? "",
+    title: s.title ?? "",
+    startsAtMs: s.startsAtMs ?? 0,
+    byUserId: s.byUserId ?? "",
+    goingUserIds: [...(s.goingUserIds ?? [])],
+  }));
 }

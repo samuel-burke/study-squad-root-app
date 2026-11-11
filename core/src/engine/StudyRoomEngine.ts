@@ -17,6 +17,7 @@ import type {
   RecapDto,
   RoomStateDto,
   RoomTimerDto,
+  TableDto,
   SnapshotDto,
 } from "../dto";
 import { conflictError, DomainError, ErrorCode, notFoundError, validationError } from "../errors";
@@ -47,7 +48,7 @@ import {
   SHOWCASE_SIZE,
 } from "../game/cosmetics";
 import { currentStreak, EMPTY_STREAK, freezeAvailable, recordActiveDay } from "../game/streak";
-import { baseFocusXp, focusXp, levelFromXp } from "../game/xp";
+import { baseFocusXp, focusXp, levelFromXp, xpForLevel } from "../game/xp";
 import type { AppConfig } from "../settings";
 import {
   addDays,
@@ -86,7 +87,10 @@ import {
   validateId,
   validateSoloMinutes,
   validateStartGoals,
+  validateTableName,
 } from "../validation";
+import { PRESETS, type TimerPreset } from "../timer/presets";
+import { MAIN_TABLE_ID } from "./ports";
 import type {
   Announcer,
   CardRecord,
@@ -123,6 +127,12 @@ export interface EngineDeps {
 export interface StartOptions {
   goals?: readonly unknown[];
   goalsPrivate?: boolean;
+  /** The table to sit at. Defaults to the main table. */
+  tableId?: string;
+  /** Starts a new table with this name instead of joining one. */
+  newTableName?: string;
+  /** The new table's timer, "25-5" or "50-10". Defaults to the community's timer. */
+  newTablePreset?: string;
 }
 
 interface BusyPostState {
@@ -251,6 +261,27 @@ function attachNewBadges(result: unknown, effects: Effects): void {
  * scheduling, real-time pushes and channel posts. The Root server and the
  * browser demo both run this same class with different adapters.
  */
+/** One of the developer's chat commands that change real data (Developer test mode only). */
+export type DevAction =
+  | { kind: "setXp" | "setLevel" | "setStreak"; userId: string; value: number }
+  | { kind: "grantBadge"; userId: string; badgeId: string }
+  | { kind: "endTimer"; userId: string }
+  | { kind: "bossHp"; value: number }
+  | { kind: "bossDefeat" | "botLine"; byUserId: string }
+  | { kind: "bossNew" | "roomSkip" | "roomStop" | "recap" }
+  /** Wipes this community's data and starts over. `keepKv` survives (like the voice channel pick). */
+  | { kind: "reset"; keepKv: readonly string[] };
+
+/** Total XP at the start of `level`. */
+function xpAtLevel(level: number): number {
+  let xp = 0;
+  for (let l = 1; l < level; l++) xp += xpForLevel(l);
+  return xp;
+}
+
+/** The developer test round's focus and break, in minutes. */
+const TEST_ROUND_MINUTES = 1;
+
 export class StudyRoomEngine {
   private readonly queue = new SerialQueue();
   private readonly pendingPosts = new Set<Promise<void>>();
@@ -535,6 +566,8 @@ export class StudyRoomEngine {
 
   async joinRoomTimer(userId: string, options: StartOptions = {}): Promise<SnapshotDto> {
     const goals = validateStartGoals(options.goals ?? []);
+    const newName = options.newTableName ? validateTableName(options.newTableName) : undefined;
+    const tableId = options.tableId ? validateId(options.tableId, "table") : MAIN_TABLE_ID;
     return this.run(async (tx, now, effects) => {
       const solo = await tx.solos.get(userId);
       if (solo?.phase === "focus") {
@@ -544,22 +577,35 @@ export class StudyRoomEngine {
 
       await this.applyStartOptions(tx, userId, goals, options.goalsPrivate, now);
       const participants = await tx.room.listParticipants();
-      if (!participants.some((p) => p.userId === userId)) {
-        const cycle = await tx.room.getCycle();
+      const me = participants.find((p) => p.userId === userId);
+      let cycle = newName ? undefined : await this.tableCycle(tx, tableId);
+      if (!newName && !cycle && tableId !== MAIN_TABLE_ID) {
+        throw notFoundError("That table has emptied out. Start a new one.");
+      }
+      if (!me || me.tableId !== cycle?.tableId) {
+        // Switching tables: leaving the old one credits it like leaving early.
+        if (me) await this.leaveTable(tx, me, now, effects);
         if (!cycle) {
-          await tx.room.saveCycle({
+          if (newName && (await tx.room.listCycles()).length >= LIMITS.maxTables) {
+            throw conflictError(`There are already ${LIMITS.maxTables} tables. Join one of them.`);
+          }
+          cycle = {
+            tableId: newName ? this.deps.newId() : MAIN_TABLE_ID,
+            name: newName ?? "",
             cycleStartedAt: now,
-            preset: this.config.preset,
+            preset: newName ? this.tablePreset(options.newTablePreset) : this.config.preset,
             settledCount: 0,
-          });
+          };
+          await tx.room.saveCycle(cycle);
         }
         await tx.room.addParticipant({
           userId,
+          tableId: cycle.tableId,
           joinedAt: now,
           keepGoing: false,
           ...NO_LIVE_CREDIT,
         });
-        await this.announceJoin(tx, effects, userId, !cycle, now);
+        await this.announceJoin(tx, effects, userId, participants.length === 0, now);
       }
       this.touch(effects, userId);
       await this.checkBusyRoom(tx, now, effects);
@@ -569,37 +615,56 @@ export class StudyRoomEngine {
 
   leaveRoomTimer(userId: string): Promise<SnapshotDto> {
     return this.run(async (tx, now, effects) => {
-      const participants = await tx.room.listParticipants();
-      const me = participants.find((p) => p.userId === userId);
-      const cycle = await tx.room.getCycle();
-      if (me && cycle) {
-        const phase = phaseAt(buildCycle(cycle.cycleStartedAt, cycle.preset), now);
-        if (phase?.kind === "focus") {
-          const minutes = overlapMs(me.joinedAt, now, phase.startsAt, phase.endsAt) / MINUTE_MS;
-          const combo = comboFor(participants.length, this.config.comboEnabled);
-          await this.creditFocus(tx, effects, {
-            userId,
-            kind: "room",
-            startedAt: Math.max(me.joinedAt, phase.startsAt),
-            endedAt: now,
-            minutes,
-            combo,
-            finished: false,
-            plannedMinutes: cycle.preset.focusMinutes,
-            now,
-            live: me,
-          });
-          // The base XP already hit the boss minute by minute; this adds the rest.
-          const rest = focusXp(minutes, combo) - me.bossXpDealt;
-          await this.damageBoss(tx, effects, rest, [userId], now);
-        }
-        await tx.room.removeParticipant(userId);
-        if (participants.length === 1) await tx.room.saveCycle(null);
-      }
+      const me = (await tx.room.listParticipants()).find((p) => p.userId === userId);
+      if (me) await this.leaveTable(tx, me, now, effects);
       this.touch(effects, userId);
       await this.checkBusyRoom(tx, now, effects);
       return this.snapshot(tx, userId, now);
     });
+  }
+
+  /** The table's timer, if it's running. */
+  private async tableCycle(tx: Store, tableId: string): Promise<RoomCycleRecord | undefined> {
+    return (await tx.room.listCycles()).find((c) => c.tableId === tableId);
+  }
+
+  private tablePreset(key: string | undefined): TimerPreset {
+    return key === "25-5" || key === "50-10" ? PRESETS[key] : this.config.preset;
+  }
+
+  /** Takes a member off their table, crediting the focus they did this round. */
+  private async leaveTable(
+    tx: Store,
+    me: ParticipantRecord,
+    now: number,
+    effects: Effects,
+  ): Promise<void> {
+    const userId = me.userId;
+    const participants = await tx.room.listParticipants();
+    const cycle = await this.tableCycle(tx, me.tableId);
+    if (cycle) {
+      const phase = phaseAt(buildCycle(cycle.cycleStartedAt, cycle.preset), now);
+      if (phase?.kind === "focus") {
+        const minutes = overlapMs(me.joinedAt, now, phase.startsAt, phase.endsAt) / MINUTE_MS;
+        const combo = comboFor(participants.length, this.config.comboEnabled);
+        await this.creditFocus(tx, effects, {
+          userId,
+          kind: "room",
+          startedAt: Math.max(me.joinedAt, phase.startsAt),
+          endedAt: now,
+          minutes,
+          combo,
+          finished: false,
+          plannedMinutes: cycle.preset.focusMinutes,
+          now,
+          live: me,
+        });
+        // The base XP already hit the boss minute by minute; this adds the rest.
+        const rest = focusXp(minutes, combo) - me.bossXpDealt;
+        await this.damageBoss(tx, effects, rest, [userId], now);
+      }
+    }
+    await this.removeFromRoom(tx, userId);
   }
 
   // ---------------------------------------------------------------- solo timer
@@ -611,6 +676,167 @@ export class StudyRoomEngine {
   ): Promise<SnapshotDto> {
     const minutes = validateSoloMinutes(minutesInput);
     const goals = validateStartGoals(options.goals ?? []);
+    return this.soloFor(userId, minutes, this.config.preset.breakMinutes, goals, options);
+  }
+
+  /**
+   * The developer's live test round: a real one-minute solo focus and a
+   * one-minute break, so pushes, XP, the boss, badges and the break screen
+   * can be watched end to end. Callers check who may start it.
+   */
+  startTestRound(userId: string): Promise<SnapshotDto> {
+    return this.soloFor(userId, TEST_ROUND_MINUTES, TEST_ROUND_MINUTES, [], {});
+  }
+
+  // ---------------------------------------------------------------- developer
+
+  /**
+   * The developer's chat commands that change real data. Only when an admin
+   * has turned on Developer test mode in this community; callers also check
+   * who is asking. Returns one plain line saying what changed.
+   */
+  devAdmin(action: DevAction): Promise<string> {
+    if (!this.config.devTestMode) {
+      return Promise.reject(
+        new DomainError(
+          ErrorCode.Forbidden,
+          "Developer test mode is off here. Turn it on in Study Squad's app settings first.",
+        ),
+      );
+    }
+    return this.run(async (tx, now, effects) => {
+      const whole = (value: number, min: number, max: number, what: string) => {
+        if (!Number.isInteger(value) || value < min || value > max)
+          throw validationError(`${what} must be a whole number from ${min} to ${max}.`);
+        return value;
+      };
+      switch (action.kind) {
+        case "setXp":
+        case "setLevel": {
+          const member = await this.loadMember(tx, action.userId);
+          const xpTotal =
+            action.kind === "setXp"
+              ? whole(action.value, 0, 10_000_000, "XP")
+              : xpAtLevel(whole(action.value, 1, 500, "Level"));
+          await tx.members.save({ ...member, xpTotal });
+          this.touch(effects, action.userId);
+          return `XP is now ${xpTotal.toLocaleString("en-US")} (level ${levelFromXp(xpTotal).level}).`;
+        }
+        case "setStreak": {
+          const member = await this.loadMember(tx, action.userId);
+          const streak = whole(action.value, 0, 10_000, "Streak");
+          const today = dayKey(now, this.config.timeZone);
+          await tx.members.save({
+            ...member,
+            streak: { ...member.streak, streak, lastActiveDay: streak > 0 ? today : null },
+          });
+          this.touch(effects, action.userId);
+          return `Streak is now ${streak} day${streak === 1 ? "" : "s"}, active today.`;
+        }
+        case "grantBadge": {
+          const badge = badgeById(action.badgeId);
+          if (!badge) throw notFoundError(`There's no badge "${action.badgeId}".`);
+          const held = (await tx.badges.list([action.userId])).some((b) => b.badgeId === badge.id);
+          if (held) return `They already have ${badge.name}.`;
+          await tx.badges.award({ userId: action.userId, badgeId: badge.id, earnedAt: now });
+          effects.badges.set(action.userId, [badge.id]);
+          this.touch(effects, action.userId);
+          return `Gave ${badge.name}.`;
+        }
+        case "endTimer": {
+          const solo = await tx.solos.get(action.userId);
+          if (solo) await tx.solos.delete(action.userId);
+          const onRoom = (await tx.room.listParticipants()).some((p) => p.userId === action.userId);
+          if (onRoom) await this.removeFromRoom(tx, action.userId);
+          if (!solo && !onRoom) return "They weren't on a timer.";
+          this.touch(effects, action.userId);
+          return "Ended their timer, without crediting the rest of it.";
+        }
+        case "bossHp": {
+          const boss = await this.loadBoss(tx, now);
+          const hpLeft = whole(action.value, 1, boss.maxHpXp, "Boss HP");
+          await tx.bosses.save({ ...boss, damageXp: boss.maxHpXp - hpLeft, defeatedAt: null });
+          effects.roomChanged = true;
+          return `${boss.name} has ${hpLeft.toLocaleString("en-US")} of ${boss.maxHpXp.toLocaleString("en-US")} HP left.`;
+        }
+        case "bossDefeat": {
+          const boss = await this.loadBoss(tx, now);
+          if (boss.defeatedAt !== null) return `${boss.name} is already defeated.`;
+          const result = applyDamage(boss, bossHpLeft(boss), [action.byUserId], now);
+          await tx.bosses.save(result.boss);
+          effects.roomChanged = true;
+          if (result.defeatedNow)
+            await this.onBossDefeated(tx, result.boss, effects, [action.byUserId]);
+          return `${boss.name} is defeated, with you landing the final blow.`;
+        }
+        case "bossNew": {
+          const week = weekKey(dayKey(now, this.config.timeZone));
+          const boss = newBoss(week, bossNameFor(week), this.config.boss.baseHpXp);
+          await tx.bosses.save(boss);
+          effects.roomChanged = true;
+          return `${boss.name} is back at full HP (${boss.maxHpXp.toLocaleString("en-US")}).`;
+        }
+        case "roomSkip": {
+          // Every table: shift its cycle so this phase ends now; the next settle moves on.
+          let skipped = 0;
+          for (const cycle of await tx.room.listCycles()) {
+            const phase = phaseAt(buildCycle(cycle.cycleStartedAt, cycle.preset), now);
+            if (!phase) continue;
+            await tx.room.saveCycle({
+              ...cycle,
+              cycleStartedAt: cycle.cycleStartedAt - (phase.endsAt - now),
+            });
+            skipped++;
+          }
+          if (skipped === 0) return "The room timer isn't running.";
+          effects.roomChanged = true;
+          return `Skipped every table to the end of its focus or break.`;
+        }
+        case "roomStop": {
+          const participants = await tx.room.listParticipants();
+          for (const p of participants) {
+            await tx.room.removeParticipant(p.userId);
+            effects.statusChanged.add(p.userId);
+          }
+          for (const cycle of await tx.room.listCycles()) await tx.room.deleteCycle(cycle.tableId);
+          effects.roomChanged = true;
+          return participants.length
+            ? `Stopped the room timer for ${participants.length} member(s), without crediting the rest.`
+            : "The room timer wasn't running.";
+        }
+        case "recap": {
+          const channelId = this.config.postChannelId;
+          if (!channelId) return "No bot messages channel is set, so there's nowhere to post.";
+          const recap = await this.recapFor(tx, now, now);
+          effects.posts.push((a) => a.dailyRecap(channelId, recap));
+          return "Posted today's recap in the bot channel.";
+        }
+        case "botLine": {
+          if (!this.config.postChannelId || !this.config.squadBot.enabled)
+            return "The squad bot is off or has no channel.";
+          await this.squadMessage(tx, effects, "sessionStarted", [action.byUserId], 1, now);
+          return "Sent a squad bot line to the bot channel.";
+        }
+        case "reset": {
+          await tx.eraseAll(action.keepKv);
+          this.breaks.clear();
+          this.challenges.clear();
+          this.lastChallenge.clear();
+          for (const userId of this.present) this.touch(effects, userId);
+          effects.roomChanged = true;
+          return "Wiped this community's Study Squad data. Everyone starts from zero.";
+        }
+      }
+    });
+  }
+
+  private soloFor(
+    userId: string,
+    minutes: number,
+    breakMinutes: number,
+    goals: string[],
+    options: StartOptions,
+  ): Promise<SnapshotDto> {
     return this.run(async (tx, now, effects) => {
       const participants = await tx.room.listParticipants();
       if (participants.some((p) => p.userId === userId)) {
@@ -627,7 +853,7 @@ export class StudyRoomEngine {
         endsAt,
         minutes,
         phase: "focus",
-        breakEndsAt: endsAt + this.config.preset.breakMinutes * MINUTE_MS,
+        breakEndsAt: endsAt + breakMinutes * MINUTE_MS,
         ...NO_LIVE_CREDIT,
       });
       this.touch(effects, userId);
@@ -672,7 +898,7 @@ export class StudyRoomEngine {
   keepGoing(userId: string): Promise<MyStatusDto> {
     return this.run(async (tx, now, effects) => {
       const participant = (await tx.room.listParticipants()).find((p) => p.userId === userId);
-      const cycle = await tx.room.getCycle();
+      const cycle = participant && (await this.tableCycle(tx, participant.tableId));
       if (participant && cycle && this.keepGoingEndsAt(participant, cycle, now) > 0) {
         await tx.room.addParticipant({ ...participant, keepGoing: true });
         effects.statusChanged.add(userId);
@@ -728,13 +954,14 @@ export class StudyRoomEngine {
   }
 
   private async currentBreak(tx: Store, userId: string, now: number): Promise<CurrentBreak | null> {
-    if ((await tx.room.listParticipants()).some((p) => p.userId === userId)) {
-      const cycle = await tx.room.getCycle();
+    const seat = (await tx.room.listParticipants()).find((p) => p.userId === userId);
+    if (seat) {
+      const cycle = await this.tableCycle(tx, seat.tableId);
       const phase = cycle
         ? phaseAt(buildCycle(cycle.cycleStartedAt, cycle.preset), now)
         : undefined;
       if (!phase || phase.kind === "focus") return null;
-      return { key: roomBreakKey(phase.startsAt), endsAt: phase.endsAt, room: true };
+      return { key: roomBreakKey(seat.tableId, phase.startsAt), endsAt: phase.endsAt, room: true };
     }
     const solo = await tx.solos.get(userId);
     if (!solo || solo.phase === "focus") return null;
@@ -743,7 +970,7 @@ export class StudyRoomEngine {
 
   /**
    * The challenge for a break, picked the first time the break is shown.
-   * `scope` is "room" for the room timer or the member for a solo break, so
+   * `scope` is "room:<table id>" for a table or the member for a solo break, so
    * the next break there never repeats the last one. Kept in memory: after a
    * restart a running break may get a new pick.
    */
@@ -925,14 +1152,12 @@ export class StudyRoomEngine {
 
   /**
    * Erases everything Study Squad stores about the member, at their request.
-   * Their card leaves the board at once, and the room timer goes idle if they
-   * were the last one on it. No XP or minutes are credited for the session cut short.
+   * Their card leaves the board at once, and their table closes if they
+   * were the last one at it. No XP or minutes are credited for the session cut short.
    */
   deleteMyData(userId: string): Promise<MyStatusDto> {
     return this.run(async (tx, now, effects) => {
-      const participants = await tx.room.listParticipants();
-      if (participants.length === 1 && participants[0]!.userId === userId)
-        await tx.room.saveCycle(null);
+      await this.removeFromRoom(tx, userId);
       await tx.eraseUser(userId);
       for (const log of this.breaks.values()) {
         log.challengeDone.delete(userId);
@@ -1054,7 +1279,9 @@ export class StudyRoomEngine {
   // ---------------------------------------------------------------- settling
 
   private async settleDue(tx: Store, now: number, effects: Effects): Promise<void> {
-    await this.settleRoomCycle(tx, now, effects);
+    for (const cycle of await tx.room.listCycles()) {
+      await this.settleRoomCycle(tx, cycle.tableId, now, effects);
+    }
     await this.settleSolos(tx, now, effects);
     await this.creditLiveFocus(tx, now, effects);
     await this.dealLiveDamage(tx, now, effects);
@@ -1067,10 +1294,10 @@ export class StudyRoomEngine {
    * minute. The end of the block adds the rest, including the combo bonus.
    */
   private async creditLiveFocus(tx: Store, now: number, effects: Effects): Promise<void> {
-    const cycle = await tx.room.getCycle();
-    const phase = cycle ? phaseAt(buildCycle(cycle.cycleStartedAt, cycle.preset), now) : undefined;
-    if (phase?.kind === "focus") {
-      for (const p of await tx.room.listParticipants()) {
+    const phases = await this.tablePhases(tx, now);
+    for (const p of await tx.room.listParticipants()) {
+      const phase = phases.get(p.tableId);
+      if (phase?.kind === "focus") {
         const minutes = overlapMs(p.joinedAt, now, phase.startsAt, phase.endsAt) / MINUTE_MS;
         const credited = await this.creditLiveMinutes(tx, effects, p, minutes, now);
         if (credited) await tx.room.addParticipant({ ...p, ...credited });
@@ -1120,10 +1347,10 @@ export class StudyRoomEngine {
    */
   private async dealLiveDamage(tx: Store, now: number, effects: Effects): Promise<void> {
     if (!this.config.boss.enabled) return;
-    const cycle = await tx.room.getCycle();
-    const phase = cycle ? phaseAt(buildCycle(cycle.cycleStartedAt, cycle.preset), now) : undefined;
-    if (phase?.kind === "focus") {
-      for (const p of await tx.room.listParticipants()) {
+    const phases = await this.tablePhases(tx, now);
+    for (const p of await tx.room.listParticipants()) {
+      const phase = phases.get(p.tableId);
+      if (phase?.kind === "focus") {
         const minutes = overlapMs(p.joinedAt, now, phase.startsAt, phase.endsAt) / MINUTE_MS;
         const hit = baseFocusXp(minutes) - p.bossXpDealt;
         if (hit <= 0) continue;
@@ -1141,19 +1368,39 @@ export class StudyRoomEngine {
     }
   }
 
-  private async settleRoomCycle(tx: Store, now: number, effects: Effects): Promise<void> {
-    const cycle = await tx.room.getCycle();
+  /** Each table's current phase, by table id. */
+  private async tablePhases(tx: Store, now: number): Promise<Map<string, CyclePhase>> {
+    const phases = new Map<string, CyclePhase>();
+    for (const cycle of await tx.room.listCycles()) {
+      const phase = phaseAt(buildCycle(cycle.cycleStartedAt, cycle.preset), now);
+      if (phase) phases.set(cycle.tableId, phase);
+    }
+    return phases;
+  }
+
+  /** The members at one table. */
+  private async seatedAt(tx: Store, tableId: string): Promise<ParticipantRecord[]> {
+    return (await tx.room.listParticipants()).filter((p) => p.tableId === tableId);
+  }
+
+  private async settleRoomCycle(
+    tx: Store,
+    tableId: string,
+    now: number,
+    effects: Effects,
+  ): Promise<void> {
+    const cycle = await this.tableCycle(tx, tableId);
     if (!cycle) return;
     const phases = buildCycle(cycle.cycleStartedAt, cycle.preset);
     let settled = cycle.settledCount;
     while (settled < phases.length && phases[settled]!.endsAt <= now) {
       const phase = phases[settled]!;
       if (phase.kind === "focus") {
-        await this.settleFocusPhase(tx, phases, phase, cycle.preset.focusMinutes, effects);
+        await this.settleFocusPhase(tx, cycle, phases, phase, effects);
       }
       if (phase.endsAt === keepGoingWindow(phases).opensAt) {
         // The long break starts: push "Keep going?" to everyone who focused this cycle.
-        for (const p of await tx.room.listParticipants()) effects.statusChanged.add(p.userId);
+        for (const p of await this.seatedAt(tx, tableId)) effects.statusChanged.add(p.userId);
       }
       settled++;
       effects.roomChanged = true;
@@ -1161,27 +1408,29 @@ export class StudyRoomEngine {
     if (settled < phases.length) {
       if (settled !== cycle.settledCount) {
         await tx.room.saveCycle({ ...cycle, settledCount: settled });
-        await this.announcePhase(tx, phases[settled]!, now, effects);
+        await this.announcePhase(tx, cycle, phases[settled]!, now, effects);
       }
       return;
     }
-    if (await this.finishCycle(tx, phases, effects)) {
-      const next = await tx.room.getCycle();
+    if (await this.finishCycle(tx, cycle, phases, effects)) {
+      const next = await this.tableCycle(tx, tableId);
       if (next) {
         await this.announcePhase(
           tx,
+          next,
           buildCycle(next.cycleStartedAt, next.preset)[0]!,
           now,
           effects,
         );
       }
-      await this.settleRoomCycle(tx, now, effects);
+      await this.settleRoomCycle(tx, tableId, now, effects);
     }
   }
 
-  /** The squad bot tells everyone in the room that the clock just switched to `phase`. */
+  /** The squad bot tells everyone at the table that its clock just switched to `phase`. */
   private async announcePhase(
     tx: Store,
+    cycle: RoomCycleRecord,
     phase: CyclePhase,
     now: number,
     effects: Effects,
@@ -1193,9 +1442,20 @@ export class StudyRoomEngine {
         : phase.kind === "longBreak"
           ? "sessionCompleted"
           : "studyResumed";
-    const userIds = (await tx.room.listParticipants()).map((p) => p.userId);
+    const userIds = (await this.seatedAt(tx, cycle.tableId)).map((p) => p.userId);
     const recap = event === "studyResumed" ? this.takeBreakRecap(now) : undefined;
-    await this.squadMessage(tx, effects, event, userIds, phase.round, now, undefined, recap);
+    const rounds = cycle.preset.rounds;
+    await this.squadMessage(
+      tx,
+      effects,
+      event,
+      userIds,
+      phase.round,
+      now,
+      undefined,
+      recap,
+      rounds,
+    );
   }
 
   /**
@@ -1211,6 +1471,7 @@ export class StudyRoomEngine {
     now: number,
     badge?: string,
     recap?: BreakRecapDto,
+    rounds = this.config.preset.rounds,
   ): Promise<void> {
     const channelId = this.config.postChannelId;
     if (!this.config.squadBot.enabled || !channelId || userIds.length === 0) return;
@@ -1225,7 +1486,6 @@ export class StudyRoomEngine {
       ...last,
       ...(line.rare ? { rare: line.id } : { [event]: line.id }),
     });
-    const rounds = (await tx.room.getCycle())?.preset.rounds;
     const heading = squadHeading(event, round, rounds);
     const mention = this.config.squadBot.mentions;
     effects.posts.push((a) =>
@@ -1283,9 +1543,14 @@ export class StudyRoomEngine {
    * is released and keeps everything they earned. People who joined during
    * the final long break haven't focused yet, so they roll over too.
    */
-  private async finishCycle(tx: Store, phases: CyclePhase[], effects: Effects): Promise<boolean> {
+  private async finishCycle(
+    tx: Store,
+    cycle: RoomCycleRecord,
+    phases: CyclePhase[],
+    effects: Effects,
+  ): Promise<boolean> {
     const { opensAt: lastFocusEnd, closesAt: end } = keepGoingWindow(phases);
-    const participants = await tx.room.listParticipants();
+    const participants = await this.seatedAt(tx, cycle.tableId);
     const carried = participants.filter((p) => p.keepGoing || p.joinedAt >= lastFocusEnd);
     for (const p of participants) {
       if (!carried.includes(p)) {
@@ -1293,11 +1558,13 @@ export class StudyRoomEngine {
         effects.statusChanged.add(p.userId);
       }
     }
-    await tx.room.saveCycle(
-      carried.length > 0
-        ? { cycleStartedAt: end, preset: this.config.preset, settledCount: 0 }
-        : null,
-    );
+    if (carried.length > 0) {
+      // The main table picks up a changed community timer; other tables keep theirs.
+      const preset = cycle.tableId === MAIN_TABLE_ID ? this.config.preset : cycle.preset;
+      await tx.room.saveCycle({ ...cycle, cycleStartedAt: end, preset, settledCount: 0 });
+    } else {
+      await tx.room.deleteCycle(cycle.tableId);
+    }
     for (const p of carried) {
       await tx.room.addParticipant({ ...p, joinedAt: end, keepGoing: false, ...NO_LIVE_CREDIT });
       effects.statusChanged.add(p.userId);
@@ -1309,12 +1576,16 @@ export class StudyRoomEngine {
 
   private async settleFocusPhase(
     tx: Store,
+    cycle: RoomCycleRecord,
     phases: readonly CyclePhase[],
     phase: CyclePhase,
-    focusMinutes: number,
     effects: Effects,
   ): Promise<void> {
-    const participants = await tx.room.listParticipants();
+    const focusMinutes = cycle.preset.focusMinutes;
+    const everyone = await tx.room.listParticipants();
+    const participants = everyone.filter((p) => p.tableId === cycle.tableId);
+    // The combo is the whole room's: this table's finishers plus everyone at other tables.
+    const atOtherTables = everyone.length - participants.length;
     const minuteShares = participants
       .map((p) => ({
         participant: p,
@@ -1325,7 +1596,7 @@ export class StudyRoomEngine {
     const finisherIds = minuteShares
       .filter((s) => s.minutes >= finishThreshold)
       .map((s) => s.participant.userId);
-    const combo = comboFor(finisherIds.length, this.config.comboEnabled);
+    const combo = comboFor(finisherIds.length + atOtherTables, this.config.comboEnabled);
     // Damage is the XP the round earns.
     const roundXp = minuteShares.reduce((sum, s) => sum + focusXp(s.minutes, combo), 0);
     // Stayed for the whole cycle: this is its last round and they finished round 1 too.
@@ -1460,8 +1731,7 @@ export class StudyRoomEngine {
 
   private async nextWakeAt(tx: Store, now: number): Promise<number | null> {
     const candidates: number[] = [];
-    const cycle = await tx.room.getCycle();
-    if (cycle) {
+    for (const cycle of await tx.room.listCycles()) {
       const next = buildCycle(cycle.cycleStartedAt, cycle.preset)[cycle.settledCount];
       if (next) candidates.push(next.endsAt);
     }
@@ -1481,9 +1751,8 @@ export class StudyRoomEngine {
 
   private async anyoneFocusing(tx: Store, now: number): Promise<boolean> {
     if ((await tx.solos.list()).some((s) => s.phase === "focus")) return true;
-    const cycle = await tx.room.getCycle();
-    if (!cycle || (await tx.room.listParticipants()).length === 0) return false;
-    return phaseAt(buildCycle(cycle.cycleStartedAt, cycle.preset), now)?.kind === "focus";
+    const phases = await this.tablePhases(tx, now);
+    return (await tx.room.listParticipants()).some((p) => phases.get(p.tableId)?.kind === "focus");
   }
 
   // ---------------------------------------------------------------- rewards
@@ -1786,6 +2055,18 @@ export class StudyRoomEngine {
 
   // ---------------------------------------------------------------- loading
 
+  /** Takes a member off the room timer without crediting anything. */
+  private async removeFromRoom(tx: Store, userId: string): Promise<void> {
+    const participants = await tx.room.listParticipants();
+    const tableId = participants.find((p) => p.userId === userId)?.tableId;
+    if (tableId === undefined) return;
+    await tx.room.removeParticipant(userId);
+    // An empty table closes.
+    if (!participants.some((p) => p.tableId === tableId && p.userId !== userId)) {
+      await tx.room.deleteCycle(tableId);
+    }
+  }
+
   private async loadMember(tx: Store, userId: string): Promise<MemberRecord> {
     return (
       (await tx.members.get(userId)) ?? {
@@ -1882,11 +2163,12 @@ export class StudyRoomEngine {
   // ---------------------------------------------------------------- views
 
   private async buildRoomState(tx: Store, now: number): Promise<RoomStateDto> {
-    const cycle = await tx.room.getCycle();
+    const cycles = await tx.room.listCycles();
     const participants = await tx.room.listParticipants();
-    const phase = cycle ? phaseAt(buildCycle(cycle.cycleStartedAt, cycle.preset), now) : undefined;
-    const timer: RoomTimerDto =
-      cycle && phase
+    const phases = await this.tablePhases(tx, now);
+    const timerOf = (cycle: RoomCycleRecord | undefined): RoomTimerDto => {
+      const phase = cycle && phases.get(cycle.tableId);
+      return cycle && phase
         ? {
             phase: phase.kind,
             round: phase.round,
@@ -1903,6 +2185,13 @@ export class StudyRoomEngine {
             phaseEndsAt: 0,
             preset: this.config.preset,
           };
+    };
+    const main = cycles.find((c) => c.tableId === MAIN_TABLE_ID);
+    const timer = timerOf(main);
+    const tables: TableDto[] = [
+      ...(main ? [main] : []),
+      ...cycles.filter((c) => c.tableId !== MAIN_TABLE_ID),
+    ].map((c) => ({ id: c.tableId, name: c.name, timer: timerOf(c) }));
 
     const solos = await tx.solos.list();
     const ids = [...participants.map((p) => p.userId), ...solos.map((s) => s.userId)];
@@ -1918,12 +2207,9 @@ export class StudyRoomEngine {
       ]),
     );
 
-    const roomKey = phase && phase.kind !== "focus" ? roomBreakKey(phase.startsAt) : undefined;
-    const roomBreak = roomKey ? this.breaks.get(roomKey) : undefined;
-    const roomChallenge =
-      roomKey && participants.length > 0 ? this.breakChallenge(roomKey, "room") : "";
     const card = (
       userId: string,
+      tableId: string,
       status: MemberCardDto["status"],
       endsAt: number,
       breakLog?: BreakLog,
@@ -1934,6 +2220,7 @@ export class StudyRoomEngine {
       return {
         userId,
         status,
+        tableId,
         endsAt,
         goalText: isPrivate ? "" : (goals.get(userId)?.text ?? ""),
         goalPrivate: isPrivate,
@@ -1949,20 +2236,25 @@ export class StudyRoomEngine {
     };
 
     const cards = [
-      ...participants.map((p: ParticipantRecord) =>
-        card(
+      ...participants.map((p: ParticipantRecord) => {
+        const phase = phases.get(p.tableId);
+        const breakKey =
+          phase && phase.kind !== "focus" ? roomBreakKey(p.tableId, phase.startsAt) : undefined;
+        return card(
           p.userId,
+          p.tableId,
           phase?.kind === "focus" ? "roomFocus" : "roomBreak",
           phase?.endsAt ?? now,
-          roomBreak,
-          roomChallenge,
-        ),
-      ),
+          breakKey ? this.breaks.get(breakKey) : undefined,
+          breakKey ? this.breakChallenge(breakKey, `room:${p.tableId}`) : "",
+        );
+      }),
       ...solos.map((s) =>
         s.phase === "focus"
-          ? card(s.userId, "soloFocus", s.endsAt)
+          ? card(s.userId, "", "soloFocus", s.endsAt)
           : card(
               s.userId,
+              "",
               "soloBreak",
               s.breakEndsAt,
               this.breaks.get(soloBreakKey(s.userId, s.breakEndsAt)),
@@ -1974,6 +2266,7 @@ export class StudyRoomEngine {
     return {
       serverNow: now,
       timer,
+      tables,
       members: cards,
       presentCount: new Set([...this.present, ...ids]).size,
       roomParticipantCount: participants.length,
@@ -2055,10 +2348,12 @@ export class StudyRoomEngine {
 
   private async buildProgress(tx: Store, userId: string, now: number): Promise<ProgressDto> {
     const today = dayKey(now, this.config.timeZone);
-    const from = addDays(today, -(LIMITS.progressWindowDays - 1));
+    // Whole Monday-to-Sunday weeks, so the heatmap's columns are weekdays.
+    // The current week runs only up to today; the client pads the rest.
+    const from = addDays(weekKey(today), -(LIMITS.progressWindowDays - 7));
     const rows = await tx.stats.listForUser(userId, from, today);
     const byDay = new Map(rows.map((r) => [r.day, r.focusMinutes]));
-    const days = Array.from({ length: LIMITS.progressWindowDays }, (_, i) => {
+    const days = Array.from({ length: daysBetween(from, today) + 1 }, (_, i) => {
       const day = addDays(from, i);
       return { day, focusMinutes: byDay.get(day) ?? 0 };
     });
@@ -2091,7 +2386,7 @@ export class StudyRoomEngine {
     let endsAt = 0;
     let keepGoingEndsAt = 0;
     if (participant) {
-      const cycle = await tx.room.getCycle();
+      const cycle = await this.tableCycle(tx, participant.tableId);
       if (cycle) keepGoingEndsAt = this.keepGoingEndsAt(participant, cycle, now);
       const phase = cycle
         ? phaseAt(buildCycle(cycle.cycleStartedAt, cycle.preset), now)
@@ -2110,6 +2405,7 @@ export class StudyRoomEngine {
       status,
       endsAt,
       onRoomTimer,
+      tableId: participant?.tableId ?? "",
       xpTotal: member?.xpTotal ?? 0,
       level: progress.level,
       xpIntoLevel: progress.xpIntoLevel,

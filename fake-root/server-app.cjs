@@ -32,6 +32,7 @@ const ChannelWebRtcEvent = {
   ChannelWebRtcUserDetach: "channelWebRtcUser.detach",
 };
 const GlobalSettingsEvent = { Update: "update", Button: "button" };
+const ChannelMessageEvent = { ChannelMessageCreated: "channelMessage.created" };
 const JobInterval = { Unspecified: 0, OneTime: 1, Daily: 2, Weekly: 3, Monthly: 4, Yearly: 5 };
 const JobScheduleEvent = { JobMissed: "job.missed", Job: "job" };
 const EVERYONE_ROLE = "00000000-0000-0000-0000-00000000e000";
@@ -239,6 +240,7 @@ function findChannel(id) {
 
 const voice = new Map(); // channelId -> Set<userId>
 const webRtcEmitter = new EventEmitter();
+const messagesEmitter = new EventEmitter();
 
 const community = {
   communities: {
@@ -264,6 +266,8 @@ const community = {
     }),
   },
   channelMessages: {
+    on: (event, listener) => messagesEmitter.on(event, listener),
+    off: (event, listener) => messagesEmitter.off(event, listener),
     create: async ({ channelId, content }) => {
       findChannel(channelId);
       const post = { id: `m${posts.length + 1}`, channelId, content, at: Date.now() };
@@ -450,11 +454,27 @@ const fake = {
   },
   nickname: (userId) => members.get(userId)?.nickname,
   attachedUsers: () => [...attached.keys()],
+  /** A member types a message in a channel, as Root reports it to the app. */
+  sendMessage(channelId, userId, content) {
+    findChannel(channelId);
+    messagesEmitter.emit(ChannelMessageEvent.ChannelMessageCreated, {
+      communityId: config.communityId,
+      channelId,
+      userId,
+      id: `msg-${Date.now()}`,
+      messageContent: content,
+      messageType: 0,
+      messageUris: [],
+      reactions: [],
+      parentMessages: [],
+    });
+  },
 };
 
 module.exports = {
   rootServer,
   RootServerException,
+  ChannelMessageEvent,
   ChannelType,
   ChannelWebRtcEvent,
   ClientEvent,

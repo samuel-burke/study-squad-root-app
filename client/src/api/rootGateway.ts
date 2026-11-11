@@ -9,6 +9,7 @@ import {
   phaseCompletedFromProto,
   progressFromProto,
   roomFromProto,
+  scheduleFromProto,
   snapshotFromProto,
   voiceChannelChoiceFromProto,
 } from "@studyroom/contract";
@@ -16,6 +17,7 @@ import {
   ClockSync,
   type LeaderboardMetric,
   type LeaderboardPeriod,
+  type ScheduledSessionDto,
   type SnapshotDto,
 } from "@studyroom/core";
 import { studyRoomServiceClient, StudyRoomServiceClientEvent } from "@studyroom/gen-client";
@@ -27,6 +29,7 @@ import {
   type SelfTestApi,
   type SelfTestReport,
   type SelfTestState,
+  type StartRequest,
   type StudyRoomGateway,
 } from "./gateway";
 
@@ -53,21 +56,27 @@ function selfTestState(message: SelfTest): SelfTestState {
   };
 }
 
+const confirmPing = (event: { nonce: string }) => {
+  void client.confirmSelfTestPing({ nonce: event.nonce }).catch(() => {});
+};
+
 /** The self-test panel's half on the client: runs it, and answers the server's ping. */
 class RootSelfTest implements SelfTestApi {
   private listening = false;
+
+  /** Answers the server's ping for a run started here (subscribe covers the rest). */
+  private listen() {
+    if (this.listening) return;
+    this.listening = true;
+    client.on(StudyRoomServiceClientEvent.SelfTestPing, confirmPing);
+  }
 
   async get() {
     return selfTestState(await call(() => client.getSelfTest({})));
   }
 
   async run(testPost: boolean) {
-    if (!this.listening) {
-      this.listening = true;
-      client.on(StudyRoomServiceClientEvent.SelfTestPing, (event: { nonce: string }) => {
-        void client.confirmSelfTestPing({ nonce: event.nonce }).catch(() => {});
-      });
-    }
+    this.listen();
     const info = await this.clientInfo();
     return selfTestState(
       await call(() => client.runSelfTest({ testPost, clientJson: JSON.stringify(info) })),
@@ -131,9 +140,15 @@ export class RootGateway implements StudyRoomGateway {
     return this.snapshot(() => client.getRoom({}));
   }
 
-  joinRoomTimer(request: { goals: string[]; goalsPrivate: boolean }) {
+  joinRoomTimer(request: StartRequest) {
     return this.snapshot(() =>
-      client.joinRoomTimer({ goals: request.goals, goalsPrivate: request.goalsPrivate }),
+      client.joinRoomTimer({
+        goals: request.goals,
+        goalsPrivate: request.goalsPrivate,
+        tableId: request.tableId,
+        newTableName: request.newTableName,
+        newTablePreset: request.newTablePreset,
+      }),
     );
   }
 
@@ -250,6 +265,31 @@ export class RootGateway implements StudyRoomGateway {
     return voiceChannelChoiceFromProto(await call(() => client.setVoiceChannel({ channelId })));
   }
 
+  async getSchedule() {
+    return scheduleFromProto(await call(() => client.getSchedule({})));
+  }
+
+  async scheduleSession(title: string, startsAtMs: number) {
+    return scheduleFromProto(await call(() => client.scheduleSession({ title, startsAtMs })));
+  }
+
+  async cancelScheduledSession(id: string) {
+    return scheduleFromProto(await call(() => client.cancelScheduledSession({ id })));
+  }
+
+  async rsvpSession(id: string, going: boolean) {
+    return scheduleFromProto(await call(() => client.rsvpSession({ id, going })));
+  }
+
+  onScheduleUpdated(handler: (sessions: ScheduledSessionDto[]) => void) {
+    const listener = (e: { schedule?: Parameters<typeof scheduleFromProto>[0] }) =>
+      handler(scheduleFromProto(e.schedule ?? { sessions: [] }));
+    client.on(StudyRoomServiceClientEvent.ScheduleUpdated, listener);
+    return () => {
+      client.off(StudyRoomServiceClientEvent.ScheduleUpdated, listener);
+    };
+  }
+
   async getProfiles(userIds: string[]): Promise<Profile[]> {
     if (userIds.length === 0) return [];
     const profiles = await call(() => rootClient.users.getUserProfiles(userIds));
@@ -283,7 +323,11 @@ export class RootGateway implements StudyRoomGateway {
     client.on(StudyRoomServiceClientEvent.MyStatus, onStatus);
     client.on(StudyRoomServiceClientEvent.BadgesEarned, onBadges);
     client.on(StudyRoomServiceClientEvent.HighFive, onHighFive);
+    // The server only pings the developer. A run can start from chat (!smoke)
+    // with the Self-test panel closed, so the ping is answered from here too.
+    client.on(StudyRoomServiceClientEvent.SelfTestPing, confirmPing);
     return () => {
+      client.off(StudyRoomServiceClientEvent.SelfTestPing, confirmPing);
       client.off(StudyRoomServiceClientEvent.RoomUpdated, onRoom);
       client.off(StudyRoomServiceClientEvent.PhaseCompleted, onPhase);
       client.off(StudyRoomServiceClientEvent.PersonalResult, onPersonal);

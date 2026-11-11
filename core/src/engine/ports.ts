@@ -50,7 +50,17 @@ export interface SoloRecord {
   liveXp: number;
 }
 
+/** The table everyone joins by default. It's always on the board, even when empty. */
+export const MAIN_TABLE_ID = "main";
+
+/**
+ * A study table's running timer. Each table runs its own cycle; a table other
+ * than the main one exists only while someone sits at it.
+ */
 export interface RoomCycleRecord {
+  tableId: string;
+  /** Shown on the board. The main table's is empty. */
+  name: string;
   cycleStartedAt: number;
   /** Captured at cycle start; settings changes apply from the next cycle. */
   preset: TimerPreset;
@@ -60,6 +70,7 @@ export interface RoomCycleRecord {
 
 export interface ParticipantRecord {
   userId: string;
+  tableId: string;
   joinedAt: number;
   /** Tapped "Keep going?" this cycle, so the cycle end carries them into the next one. */
   keepGoing: boolean;
@@ -189,8 +200,11 @@ export interface Store {
     delete(userId: string): Promise<void>;
   };
   room: {
-    getCycle(): Promise<RoomCycleRecord | undefined>;
-    saveCycle(cycle: RoomCycleRecord | null): Promise<void>;
+    /** Every running table, oldest first. */
+    listCycles(): Promise<RoomCycleRecord[]>;
+    saveCycle(cycle: RoomCycleRecord): Promise<void>;
+    deleteCycle(tableId: string): Promise<void>;
+    /** Everyone at every table, earliest joined first. */
     listParticipants(): Promise<ParticipantRecord[]>;
     addParticipant(participant: ParticipantRecord): Promise<void>;
     removeParticipant(userId: string): Promise<void>;
@@ -269,6 +283,12 @@ export interface Store {
    * Community totals for past recaps are not recomputed.
    */
   eraseUser(userId: string): Promise<void>;
+  /**
+   * Removes every member's records and the room, boss and kv state, so the
+   * community starts over. Keeps feedback notes still owed to the developer
+   * and the kv keys named in `keepKv`. Only the developer's `!reset` uses it.
+   */
+  eraseAll(keepKv: readonly string[]): Promise<void>;
   /** Runs `work` atomically. Implementations must roll back if it throws. */
   transaction<T>(work: (tx: Store) => Promise<T>): Promise<T>;
 }

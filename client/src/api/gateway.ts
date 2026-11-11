@@ -9,6 +9,7 @@ import type {
   PhaseCompletedDto,
   ProgressDto,
   RoomStateDto,
+  ScheduledSessionDto,
   SnapshotDto,
   VoiceChannelChoiceDto,
 } from "@studyroom/core";
@@ -22,6 +23,12 @@ export interface Profile {
 export interface StartRequest {
   goals: string[];
   goalsPrivate: boolean;
+  /** The table to sit at. Defaults to the main table. */
+  tableId?: string;
+  /** Starts a new table with this name instead. */
+  newTableName?: string;
+  /** The new table's timer, "25-5" or "50-10". */
+  newTablePreset?: string;
 }
 
 export interface GatewayHandlers {
@@ -39,7 +46,7 @@ export interface GatewayHandlers {
 export interface SelfTestCheck {
   id: string;
   title: string;
-  status: "pass" | "warn" | "fail" | "pending";
+  status: "pass" | "warn" | "fail" | "pending" | "skip";
   detail: string;
   raw?: unknown;
 }
@@ -129,6 +136,15 @@ export interface StudyRoomGateway {
   getVoiceChannels(): Promise<VoiceChannelChoiceDto>;
   /** Admins only: saves the voice channel ("" clears the pick). */
   setVoiceChannel(channelId: string): Promise<VoiceChannelChoiceDto>;
+  /** Upcoming scheduled sessions, soonest first. */
+  getSchedule(): Promise<ScheduledSessionDto[]>;
+  scheduleSession(title: string, startsAtMs: number): Promise<ScheduledSessionDto[]>;
+  /** Only the member who scheduled it can cancel it. */
+  cancelScheduledSession(id: string): Promise<ScheduledSessionDto[]>;
+  /** "I'm in" (pinged when it starts), or not. */
+  rsvpSession(id: string, going: boolean): Promise<ScheduledSessionDto[]>;
+  /** Someone scheduled, cancelled or RSVP'd. Returns an unsubscribe. */
+  onScheduleUpdated(handler: (sessions: ScheduledSessionDto[]) => void): () => void;
   getProfiles(userIds: string[]): Promise<Profile[]>;
   subscribe(handlers: GatewayHandlers): () => void;
 }

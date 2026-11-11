@@ -267,6 +267,55 @@ const migrations: Migration[] = [
       });
     },
   },
+  {
+    // Study tables: each table runs its own timer, so the one room_cycle row
+    // becomes a row per table. The running cycle, if any, is the main table's.
+    name: "011_study_tables",
+    async up(db) {
+      await db.schema.createTable("room_tables", (t) => {
+        t.string("table_id").primary();
+        t.string("name").notNullable().defaultTo("");
+        t.bigInteger("cycle_started_at").notNullable();
+        t.text("preset").notNullable();
+        t.integer("settled_count").notNullable().defaultTo(0);
+      });
+      for (const row of await db("room_cycle").select()) {
+        await db("room_tables").insert({
+          table_id: "main",
+          cycle_started_at: row.cycle_started_at,
+          preset: row.preset,
+          settled_count: row.settled_count,
+        });
+      }
+      await db.schema.dropTable("room_cycle");
+      await db.schema.alterTable("room_participants", (t) => {
+        t.string("table_id").notNullable().defaultTo("main");
+      });
+    },
+    async down(db) {
+      // Only the main table survives a rollback; everyone else leaves their table.
+      await db("room_participants").whereNot({ table_id: "main" }).delete();
+      await db.schema.alterTable("room_participants", (t) => {
+        t.dropColumn("table_id");
+      });
+      await db.schema.createTable("room_cycle", (t) => {
+        t.integer("id").primary();
+        t.bigInteger("cycle_started_at").notNullable();
+        t.text("preset").notNullable();
+        t.integer("settled_count").notNullable().defaultTo(0);
+      });
+      const main = await db("room_tables").where({ table_id: "main" }).first();
+      if (main) {
+        await db("room_cycle").insert({
+          id: 1,
+          cycle_started_at: main.cycle_started_at,
+          preset: main.preset,
+          settled_count: main.settled_count,
+        });
+      }
+      await db.schema.dropTable("room_tables");
+    },
+  },
 ];
 
 class CodeMigrationSource implements Knex.MigrationSource<Migration> {

@@ -26,6 +26,8 @@ export interface RoomTimerDto {
 export interface MemberCardDto {
   userId: string;
   status: MemberStatus;
+  /** The table the member sits at. Empty on a solo timer. */
+  tableId: string;
   /** When the member's current focus or break ends (server time). */
   endsAt: number;
   /** Empty when the member keeps goals private or has none open. */
@@ -107,6 +109,16 @@ export interface VoiceChannelOptionDto {
 }
 
 /** The voice channels admins can pick from, and the current pick. */
+/** A study session someone scheduled, for the Schedule sheet. */
+export interface ScheduledSessionDto {
+  id: string;
+  title: string;
+  startsAtMs: number;
+  byUserId: string;
+  /** Tapped "I'm in"; they're pinged when it starts. The scheduler is in by default. */
+  goingUserIds: string[];
+}
+
 export interface VoiceChannelChoiceDto {
   /** The caller may change the pick (they can manage apps in this community). */
   canEdit: boolean;
@@ -118,14 +130,26 @@ export interface VoiceChannelChoiceDto {
   status: string;
 }
 
+/** A study table: a group in the room with its own timer. */
+export interface TableDto {
+  id: string;
+  /** Empty for the main table. */
+  name: string;
+  timer: RoomTimerDto;
+}
+
 export interface RoomStateDto {
   serverNow: number;
+  /** The main table's timer. */
   timer: RoomTimerDto;
+  /** Every table with someone at it, main first, then oldest first. */
+  tables: TableDto[];
   members: MemberCardDto[];
   /** People with the app open or a session running. */
   presentCount: number;
+  /** Everyone at a table, whichever table. */
   roomParticipantCount: number;
-  /** Combo the room timer would earn right now. */
+  /** Combo the room would earn right now. Everyone at any table counts. */
   combo: number;
   boss: BossDto;
   features: RoomFeaturesDto;
@@ -147,6 +171,8 @@ export interface MyStatusDto {
   status: MyStatusKind;
   endsAt: number;
   onRoomTimer: boolean;
+  /** The table the member sits at. Empty when not at one. */
+  tableId: string;
   xpTotal: number;
   level: number;
   xpIntoLevel: number;

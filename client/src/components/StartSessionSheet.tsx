@@ -19,7 +19,7 @@ interface StartSessionSheetProps {
   me: MyStatusDto;
   now: number;
   busy: boolean;
-  initialMode: "room" | "solo";
+  initialMode: "room" | "solo" | "table";
   onClose(): void;
   onStartRoom(request: StartRequest): Promise<boolean>;
   onStartSolo(minutes: number, request: StartRequest): Promise<boolean>;
@@ -44,7 +44,9 @@ export function StartSessionSheet(props: StartSessionSheetProps) {
   const slots = Math.max(0, Math.min(2, LIMITS.maxOpenGoals - openGoals));
   const [goals, setGoals] = useState<string[]>(() => Array(slots).fill(""));
   const [goalsPrivate, setGoalsPrivate] = useState(me.goalsPrivate);
-  const [mode, setMode] = useState<"room" | "solo">(props.initialMode);
+  const [mode, setMode] = useState(props.initialMode);
+  const [tableName, setTableName] = useState("");
+  const [tablePreset, setTablePreset] = useState<"25-5" | "50-10">("25-5");
   const [preset, setPreset] = useState<number>(25);
   // Any whole length the server accepts, typed in. Some secret badges need one.
   const [custom, setCustom] = useState<string | null>(null);
@@ -58,9 +60,13 @@ export function StartSessionSheet(props: StartSessionSheetProps) {
     event.preventDefault();
     const request = { goals: goals.map((g) => g.trim()).filter(Boolean), goalsPrivate };
     const ok =
-      mode === "room"
-        ? await props.onStartRoom(request)
-        : await props.onStartSolo(minutes, request);
+      mode === "solo"
+        ? await props.onStartSolo(minutes, request)
+        : await props.onStartRoom(
+            mode === "table"
+              ? { ...request, newTableName: tableName, newTablePreset: tablePreset }
+              : request,
+          );
     if (ok) onClose();
   }
 
@@ -146,6 +152,52 @@ export function StartSessionSheet(props: StartSessionSheetProps) {
               <span className="choice-sub">Pick your own length. Still shows on the board.</span>
             </span>
           </button>
+          <button
+            type="button"
+            role="radio"
+            className="choice"
+            aria-checked={mode === "table"}
+            onClick={() => setMode("table")}
+          >
+            <PeopleIcon
+              size={22}
+              stroke={mode === "table" ? "var(--amber-strong)" : "var(--text-muted)"}
+            />
+            <span style={{ flex: 1 }}>
+              <span className="choice-title">Start a new table</span>
+              <span className="choice-sub">
+                A smaller group with its own timer. It still counts toward the room combo.
+              </span>
+            </span>
+          </button>
+          {mode === "table" && (
+            <>
+              <label htmlFor="table-name" className="visually-hidden">
+                Table name
+              </label>
+              <input
+                id="table-name"
+                className="input"
+                value={tableName}
+                maxLength={LIMITS.tableNameMaxLength}
+                placeholder="Table name, e.g. Calc II"
+                onChange={(e) => setTableName(e.target.value)}
+              />
+              <div className="minutes" role="radiogroup" aria-label="Table timer">
+                {(["25-5", "50-10"] as const).map((key) => (
+                  <button
+                    key={key}
+                    type="button"
+                    role="radio"
+                    aria-checked={tablePreset === key}
+                    onClick={() => setTablePreset(key)}
+                  >
+                    {key.replace("-", " / ")}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
           {mode === "solo" && (
             <div className="minutes" role="radiogroup" aria-label="Solo timer length">
               {SOLO_LENGTHS.map((m) => (
@@ -196,7 +248,11 @@ export function StartSessionSheet(props: StartSessionSheetProps) {
         <button
           type="submit"
           className="btn btn-primary btn-start"
-          disabled={busy || (mode === "solo" && !minutesValid)}
+          disabled={
+            busy ||
+            (mode === "solo" && !minutesValid) ||
+            (mode === "table" && tableName.trim() === "")
+          }
         >
           Start focusing
         </button>

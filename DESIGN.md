@@ -24,6 +24,10 @@ Importing `@rootsdk/server-app` exits the process when `COMMUNITY_ID` is missing
 
 The room timer is the default and the brighter button because joining it is what makes the room feel like a group and what feeds the combo. Solo timers (5 to 180 minutes) still appear on the board so nobody is left out. You can be on one or the other, not both.
 
+### Study tables
+
+Anyone can start a **table**: a smaller group in the room, like "Calc II", with its own name and its own 25/5 or 50/10 timer. The room timer is the main table. Each table is its own cycle (`room_tables`, one row per table), and a member sits at one table at a time. Sitting at another table credits the old one like leaving early. A table other than the main one closes when its last member leaves. While only the main table runs, the board looks as it always did; once there's another table, the board is split into a section per table (yours first) plus one for solo timers. At most 8 tables run at once. Each table gets its own break challenge and high-fives. Only one combo exists, and it's the whole room's (see below).
+
 ## Rewards
 
 | Rule              | Value                                                             | Why                                                                      |
@@ -31,13 +35,13 @@ The room timer is the default and the brighter button because joining it is what
 | Focus XP          | 2 XP per whole minute × combo                                     | Rewards time, not task count                                             |
 | Goal XP           | +25 once per goal, for the first 5 goals finished each day        | Unchecking, rechecking or adding quick goals can't farm it               |
 | Level curve       | Level _n_ needs 150 + 50·_n_ XP (level 7 needs 500)               | Matches the mockups; early levels come fast                              |
-| Combo             | 1.0x + 0.1x per extra person who **finishes** the round, max 2.0x | Rewards focusing together                                                |
+| Combo             | 1.0x + 0.1x per extra person who **finishes** the round, max 2.0x | Rewards focusing together. People at other tables count too              |
 | Finishing a round | At least 5 minutes in that round (or half the round, if shorter)  | Joining in the last seconds doesn't count toward the combo or the streak |
 | Leaving early     | Minutes so far are credited, round not finished                   | Honest time still counts                                                 |
 | Boss loot         | +100 XP × boss strength to every contributor                      | Happens once a week                                                      |
 | Weekly quests     | +30 to +40 XP per quest, once per week                            | At most three a week                                                     |
 
-The live combo on screen counts everyone on the room timer, as a preview. The combo actually paid out counts finishers.
+The live combo on screen counts everyone at any table, as a preview. The combo actually paid out at a table's round end counts that table's finishers plus everyone sitting at the other tables then. Solo timers never count.
 
 Focus is credited **live**. While anyone is focusing, the engine wakes every minute and credits each whole minute of a running block: the minutes go into `daily_stats`, and the base XP (2 per minute) goes to the member's total and `daily_stats`. That's what makes the XP bar, level, minute-based quests, the leaderboard and the rank chips move during a session. Each room participant and solo timer remembers what it has already credited (`liveMinutes`, `liveXp`), so the end of a block (round end, leaving early, stopping a solo) adds only the rest, including the combo bonus, and a block's totals and session log are exactly what they'd be without live crediting. The counters are stored, so a server restart mid-block doesn't credit anything twice. Each minute pushes the room and the member's status, and the progress screen reloads on each room push while it's open.
 

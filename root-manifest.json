@@ -1,6 +1,6 @@
 {
   "id": "ADIjs4fHiQmWa4Qi7Kaa4w",
-  "version": "0.3.12",
+  "version": "0.4.0",
   "package": {
     "client": {
       "deploy": "client/dist"
@@ -305,6 +305,14 @@
             "description": "Celebrate 7, 30, 50, 100 and 365 day streaks in the post channel.",
             "checkbox": {
               "defaultValue": true
+            }
+          },
+          {
+            "key": "devTestMode",
+            "title": "Developer test mode",
+            "description": "For test communities only. Lets the app's developer change XP, streaks, the boss and the clock here. Leave off.",
+            "checkbox": {
+              "defaultValue": false
             }
           }
         ]

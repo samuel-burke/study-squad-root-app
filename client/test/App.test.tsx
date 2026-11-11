@@ -140,6 +140,32 @@ describe("Study Squad app", () => {
     expect(opener).toHaveFocus();
   });
 
+  it("shows the next scheduled session, RSVPs, schedules and cancels", async () => {
+    const { user } = await renderApp();
+    const card = screen.getByRole("region", { name: "Up next" });
+    expect(card).toHaveTextContent("Exam cram");
+    expect(card).toHaveTextContent("3 going");
+    await user.click(within(card).getByRole("button", { name: "I'm in" }));
+    expect(await within(card).findByRole("button", { name: "✓ Going" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(card).toHaveTextContent("4 going");
+
+    await user.click(within(card).getByRole("button", { name: "All sessions" }));
+    const dialog = screen.getByRole("dialog", { name: "Scheduled sessions" });
+    // Only your own sessions can be cancelled.
+    expect(within(dialog).queryByRole("button", { name: "Cancel" })).not.toBeInTheDocument();
+    const schedule = within(dialog).getByRole("button", { name: "Schedule" });
+    expect(schedule).toBeDisabled();
+    await user.type(within(dialog).getByRole("textbox", { name: "Session name" }), "Finals");
+    await user.click(schedule);
+    expect(await within(dialog).findByText("Finals")).toBeInTheDocument();
+    expect(dialog).toHaveTextContent("by you · 1 going");
+    await user.click(within(dialog).getByRole("button", { name: "Cancel" }));
+    await waitFor(() => expect(within(dialog).queryByText("Finals")).not.toBeInTheDocument());
+  });
+
   it("sends anonymous feedback to the developer from room settings", async () => {
     const { user, gateway } = await renderApp();
     await user.click(screen.getByRole("button", { name: "Room settings" }));
@@ -287,6 +313,14 @@ describe("Study Squad app", () => {
     expect(within(quests).getAllByRole("progressbar")).toHaveLength(3);
     await user.click(screen.getByRole("button", { name: "Back to the room" }));
     expect(await screen.findByRole("timer")).toBeInTheDocument();
+  });
+
+  it("hides the freeze status when there's no streak to protect", async () => {
+    const { user } = await renderApp({ activeDaysAgo: [10] });
+    await user.click(screen.getByRole("button", { name: "Your progress" }));
+    expect(await screen.findByText("0 day streak")).toBeInTheDocument();
+    expect(screen.queryByText("1 freeze left")).not.toBeInTheDocument();
+    expect(screen.queryByText("Freeze used this week")).not.toBeInTheDocument();
   });
 
   it("waits for the stats and the leaderboard before showing either, so nothing jumps", async () => {

@@ -30,7 +30,7 @@ interface Data {
   members: Map<string, MemberRecord>;
   goals: Map<string, GoalRecord>;
   solos: Map<string, SoloRecord>;
-  cycle: RoomCycleRecord | null;
+  cycles: Map<string, RoomCycleRecord>;
   participants: Map<string, ParticipantRecord>;
   sessions: SessionLogRecord[];
   stats: Map<string, DailyStatRecord>;
@@ -47,7 +47,7 @@ const emptyData = (): Data => ({
   members: new Map(),
   goals: new Map(),
   solos: new Map(),
-  cycle: null,
+  cycles: new Map(),
   participants: new Map(),
   sessions: [],
   stats: new Map(),
@@ -91,6 +91,13 @@ export class MemoryStore implements Store {
     for (const boss of d.bosses.values()) {
       boss.contributorIds = boss.contributorIds.filter((id) => id !== userId);
     }
+  }
+
+  async eraseAll(keepKv: readonly string[]): Promise<void> {
+    const fresh = emptyData();
+    fresh.feedback = this.data.feedback;
+    for (const key of keepKv) if (this.data.kv.has(key)) fresh.kv.set(key, this.data.kv.get(key));
+    this.data = fresh;
   }
 
   async transaction<T>(work: (tx: Store) => Promise<T>): Promise<T> {
@@ -161,9 +168,13 @@ export class MemoryStore implements Store {
   };
 
   room = {
-    getCycle: async () => copyOrUndefined(this.data.cycle ?? undefined),
-    saveCycle: async (cycle: RoomCycleRecord | null) => {
-      this.data.cycle = cycle ? copy(cycle) : null;
+    listCycles: async () =>
+      [...this.data.cycles.values()].sort((a, b) => a.cycleStartedAt - b.cycleStartedAt).map(copy),
+    saveCycle: async (cycle: RoomCycleRecord) => {
+      this.data.cycles.set(cycle.tableId, copy(cycle));
+    },
+    deleteCycle: async (tableId: string) => {
+      this.data.cycles.delete(tableId);
     },
     listParticipants: async () =>
       [...this.data.participants.values()].sort((a, b) => a.joinedAt - b.joinedAt).map(copy),

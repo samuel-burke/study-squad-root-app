@@ -9,8 +9,10 @@ import {
   customPreset,
   dayKey,
   DEFAULT_CONFIG,
+  EMPTY_STREAK,
   ErrorCode,
   newBoss,
+  recordActiveDay,
   squadPost,
   weekKey,
   MemoryStore,
@@ -24,6 +26,7 @@ import {
   type PhaseCompletedDto,
   type RecapDto,
   type RoomStateDto,
+  type ScheduledSessionDto,
   type VoiceChannelChoiceDto,
   type WakeScheduler,
 } from "@studyroom/core";
@@ -52,6 +55,14 @@ export interface DemoOptions {
   xp?: number;
   /** Days missed since you were last active. 0 means yesterday was active. */
   missedDays?: number;
+  /**
+   * Days ago you finished a session (0 is today), replayed through the real
+   * streak rules so freezes are spent exactly as they would be. Replaces
+   * `streak` and `missedDays` and your heatmap history.
+   */
+  activeDaysAgo?: number[];
+  /** Stands in for the admin's "Streak freezes" setting. */
+  freezes?: boolean;
   /** Badges whose unlock animation plays when the page opens, without earning them. */
   unlock?: string[];
   /** Badges you already hold when the page opens. You start with none otherwise. */
@@ -197,6 +208,15 @@ export function demoOptionsFromSearch(search: string): DemoOptions {
   if (weekHours !== undefined) options.weekHours = Math.min(100, weekHours);
   const missedDays = whole("missed", 30);
   if (missedDays !== undefined) options.missedDays = missedDays;
+  const active = params.get("active");
+  if (active !== null) {
+    const daysAgo = active
+      .split(",")
+      .map((d) => Number(d.trim()))
+      .filter((d) => Number.isInteger(d) && d >= 0 && d < 35);
+    options.activeDaysAgo = [...new Set(daysAgo)].sort((a, b) => b - a);
+  }
+  if (params.get("freezes") === "0") options.freezes = false;
   const held = params.get("badges");
   if (held) {
     const known = held
@@ -243,6 +263,7 @@ function demoConfig(options: DemoOptions): AppConfig {
     voiceChannelName: "Study voice",
     voiceChannelUrl: "https://rootapp.com",
     voiceChannelStatus: "#Study voice",
+    streakFreezesEnabled: options.freezes ?? DEFAULT_CONFIG.streakFreezesEnabled,
   };
 }
 
@@ -271,6 +292,16 @@ export class DemoGateway implements StudyRoomGateway {
   private readonly botBreaks = new Set<string>();
   private unlockPreviewed = false;
   private nextId = 1;
+  /** Devon's "7pm room timer?" from the mockup, as a scheduled session. */
+  private schedule: ScheduledSessionDto[] = [
+    {
+      id: "demo-session-0",
+      title: "Exam cram",
+      startsAtMs: new Date(Date.now() + 2 * 24 * MINUTE * 60).setHours(19, 0, 0, 0),
+      byUserId: "bot-devon",
+      goingUserIds: ["bot-devon", "bot-ana", "bot-jordan"],
+    },
+  ];
 
   private constructor(private readonly options: DemoOptions) {
     const now = () => Date.now() + this.skewMs;
@@ -381,26 +412,8 @@ export class DemoGateway implements StudyRoomGateway {
         await this.store.badges.award({ userId, badgeId, earnedAt: earnedAt + i * MINUTE });
     };
     await award(DEMO_USER_ID, this.options.badges ?? []);
-    // Five weeks of history: any missed days, then the streak's active days,
-    // a gap before that, then a mixed record.
-    for (let back = 1; back < 35; back++) {
-      const streakDay = back - missed;
-      const minutes =
-        streakDay < 1
-          ? 0
-          : streakDay <= yourStreak
-            ? 30 + ((back * 37) % 90)
-            : streakDay === yourStreak + 1
-              ? 0
-              : (back * 53) % 4 === 0
-                ? 0
-                : (back * 29) % 140;
-      if (minutes > 0)
-        await this.store.stats.add(DEMO_USER_ID, addDays(today, -back), {
-          focusMinutes: minutes,
-          xp: minutes * 2,
-        });
-    }
+    if (this.options.activeDaysAgo) await this.seedActiveDays(today, this.options.activeDaysAgo);
+    else await this.seedYourHistory(today, yourStreak, missed);
     await this.seedWeekHours(today);
     await this.seedBoss();
     if (!this.options.bots) return;
@@ -431,6 +444,41 @@ export class DemoGateway implements StudyRoomGateway {
       if (bot.cardStyle)
         await this.store.cards.save({ userId: bot.userId, style: bot.cardStyle, showcase: null });
     }
+  }
+
+  /** Five weeks of history: any missed days, then the streak's active days, a gap before that, then a mixed record. */
+  private async seedYourHistory(today: string, yourStreak: number, missed: number) {
+    for (let back = 1; back < 35; back++) {
+      const streakDay = back - missed;
+      const minutes =
+        streakDay < 1
+          ? 0
+          : streakDay <= yourStreak
+            ? 30 + ((back * 37) % 90)
+            : streakDay === yourStreak + 1
+              ? 0
+              : (back * 53) % 4 === 0
+                ? 0
+                : (back * 29) % 140;
+      if (minutes > 0)
+        await this.store.stats.add(DEMO_USER_ID, addDays(today, -back), {
+          focusMinutes: minutes,
+          xp: minutes * 2,
+        });
+    }
+  }
+
+  /** `?active=`: your history is exactly these days, and the streak replays them through the real rules. */
+  private async seedActiveDays(today: string, daysAgo: number[]) {
+    let streak = EMPTY_STREAK;
+    for (const back of daysAgo) {
+      const day = addDays(today, -back);
+      streak = recordActiveDay(streak, day, this.config.streakFreezesEnabled).state;
+      const minutes = 30 + ((back * 37) % 90);
+      await this.store.stats.add(DEMO_USER_ID, day, { focusMinutes: minutes, xp: minutes * 2 });
+    }
+    const you = await this.store.members.get(DEMO_USER_ID);
+    if (you) await this.store.members.save({ ...you, streak });
   }
 
   /** `?weekHours=`: spreads extra focus over the earlier days of this week, with their XP. */
@@ -699,6 +747,46 @@ export class DemoGateway implements StudyRoomGateway {
       voiceChannelStatus: picked ? `#${picked.name}` : "",
     });
     return this.getVoiceChannels();
+  }
+
+  async getSchedule(): Promise<ScheduledSessionDto[]> {
+    return [...this.schedule].sort((a, b) => a.startsAtMs - b.startsAtMs);
+  }
+
+  async scheduleSession(title: string, startsAtMs: number): Promise<ScheduledSessionDto[]> {
+    const id = `demo-session-${this.schedule.length + 1}`;
+    this.schedule.push({
+      id,
+      title: title.trim(),
+      startsAtMs,
+      byUserId: DEMO_USER_ID,
+      goingUserIds: [DEMO_USER_ID],
+    });
+    return this.getSchedule();
+  }
+
+  async rsvpSession(id: string, going: boolean): Promise<ScheduledSessionDto[]> {
+    this.schedule = this.schedule.map((s) =>
+      s.id !== id
+        ? s
+        : {
+            ...s,
+            goingUserIds: [
+              ...s.goingUserIds.filter((u) => u !== DEMO_USER_ID),
+              ...(going ? [DEMO_USER_ID] : []),
+            ],
+          },
+    );
+    return this.getSchedule();
+  }
+
+  onScheduleUpdated() {
+    return () => {};
+  }
+
+  async cancelScheduledSession(id: string): Promise<ScheduledSessionDto[]> {
+    this.schedule = this.schedule.filter((s) => s.id !== id);
+    return this.getSchedule();
   }
 
   async getProfiles(userIds: string[]): Promise<Profile[]> {

@@ -7,7 +7,7 @@
 // (FAKE_ROOT_HOST, default 127.0.0.1), serves:
 //   /            the client build in FAKE_ROOT_STATIC (built with `vite build --mode fakeroot`)
 //   /root        a WebSocket per open app, carrying protobuf bytes (see client-app.js)
-//   /__fake/...  test controls: settings, jobs, posts, voice, state
+//   /__fake/...  test controls: settings, jobs, posts, messages, voice, state
 //
 // Open the app as a member with /?user=<userId>. Each tab is its own device.
 "use strict";
@@ -81,6 +81,10 @@ const controls = {
     );
     return { now };
   },
+  "POST /__fake/messages": (body) => (
+    fake.sendMessage(body.channelId, body.userId, body.content),
+    { ok: true }
+  ),
   "POST /__fake/voice/join": (body) => (fake.joinVoice(body.channelId, body.userId), { ok: true }),
   "POST /__fake/voice/leave": (body) => (
     fake.leaveVoice(body.channelId, body.userId),

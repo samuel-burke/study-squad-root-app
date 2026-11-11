@@ -6,6 +6,7 @@ import {
   memberProfileToProto,
   myStatusToProto,
   progressToProto,
+  scheduleToProto,
   snapshotToProto,
 } from "@studyroom/contract";
 import {
@@ -42,8 +43,13 @@ import type {
   SelfTest as SelfTestMessage,
   RunSelfTestRequest,
   ConfirmSelfTestPingRequest,
+  Schedule,
+  ScheduleSessionRequest,
+  CancelScheduledSessionRequest,
+  RsvpSessionRequest,
 } from "@studyroom/gen-shared";
 import type { VoiceChannelPicker } from "./adapters/voiceChannelPicker";
+import type { SessionSchedule } from "./jobs/sessionSchedule";
 import type { ClientInfo, SelfTest } from "./selfTest";
 
 /** An error that is safe to show the caller. */
@@ -66,6 +72,8 @@ export interface HandlerOptions {
   voicePicker?: Pick<VoiceChannelPicker, "choice" | "pick">;
   /** The owner-only self-test panel. Absent in tests that don't need it. */
   selfTest?: Pick<SelfTest, "allowed" | "report" | "start" | "confirmPing">;
+  /** Scheduled study sessions. Absent in tests that don't need it. */
+  schedule?: Pick<SessionSchedule, "list" | "add" | "cancel" | "rsvp" | "forget">;
 }
 
 /**
@@ -79,6 +87,7 @@ export class StudyRoomHandlers {
   private readonly reads: RateLimiter;
   private readonly voicePicker: HandlerOptions["voicePicker"];
   private readonly selfTest: HandlerOptions["selfTest"];
+  private readonly schedule: HandlerOptions["schedule"];
 
   constructor(
     private readonly engine: StudyRoomEngine,
@@ -92,6 +101,39 @@ export class StudyRoomHandlers {
     this.reads = new RateLimiter(read.capacity, read.perSecond, now);
     this.voicePicker = options.voicePicker;
     this.selfTest = options.selfTest;
+    this.schedule = options.schedule;
+  }
+
+  getSchedule(userId: string): Promise<Schedule> {
+    return this.handle("getSchedule", userId, "read", async () =>
+      scheduleToProto((await this.schedule?.list()) ?? []),
+    );
+  }
+
+  scheduleSession(userId: string, request: ScheduleSessionRequest): Promise<Schedule> {
+    return this.handle("scheduleSession", userId, "write", async () =>
+      scheduleToProto(await this.sessions().add(userId, request.title, request.startsAtMs)),
+    );
+  }
+
+  cancelScheduledSession(
+    userId: string,
+    request: CancelScheduledSessionRequest,
+  ): Promise<Schedule> {
+    return this.handle("cancelScheduledSession", userId, "write", async () =>
+      scheduleToProto(await this.sessions().cancel(userId, request.id)),
+    );
+  }
+
+  rsvpSession(userId: string, request: RsvpSessionRequest): Promise<Schedule> {
+    return this.handle("rsvpSession", userId, "write", async () =>
+      scheduleToProto(await this.sessions().rsvp(userId, request.id, request.going === true)),
+    );
+  }
+
+  private sessions() {
+    if (!this.schedule) throw new DomainError(ErrorCode.NotFound, "Scheduling isn't available.");
+    return this.schedule;
   }
 
   getSelfTest(userId: string): Promise<SelfTestMessage> {
@@ -214,6 +256,9 @@ export class StudyRoomHandlers {
         await this.engine.joinRoomTimer(userId, {
           goals: request.goals,
           goalsPrivate: request.goalsPrivate,
+          tableId: request.tableId,
+          newTableName: request.newTableName,
+          newTablePreset: request.newTablePreset,
         }),
       ),
     );
@@ -297,9 +342,10 @@ export class StudyRoomHandlers {
   }
 
   deleteMyData(userId: string): Promise<MyStatus> {
-    return this.handle("deleteMyData", userId, "write", async () =>
-      myStatusToProto(await this.engine.deleteMyData(userId)),
-    );
+    return this.handle("deleteMyData", userId, "write", async () => {
+      await this.schedule?.forget(userId);
+      return myStatusToProto(await this.engine.deleteMyData(userId));
+    });
   }
 
   completeBreakChallenge(userId: string): Promise<RoomSnapshot> {

@@ -213,3 +213,54 @@ test("the self-test's job check finishes when Root runs the job", async ({ brows
   await expectNoErrors(owner);
   await owner.close();
 });
+
+test("the developer's chat commands answer only the developer", async ({ browser, request }) => {
+  const owner = await openAs(browser, "u-owner");
+  const say = async (userId: string, content: string) => {
+    const res = await request.post("/__fake/messages", {
+      data: { channelId: "ch-general", userId, content },
+    });
+    expect(res.ok()).toBe(true);
+  };
+  const repliesSince = async (count: number) =>
+    (await posts(request)).slice(count).map((p) => p.content);
+  const start = (await posts(request)).length;
+
+  await say("u-ana", "!help");
+  await say("u-owner", "!help");
+  await expect
+    .poll(() => repliesSince(start))
+    .toEqual([expect.stringMatching(/^🧪 Developer commands/)]);
+
+  // A preview plays on the developer's own screen, and needs no test mode.
+  await say("u-owner", "!preview badge night-owl");
+  await expect(owner.page.locator(".unlock")).toBeVisible();
+  await owner.page.locator(".unlock").getByRole("button", { name: "Nice!" }).click();
+
+  // Real changes wait for Developer test mode.
+  let seen = (await posts(request)).length;
+  await say("u-owner", "!level me 10");
+  await expect.poll(() => repliesSince(seen)).toEqual([expect.stringMatching(/test mode is off/)]);
+  await saveSettings(request, { room: { postChannel: "ch-study" }, game: { devTestMode: true } });
+  // The server applies saved settings a moment later, so ask until it answers.
+  await expect
+    .poll(async () => {
+      const before = (await posts(request)).length;
+      await say("u-owner", "!level me 10");
+      await expect.poll(async () => (await posts(request)).length).toBeGreaterThan(before);
+      return (await posts(request)).at(-1)?.content;
+    })
+    .toMatch(/\(level 10\)/);
+
+  // The smoke test from chat, once the last run's cooldown has passed.
+  await advanceClock(request, 61_000);
+  seen = (await posts(request)).length;
+  await say("u-owner", "!smoke");
+  await expect
+    .poll(() => repliesSince(seen))
+    .toEqual([expect.stringMatching(/Smoke test on .*Still waiting on: Job scheduler\./)]);
+
+  await saveSettings(request, { room: { postChannel: "ch-study" } });
+  await expectNoErrors(owner);
+  await owner.close();
+});

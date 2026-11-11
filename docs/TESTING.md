@@ -6,20 +6,22 @@ Most game features take days to reach for real: streaks need calendar days, and 
 
 Run `npm run demo` and add these to the printed URL. They only exist in the demo build, so they never reach a Root community. Reloading the page starts over.
 
-| Parameter        | Example                         | What it does                                                                                                                                                                     |
-| ---------------- | ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `focus`, `break` | `?focus=1&break=0.5`            | Room timer lengths in minutes. A 1 / 0.5 cycle takes 7 minutes. XP counts whole minutes, so `focus` under 1 earns 0 XP.                                                          |
-| `bots`           | `bots=0`                        | Leaves out the simulated members.                                                                                                                                                |
-| `elapsed`        | `elapsed=10`                    | How far into round 1 the room is when the page opens.                                                                                                                            |
-| `bossLeft`       | `bossLeft=2`                    | HP the weekly boss has left, in XP. Any finished round of 1 minute or more then defeats it.                                                                                      |
-| `bossName`       | `bossName=The Final Final Exam` | Makes this week's boss the built-in boss with that name, for its strength and badges. Names not in the built-in list are ignored.                                                |
-| `bossHp`         | `bossHp=100`                    | Stands in for the Boss base HP setting.                                                                                                                                          |
-| `streak`         | `streak=6`                      | Your starting streak. With yesterday active, one finished session makes it 7.                                                                                                    |
-| `missed`         | `missed=1`                      | Days missed since you were last active. 1 is covered by the week's freeze; 3 always breaks the streak.                                                                           |
-| `xp`             | `xp=2440`                       | Your starting lifetime XP, for level-ups, Jackpot (any total ending in 777) and Over 9000.                                                                                       |
-| `unlock`         | `unlock=giant-slayer,blitz`     | Plays those badges' unlock animations, without awarding them, after your first click on the page (browsers only allow sound after a click). `unlock=all` plays one of each tier. |
-| `badges`         | `badges=first-session,squad-up` | Starts you holding those badges. Without it you start with none, so your first round and goal earn badges live with their unlock moments.                                        |
-| `weekHours`      | `weekHours=6`                   | Adds that many focus hours to your earlier days this week, to place you on the weekly leaderboard (used for store screenshots).                                                  |
+| Parameter        | Example                         | What it does                                                                                                                                                                                                  |
+| ---------------- | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `focus`, `break` | `?focus=1&break=0.5`            | Room timer lengths in minutes. A 1 / 0.5 cycle takes 7 minutes. XP counts whole minutes, so `focus` under 1 earns 0 XP.                                                                                       |
+| `bots`           | `bots=0`                        | Leaves out the simulated members.                                                                                                                                                                             |
+| `elapsed`        | `elapsed=10`                    | How far into round 1 the room is when the page opens.                                                                                                                                                         |
+| `bossLeft`       | `bossLeft=2`                    | HP the weekly boss has left, in XP. Any finished round of 1 minute or more then defeats it.                                                                                                                   |
+| `bossName`       | `bossName=The Final Final Exam` | Makes this week's boss the built-in boss with that name, for its strength and badges. Names not in the built-in list are ignored.                                                                             |
+| `bossHp`         | `bossHp=100`                    | Stands in for the Boss base HP setting.                                                                                                                                                                       |
+| `streak`         | `streak=6`                      | Your starting streak. With yesterday active, one finished session makes it 7.                                                                                                                                 |
+| `missed`         | `missed=1`                      | Days missed since you were last active. 1 is covered by the week's freeze; 3 always breaks the streak.                                                                                                        |
+| `active`         | `active=5,4,3,2`                | Days ago you finished a session (0 is today). Your history is exactly those days, and the streak replays them through the real rules, so freezes are spent as they would be. Overrides `streak` and `missed`. |
+| `freezes`        | `freezes=0`                     | Turns streak freezes off, like the admin setting.                                                                                                                                                             |
+| `xp`             | `xp=2440`                       | Your starting lifetime XP, for level-ups, Jackpot (any total ending in 777) and Over 9000.                                                                                                                    |
+| `unlock`         | `unlock=giant-slayer,blitz`     | Plays those badges' unlock animations, without awarding them, after your first click on the page (browsers only allow sound after a click). `unlock=all` plays one of each tier.                              |
+| `badges`         | `badges=first-session,squad-up` | Starts you holding those badges. Without it you start with none, so your first round and goal earn badges live with their unlock moments.                                                                     |
+| `weekHours`      | `weekHours=6`                   | Adds that many focus hours to your earlier days this week, to place you on the weekly leaderboard (used for store screenshots).                                                                               |
 
 Useful combinations:
 
@@ -27,6 +29,7 @@ Useful combinations:
 - Giant Slayer and Survived Finals: `?focus=1&break=0.5&bossLeft=2&bossName=The%20Final%20Final%20Exam`.
 - Streak milestone: `?focus=1&break=0.5&streak=6`, finish a round (On a Roll).
 - Freeze: `?focus=1&break=0.5&streak=4&missed=1`, finish a round (Saved by the Freeze).
+- Freeze edge cases on the Progress screen: `?active=5,4,3,2` on a Tuesday is a missed Monday held up by the freeze. Pin the date with Playwright's `page.clock.setFixedTime` to pick the weekday.
 - Comeback and Phoenix: `?focus=1&break=0.5&streak=30&missed=3`, finish a round.
 - Every medal tier's animation and sound: `?unlock=all`.
 
@@ -53,6 +56,27 @@ Nothing it does touches members' data. The test row and the test job are its own
 
 1. In GitHub, add the Actions secret `SELF_TEST_USER_IDS` with your Root user id (separate several with commas). For Docker builds, add it to `server/.env`.
 2. Ship the next version. The Self-test section appears in Room settings, for you only. The app never shows ids.
+
+## Developer chat commands
+
+The developer (a user in `SELF_TEST_USER_IDS`) can type commands in any channel Study Squad can see. Everyone else's messages are ignored, with no reply. `!help` lists them.
+
+- `!smoke` runs the self-test from chat and posts a summary, then a second one when the job check finishes.
+- `!preview badge <id>`, `!preview levelup`, `!preview break`, `!preview highfive`, `!preview keepgoing`, `!preview celebrate` play that screen on your own open app only. Nothing is saved, and the next real update replaces it. These work without test mode.
+
+The rest change real data, so they also need **Developer test mode** turned on in that community's Study Squad app settings. Leave it off everywhere except a test community. The server checks it on every command.
+
+- `!test round`: a real 1-minute solo and 1-minute break, with real XP.
+- `!xp <who> <n>`, `!level <who> <n>`, `!streak <who> <n>`, `!badge <who> <id>`, `!end <who>`. `<who>` is `me` or an @mention.
+- `!boss hp <n>`, `!boss defeat`, `!boss new`.
+- `!room skip` ends the room's current phase now. `!room stop` stops the room timer.
+- `!clock +30m`, `+1h`, `+1d`, `+1w` jump the game clock forward (up to 4 weeks at a time) and settle everything now due, like streaks, quests and recaps. It can't go back: the offset is saved and stays that way. `!clock` on its own shows how far ahead it is.
+- `!recap` posts the recap now. `!botline` posts a squad bot line.
+- `!reset confirm` wipes all of this community's Study Squad data (members, XP, streaks, badges, goals, history, the boss and the room) and puts the game clock back to real time. It keeps the voice channel pick and feedback notes still on their way to you. `!reset` alone only explains what it would do.
+
+A live time travel run in a test community: `!reset confirm`, study, `!clock +1d`, check streaks, freezes, quests and the boss in the app, repeat, then `!reset confirm` when you're done.
+
+Messages are only read to spot a command. Nothing is stored or logged.
 
 ## Before each release: staging check
 
@@ -95,6 +119,10 @@ docker run --rm -it --platform linux/amd64 --ipc=host -v "$PWD":/app -w /app mcr
 ```
 
 Keep the image tag in step with the `@playwright/test` version in `client/package.json`. Afterwards, rerun `npm ci && npm run generate` natively before testing on the Mac, since the container installs Linux packages.
+
+### Time travel on the real database
+
+`server/test/timeTravel.integration.test.ts` runs the engine on a fresh copy of the same SQLite tables and migrations Root runs, and moves the clock forward across two weeks: the 4am day change, a freeze spent on a missed Friday, the end of daylight saving, a server restart in the middle, a fresh freeze and boss on Monday, a streak broken by two missed days, and `!reset` wiping everything. It runs with `npm test`, so every PR checks it.
 
 ### Full stack, on the fake Root host
 

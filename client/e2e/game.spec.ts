@@ -235,6 +235,8 @@ test.describe("game rules", () => {
 });
 
 test.describe("badge unlock preview", () => {
+  test.use({ reducedMotion: "no-preference" });
+
   test("plays one unlock per tier after the first key press", async ({ page }) => {
     await page.goto("/?unlock=all");
     await expect(page.getByRole("timer")).toBeVisible();

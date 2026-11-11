@@ -40,6 +40,8 @@ export default defineConfig(({ mode }) => ({
   build: {
     target: "es2022",
     sourcemap: true,
+    // three.js (the 3D badge medal) is one ~600 kB chunk, loaded only when a badge unlocks.
+    chunkSizeWarningLimit: 650,
   },
   server: {
     port: 5173,

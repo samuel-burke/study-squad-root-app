@@ -44,10 +44,12 @@ function load(ctx: AudioContext, url: string): Promise<AudioBuffer> {
   return buffer;
 }
 
-/** Loads every clip ahead of time, so the first one plays on the beat. */
-export function preloadClips(): void {
+/** Loads every clip, and any `extra` sounds, ahead of time so the first one plays on the beat. */
+export function preloadClips(extra: string[] = []): void {
   withAudio((ctx) => {
-    for (const clip of Object.values(CLIPS)) void load(ctx, clip.url).catch(() => {});
+    for (const url of [...Object.values(CLIPS).map((c) => c.url), ...extra]) {
+      void load(ctx, url).catch(() => {});
+    }
   });
 }
 
@@ -57,22 +59,30 @@ export function preloadClips(): void {
  * show that started alongside it. Any audio failure is swallowed.
  */
 export function playClip(clip: Clip): () => void {
+  return playSound(CLIPS[clip].url, VOLUME);
+}
+
+/**
+ * Plays a sound `at` seconds from now at `volume`, and returns a function that
+ * fades it out. A late load skips ahead so it stays in time.
+ */
+export function playSound(url: string, volume: number, at = 0): () => void {
   const asked = performance.now();
   let stopped = false;
   let stop = () => {
     stopped = true;
   };
   withAudio((ctx) => {
-    load(ctx, CLIPS[clip].url)
+    load(ctx, url)
       .then((buffer) => {
-        const late = (performance.now() - asked) / 1000;
+        const late = (performance.now() - asked) / 1000 - at;
         if (stopped || late >= buffer.duration) return;
         const source = ctx.createBufferSource();
         source.buffer = buffer;
         const gain = ctx.createGain();
-        gain.gain.value = VOLUME;
+        gain.gain.value = volume;
         source.connect(gain).connect(ctx.destination);
-        source.start(0, late);
+        source.start(ctx.currentTime + Math.max(0, -late), Math.max(0, late));
         stop = () => {
           gain.gain.setTargetAtTime(0, ctx.currentTime, 0.15);
           source.stop(ctx.currentTime + 0.8);

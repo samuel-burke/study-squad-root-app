@@ -16,6 +16,20 @@ shares their work.
 |                |                | [Hyper Ultra Fanfare](https://opengameart.org/content/hyper-ultra-fanfare)                                     | Zane Little Music | [CC0](https://creativecommons.org/publicdomain/zero/1.0/) |
 | `boss.mp3`     | Boss defeated  | [Epic_Heroic_Orchestral_Dramatic](https://freesound.org/s/423499/)                                             | SoundFlakes       | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) |
 
+The quiet action effects under the shows live in `client/src/assets/sfx`,
+trimmed, faded and loudness matched (changes made by Study Squad), under the
+[Pixabay Content License](https://pixabay.com/service/license-summary/).
+
+| File            | Used for                    | Sound                                                                                                               | Artist        |
+| --------------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------- | ------------- |
+| `thud.mp3`      | Every medal landing         | [Dramatic Thud Stinger](https://pixabay.com/sound-effects/film-special-effects-dramatic-thud-stinger-631487/)       | Dragon Studio |
+| `whoosh.mp3`    | Medals moving, boss medal   | [Whoosh Cinematic](https://pixabay.com/sound-effects/whoosh-cinematic-376875/)                                      | Dragon Studio |
+| `spotlight.mp3` | Gold's spotlight            | [Spotlight Turning On](https://pixabay.com/sound-effects/spotlight-turning-on-388828/)                              | freesoundfx   |
+| `tension.mp3`   | Gold's rise                 | [Tension Stinger Ambience](https://pixabay.com/sound-effects/film-special-effects-tension-stinger-ambience-355381/) | gd_salman     |
+| `crackle.mp3`   | Platinum's beam             | [Static](https://pixabay.com/sound-effects/static-224541/)                                                          | SoundReality  |
+| `lightning.mp3` | Platinum's lightning strike | [Weather Lightning 2](https://pixabay.com/sound-effects/weather-lightning-2-464187/)                                | patricksilvey |
+| `glass.mp3`     | Boss card shattering        | [Glass Bottle Smash](https://pixabay.com/sound-effects/glass-bottle-smash-277554/)                                  | Universfield  |
+
 New sounds must be free to use in an app that Root may charge for: CC0,
-CC BY or OGA-BY, with a line here. No NonCommercial (NC), NoDerivatives (ND),
+CC BY, OGA-BY or the Pixabay Content License, with a line here. No NonCommercial (NC), NoDerivatives (ND),
 ShareAlike (SA) or GPL sounds.

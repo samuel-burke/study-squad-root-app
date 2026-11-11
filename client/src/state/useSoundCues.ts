@@ -1,6 +1,7 @@
 import type { MyStatusKind } from "@studyroom/core";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { preloadClips } from "../lib/clips";
+import { SHOW_SOUNDS } from "../lib/showEffects";
 import { cueFor, playCue, unlockAudio, type SoundCue } from "../lib/sounds";
 
 const MUTED_KEY = "studysquad.soundsMuted";
@@ -41,7 +42,7 @@ export function useSoundCues(
   useEffect(() => {
     const unlock = () => {
       unlockAudio();
-      preloadClips();
+      preloadClips(SHOW_SOUNDS);
     };
     for (const type of UNLOCK_EVENTS) window.addEventListener(type, unlock, true);
     return () => {

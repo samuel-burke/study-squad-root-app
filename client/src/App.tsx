@@ -23,8 +23,8 @@ import { useProfiles } from "./state/useProfiles";
 import { useCountdownChirps } from "./state/useCountdownChirps";
 import { useEventSounds } from "./state/useEventSounds";
 import { useSoundCues } from "./state/useSoundCues";
-import { useAmbient } from "./state/useAmbient";
-import { SoundsSheet } from "./components/SoundsSheet";
+import { useSounds } from "./state/useSounds";
+import { MiniPlayer, SoundsSheet } from "./components/SoundsSheet";
 import { useStudyRoom } from "./state/useStudyRoom";
 import { myTableView } from "./lib/view";
 
@@ -48,7 +48,7 @@ export function App({ gateway }: { gateway: StudyRoomGateway }) {
   // A badge the member asked to see unlock again, from the progress screen.
   const [replayBadge, setReplayBadge] = useState<string | null>(null);
   const sounds = useSoundCues(state.me?.status ?? null);
-  const ambient = useAmbient(state.me?.status ?? null);
+  const player = useSounds(state.me?.status ?? null);
   const serverNow = useCallback(() => gateway.now(), [gateway]);
   // Room timer members follow the room clock, which every phase change updates.
   const myEndsAt =
@@ -156,7 +156,8 @@ export function App({ gateway }: { gateway: StudyRoomGateway }) {
             busy={busy}
             compact={compact}
             soundsMuted={sounds.muted}
-            ambientOn={ambient.sound !== "off"}
+            ambientOn={player.musicOn || player.ambienceOn}
+            miniPlayer={<MiniPlayer sounds={player} />}
             onOpenSounds={() => setOverlay({ kind: "sounds" })}
             onStart={(mode) => setOverlay({ kind: "start", mode })}
             onLeave={() => void actions.leaveRoomTimer()}
@@ -231,11 +232,9 @@ export function App({ gateway }: { gateway: StudyRoomGateway }) {
       )}
       {overlay?.kind === "sounds" && (
         <SoundsSheet
-          sound={ambient.sound}
-          volume={ambient.volume}
+          sounds={player}
+          wide={!compact}
           effectsOn={!sounds.muted}
-          onSound={ambient.setSound}
-          onVolume={ambient.setVolume}
           onEffects={(on) => sounds.setMuted(!on)}
           onClose={() => setOverlay(null)}
         />

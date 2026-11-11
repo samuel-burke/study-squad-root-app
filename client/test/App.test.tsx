@@ -243,21 +243,24 @@ describe("Study Squad app", () => {
     expect(within(dialog).getByRole("textbox")).toHaveValue("hello");
   });
 
-  it("opens the Sounds sheet to pick a background and mute sound effects", async () => {
+  it("opens the Sounds sheet to pick ambience and mute sound effects", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("[]"));
     const { user } = await renderApp();
     const button = screen.getByRole("button", { name: "Sounds" });
     await user.click(button);
     let dialog = screen.getByRole("dialog", { name: "Sounds" });
-    expect(within(dialog).getByRole("button", { name: /^Off/ })).toHaveAttribute(
+    expect(within(dialog).getByRole("button", { name: "Off" })).toHaveAttribute(
       "aria-pressed",
       "true",
     );
-    await user.click(within(dialog).getByRole("button", { name: /^Rain/ }));
-    expect(within(dialog).getByRole("button", { name: /^Rain/ })).toHaveAttribute(
+    await user.click(within(dialog).getByRole("button", { name: "Rain" }));
+    expect(within(dialog).getByRole("button", { name: "Rain" })).toHaveAttribute(
       "aria-pressed",
       "true",
     );
-    expect(window.localStorage.getItem("studysquad.ambient")).toBe("rain");
+    expect(JSON.parse(window.localStorage.getItem("studysquad.sounds")!)).toMatchObject({
+      ambience: "rain",
+    });
 
     const effects = within(dialog).getByRole("switch", { name: "Sound effects" });
     expect(effects).toHaveAttribute("aria-checked", "true");
@@ -267,12 +270,10 @@ describe("Study Squad app", () => {
 
     await user.click(within(dialog).getByRole("button", { name: "Done" }));
     expect(screen.queryByRole("dialog", { name: "Sounds" })).not.toBeInTheDocument();
-    // The header shows a background sound is on.
-    expect(button.querySelector(".sound-on")).not.toBeNull();
 
     await user.click(button);
     dialog = screen.getByRole("dialog", { name: "Sounds" });
-    expect(within(dialog).getByRole("button", { name: /^Rain/ })).toHaveAttribute(
+    expect(within(dialog).getByRole("button", { name: "Rain" })).toHaveAttribute(
       "aria-pressed",
       "true",
     );

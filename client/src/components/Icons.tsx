@@ -226,3 +226,59 @@ export const OffIcon = (p: IconProps) => (
     <path d="m5.7 5.7 12.6 12.6" />
   </Svg>
 );
+
+export const StormIcon = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M6 16.3A7 7 0 1 1 15.7 8h1.8a4.5 4.5 0 0 1 2.5 8.2" />
+    <path d="m13 12-3 5h4l-3 5" />
+  </Svg>
+);
+
+export const FireIcon = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.4-.5-2-1-3-1.1-2.1-.2-4 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.2.4-2.3 1-3.3.3 1.6 1.3 2.8 2.5 2.8z" />
+  </Svg>
+);
+
+export const ForestIcon = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M10 10v.2A3 3 0 0 1 8.9 16H5a3 3 0 0 1-1-5.8V10a3 3 0 0 1 6 0Z" />
+    <path d="M7 16v6M13 19v3" />
+    <path d="M12 19h8.3a1 1 0 0 0 .7-1.7L18 14h.3a1 1 0 0 0 .7-1.7L16 9h.2a1 1 0 0 0 .8-1.7L13 3l-1.4 1.5" />
+  </Svg>
+);
+
+export const PlayIcon = (p: IconProps) => (
+  <Svg {...p} fill="currentColor" stroke="none">
+    <path d="M7 4.5v15a1 1 0 0 0 1.5.9l12-7.5a1 1 0 0 0 0-1.8l-12-7.5A1 1 0 0 0 7 4.5z" />
+  </Svg>
+);
+
+export const PauseIcon = (p: IconProps) => (
+  <Svg {...p} fill="currentColor" stroke="none">
+    <rect x="6" y="4" width="4" height="16" rx="1" />
+    <rect x="14" y="4" width="4" height="16" rx="1" />
+  </Svg>
+);
+
+export const PrevIcon = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M19 20 9 12l10-8v16zM5 19V5" />
+  </Svg>
+);
+
+export const NextIcon = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="m5 4 10 8-10 8V4zM19 5v14" />
+  </Svg>
+);
+
+export const ShuffleIcon = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M2 18h1.4c1.3 0 2.5-.6 3.3-1.7l6.1-8.6c.7-1.1 2-1.7 3.3-1.7H22" />
+    <path d="m18 2 4 4-4 4" />
+    <path d="M2 6h1.9c1.5 0 2.9.9 3.6 2.2" />
+    <path d="M22 18h-5.9c-1.3 0-2.6-.7-3.3-1.8l-.5-.8" />
+    <path d="m18 14 4 4-4 4" />
+  </Svg>
+);

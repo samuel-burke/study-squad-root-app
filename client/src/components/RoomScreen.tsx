@@ -39,6 +39,8 @@ export interface RoomScreenProps {
   podium?: ReactNode;
   /** The next scheduled session. */
   upNext?: ReactNode;
+  /** Shows the playing track under the timer. */
+  miniPlayer?: ReactNode;
 }
 
 function Header({
@@ -176,6 +178,7 @@ export function RoomScreen(props: RoomScreenProps) {
         <Header {...props} />
         {room.boss.enabled && <MobileBoss boss={room.boss} />}
         {timer}
+        {props.miniPlayer}
         {challenge}
         {props.podium}
         {props.upNext}
@@ -222,6 +225,7 @@ export function RoomScreen(props: RoomScreenProps) {
       <div className="room-body">
         <main className="room-main">
           {timer}
+          {props.miniPlayer}
           {challenge}
           {board}
         </main>

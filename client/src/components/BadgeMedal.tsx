@@ -1,4 +1,10 @@
-import type { BadgeCategory, BadgeDefinition, BadgeGlyph, BadgeTier } from "@studyroom/core";
+import type {
+  BadgeCategory,
+  BadgeColor,
+  BadgeDefinition,
+  BadgeGlyph,
+  BadgeTier,
+} from "@studyroom/core";
 import { useId, type ReactNode } from "react";
 
 /**
@@ -194,6 +200,21 @@ export const METALS: Record<
   },
 };
 
+/** Themed metals for badges with a `color`. They keep their tier's stamp ink. */
+const COLORS: Record<BadgeColor, { rim: string[]; face: string; ink: string }> = {
+  ice: { rim: ["#f2fdff", "#a6dbf0", "#3f7c99"], face: "#0d2c3d", ink: "#c4f1ff" },
+  purple: { rim: ["#f3edff", "#b7a2ec", "#58428f"], face: "#1e1440", ink: "#d9c8ff" },
+  sunrise: { rim: ["#fff2e2", "#f0b48a", "#9a5534"], face: "#3a1a0c", ink: "#ffc890" },
+  green: { rim: ["#e6f7cc", "#93bb6a", "#45702a"], face: "#11301a", ink: "#b9f2a4" },
+  electric: { rim: ["#f4fbff", "#9cc8f0", "#3a6496"], face: "#0e1f3f", ink: "#a8dcff" },
+};
+
+/** The colours an earned badge's medal is drawn in. */
+export function medalMetal(badge: BadgeDefinition) {
+  const tier = METALS[badge.tier];
+  return badge.color ? { ...tier, ...COLORS[badge.color] } : tier;
+}
+
 /** Points of a star polygon centred on the medal, as an SVG path. */
 function starPath(points: number, outer: number, inner: number, cy = 32): string {
   const steps = points * 2;
@@ -286,7 +307,7 @@ export function BadgeMedal({
   const id = useId().replace(/:/g, "");
   const hidden = locked && badge.secret === true;
   const look: MedalLook = locked ? "locked" : badge.tier;
-  const metal = METALS[look];
+  const metal = locked ? METALS.locked : medalMetal(badge);
   const frame = FRAMES[badge.category];
   const glyph = GLYPHS[hidden ? "question" : badge.glyph];
   const small = size < 36;

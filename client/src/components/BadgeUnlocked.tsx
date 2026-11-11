@@ -3,7 +3,7 @@ import { useEffect, useId, useRef, useState, type CSSProperties } from "react";
 import { playClip } from "../lib/clips";
 import type { Medal3D } from "../lib/medal3d";
 import { clamp, SHOWS, ShowPainter, type DrawMedal } from "../lib/unlockShow";
-import { BadgeMedal, FRAMES, METALS } from "./BadgeMedal";
+import { BadgeMedal, FRAMES, medalMetal } from "./BadgeMedal";
 
 const EYEBROWS: Record<BadgeTier, string> = {
   bronze: "Badge unlocked",
@@ -108,7 +108,7 @@ export function BadgeUnlocked({
       import("../lib/medal3d")
         .then(({ createMedal3D }) => {
           if (closed) return;
-          medal3d = createMedal3D(tier, FRAMES[badge.category], METALS[tier].rim[1]!, c);
+          medal3d = createMedal3D(tier, FRAMES[badge.category], medalMetal(badge).rim[1]!, c);
           if (still) paint();
         })
         .catch(() => {

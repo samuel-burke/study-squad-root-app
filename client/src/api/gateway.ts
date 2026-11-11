@@ -22,6 +22,12 @@ export interface Profile {
 export interface StartRequest {
   goals: string[];
   goalsPrivate: boolean;
+  /** The table to sit at. Defaults to the main table. */
+  tableId?: string;
+  /** Starts a new table with this name instead. */
+  newTableName?: string;
+  /** The new table's timer, "25-5" or "50-10". */
+  newTablePreset?: string;
 }
 
 export interface GatewayHandlers {

@@ -1,16 +1,41 @@
-import { formatCountdown, type MemberCardDto, type RoomTimerDto } from "@studyroom/core";
+import {
+  formatCountdown,
+  MAIN_TABLE_ID,
+  type MemberCardDto,
+  type MyStatusDto,
+  type RoomStateDto,
+  type RoomTimerDto,
+} from "@studyroom/core";
+
+/** A table's name for the board. The main table has none of its own. */
+export function tableName(table: { id: string; name: string }): string {
+  return table.id === MAIN_TABLE_ID ? "Main table" : table.name;
+}
+
+/**
+ * The room as you see it: `timer` is your own table's timer while you sit at
+ * one, so the header, the hero timer and the sounds all follow your table.
+ */
+export function myTableView(room: RoomStateDto, me: Pick<MyStatusDto, "tableId">): RoomStateDto {
+  const mine = room.tables.find((t) => t.id === me.tableId);
+  return mine ? { ...room, timer: mine.timer } : room;
+}
 
 export type Tone = "room" | "solo" | "break";
 
 /** The status chip on a member card: "Room timer · 14:32", "Solo · 38:10", "Break · back in 3:12". */
 export function statusChip(
-  member: Pick<MemberCardDto, "status" | "endsAt">,
+  member: Pick<MemberCardDto, "status" | "endsAt"> & { tableId?: string },
   now: number,
+  tables?: ReadonlyMap<string, string>,
 ): { label: string; tone: Tone } {
   const left = formatCountdown(member.endsAt - now);
   switch (member.status) {
     case "roomFocus":
-      return { label: `Room timer · ${left}`, tone: "room" };
+      return {
+        label: `${tables?.get(member.tableId ?? "") ?? "Room timer"} · ${left}`,
+        tone: "room",
+      };
     case "soloFocus":
       return { label: `Solo · ${left}`, tone: "solo" };
     case "roomBreak":
@@ -20,11 +45,15 @@ export function statusChip(
 }
 
 /** The short status on a mobile row: "Room", "Solo 38:10", "Break 3:12". */
-export function rowTime(member: Pick<MemberCardDto, "status" | "endsAt">, now: number): string {
+export function rowTime(
+  member: Pick<MemberCardDto, "status" | "endsAt"> & { tableId?: string },
+  now: number,
+  tables?: ReadonlyMap<string, string>,
+): string {
   const left = formatCountdown(member.endsAt - now);
   switch (member.status) {
     case "roomFocus":
-      return "Room";
+      return tables?.get(member.tableId ?? "") ?? "Room";
     case "soloFocus":
       return `Solo ${left}`;
     case "roomBreak":

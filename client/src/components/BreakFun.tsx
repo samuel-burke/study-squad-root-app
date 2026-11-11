@@ -25,7 +25,7 @@ export function myBreakKey(room: RoomStateDto, userId: string, now: number): str
   if (mine.status === "roomBreak") {
     const { phase, phaseStartedAt, phaseEndsAt } = room.timer;
     if (phase !== "break" && phase !== "longBreak") return null;
-    return now < phaseEndsAt ? roomBreakKey(phaseStartedAt) : null;
+    return now < phaseEndsAt ? roomBreakKey(mine.tableId, phaseStartedAt) : null;
   }
   if (mine.status === "soloBreak") {
     return now < mine.endsAt ? soloBreakKey(userId, mine.endsAt) : null;
@@ -57,7 +57,7 @@ export function BreakChallengeCard({
   // Everyone on your break: the whole room timer, or just you on a solo break.
   const together =
     mine?.status === "roomBreak"
-      ? room.members.filter((m) => m.status === "roomBreak")
+      ? room.members.filter((m) => m.status === "roomBreak" && m.tableId === mine.tableId)
       : mine
         ? [mine]
         : [];

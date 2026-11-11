@@ -113,6 +113,7 @@ describe("opening a profile from the board", () => {
   const member = (userId: string): MemberCardDto => ({
     userId,
     status: "roomFocus",
+    tableId: "main",
     endsAt: 0,
     goalText: "",
     goalPrivate: true,

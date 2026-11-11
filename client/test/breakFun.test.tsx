@@ -10,6 +10,7 @@ import { initialRoomViewState, roomReducer } from "../src/state/roomState";
 const card = (userId: string, overrides: Partial<MemberCardDto> = {}): MemberCardDto => ({
   userId,
   status: "roomBreak",
+  tableId: "main",
   endsAt: 60_000,
   goalText: "",
   goalPrivate: false,

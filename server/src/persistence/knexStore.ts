@@ -117,7 +117,6 @@ const toCard = (r: Row): CardRecord => ({
     r.showcase === null || r.showcase === undefined ? null : parseJson<string[]>(r.showcase, []),
 });
 
-const ROOM_CYCLE_ID = 1;
 // SQLite's default limit on bound variables is 999; stay well under it.
 const IN_CHUNK = 500;
 
@@ -303,10 +302,10 @@ export class KnexStore implements Store {
   };
 
   room = {
-    getCycle: async (): Promise<RoomCycleRecord | undefined> => {
-      const row = await this.db("room_cycle").where({ id: ROOM_CYCLE_ID }).first();
-      if (!row) return undefined;
-      return {
+    listCycles: async (): Promise<RoomCycleRecord[]> =>
+      (await this.db("room_tables").orderBy("cycle_started_at", "asc")).map((row: Row) => ({
+        tableId: String(row.table_id),
+        name: String(row.name),
         cycleStartedAt: num(row.cycle_started_at),
         preset: parseJson<TimerPreset>(row.preset, {
           focusMinutes: 25,
@@ -315,26 +314,26 @@ export class KnexStore implements Store {
           rounds: 4,
         }),
         settledCount: num(row.settled_count),
-      };
-    },
-    saveCycle: async (cycle: RoomCycleRecord | null) => {
-      if (!cycle) {
-        await this.db("room_cycle").where({ id: ROOM_CYCLE_ID }).delete();
-        return;
-      }
-      await this.db("room_cycle")
+      })),
+    saveCycle: async (cycle: RoomCycleRecord) => {
+      await this.db("room_tables")
         .insert({
-          id: ROOM_CYCLE_ID,
+          table_id: cycle.tableId,
+          name: cycle.name,
           cycle_started_at: cycle.cycleStartedAt,
           preset: JSON.stringify(cycle.preset),
           settled_count: cycle.settledCount,
         })
-        .onConflict("id")
+        .onConflict("table_id")
         .merge();
+    },
+    deleteCycle: async (tableId: string) => {
+      await this.db("room_tables").where({ table_id: tableId }).delete();
     },
     listParticipants: async (): Promise<ParticipantRecord[]> =>
       (await this.db("room_participants").orderBy("joined_at", "asc")).map((r: Row) => ({
         userId: String(r.user_id),
+        tableId: String(r.table_id),
         joinedAt: num(r.joined_at),
         keepGoing: bool(r.keep_going),
         bossXpDealt: num(r.boss_xp_dealt),
@@ -345,6 +344,7 @@ export class KnexStore implements Store {
       await this.db("room_participants")
         .insert({
           user_id: p.userId,
+          table_id: p.tableId,
           joined_at: p.joinedAt,
           keep_going: p.keepGoing,
           boss_xp_dealt: p.bossXpDealt,

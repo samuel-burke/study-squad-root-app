@@ -27,6 +27,7 @@ import {
   type SelfTestApi,
   type SelfTestReport,
   type SelfTestState,
+  type StartRequest,
   type StudyRoomGateway,
 } from "./gateway";
 
@@ -137,9 +138,15 @@ export class RootGateway implements StudyRoomGateway {
     return this.snapshot(() => client.getRoom({}));
   }
 
-  joinRoomTimer(request: { goals: string[]; goalsPrivate: boolean }) {
+  joinRoomTimer(request: StartRequest) {
     return this.snapshot(() =>
-      client.joinRoomTimer({ goals: request.goals, goalsPrivate: request.goalsPrivate }),
+      client.joinRoomTimer({
+        goals: request.goals,
+        goalsPrivate: request.goalsPrivate,
+        tableId: request.tableId,
+        newTableName: request.newTableName,
+        newTablePreset: request.newTablePreset,
+      }),
     );
   }
 

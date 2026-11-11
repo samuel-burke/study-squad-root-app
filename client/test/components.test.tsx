@@ -273,6 +273,7 @@ describe("MemberBoard", () => {
   const me = {
     userId: "me",
     status: "roomFocus" as const,
+    tableId: "main",
     endsAt: 60_000,
     goalText: "",
     goalPrivate: false,

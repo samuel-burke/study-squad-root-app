@@ -22,7 +22,7 @@ export function showMs(tier: BadgeTier): number {
 }
 
 /** The flat medal art as an image, on an 88 by 88 box so the ribbons and wreath fit. */
-function medalImage(svg: SVGSVGElement): HTMLImageElement {
+export function medalImage(svg: SVGSVGElement): HTMLImageElement {
   const copy = svg.cloneNode(true) as SVGSVGElement;
   copy.setAttribute("viewBox", "-12 -12 88 88");
   copy.setAttribute("width", "1024");

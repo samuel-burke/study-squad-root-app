@@ -244,7 +244,6 @@ describe("Study Squad app", () => {
   });
 
   it("opens the Sounds sheet to pick ambience and mute sound effects", async () => {
-    vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("[]"));
     const { user } = await renderApp();
     const button = screen.getByRole("button", { name: "Sounds" });
     await user.click(button);

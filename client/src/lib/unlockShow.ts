@@ -501,7 +501,8 @@ export class ShowPainter {
     let my = cy + (dt > 0 ? Math.sin(dt * 1.6) * R * 0.04 : 0);
     let mr = R;
     let show = true;
-    let tilt = dt > 0 ? Math.sin(dt * 0.8) * 0.55 : 0;
+    // Once landed, the medal sways gently rather than turning.
+    let tilt = dt > 0 ? Math.sin(dt * 0.8) * 0.25 : 0;
     if (s.build === "none") mr = R * (0.6 + 0.4 * ease(t / 0.4));
     if (s.build === "gather") {
       if (dt < 0) show = false;
@@ -512,7 +513,7 @@ export class ShowPainter {
         my = cy + H * 0.3 * (1 - ease(bp));
         mr = R * (0.55 + 0.45 * ease(bp));
         tilt = Math.PI * 4 * bp * bp;
-      } else tilt += Math.PI * 2 * ease((dt - 3.4) / 1.6);
+      }
     }
     if (s.build === "beam" && dt < 0) {
       const p = ease((t - 0.8) / (L - 0.8));

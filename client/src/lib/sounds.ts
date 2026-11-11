@@ -9,7 +9,7 @@ export type SoundCue = "focusStart" | "focusEnd" | "breakStart" | "breakEnd";
 
 type Phase = "idle" | "focus" | "break";
 
-export function phaseOf(status: MyStatusKind): Phase {
+function phaseOf(status: MyStatusKind): Phase {
   switch (status) {
     case "idle":
       return "idle";

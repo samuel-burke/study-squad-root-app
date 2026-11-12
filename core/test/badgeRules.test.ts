@@ -224,6 +224,27 @@ const RULES: Record<string, Row> = {
     earns: session({ start: at("2027-05-04", 14), end: at("2027-05-04", 14, 25) }),
     misses: session({ start: at("2027-05-03", 14), end: at("2027-05-03", 14, 25) }),
   },
+  "shortest-day": {
+    earns: session({ start: at("2026-12-21", 14), end: at("2026-12-21", 14, 25) }),
+    misses: session({ start: at("2026-12-22", 14), end: at("2026-12-22", 14, 25) }),
+  },
+  "fibonacci-day": {
+    earns: session({ start: at("2026-11-23", 14), end: at("2026-11-23", 14, 25) }),
+    misses: session({ start: at("2026-11-22", 14), end: at("2026-11-22", 14, 25) }),
+  },
+  "mole-day": {
+    earns: session({ start: at("2026-10-23", 14), end: at("2026-10-23", 14, 25) }),
+    misses: session({ start: at("2026-10-22", 14), end: at("2026-10-22", 14, 25) }),
+  },
+  "programmers-day": {
+    earns: session({ start: at("2027-09-13", 14), end: at("2027-09-13", 14, 25) }),
+    misses: session({ start: at("2027-09-12", 14), end: at("2027-09-12", 14, 25) }),
+  },
+  "sleep-not-found": {
+    earns: session({ start: at("2026-10-28", 3, 50), end: at("2026-10-28", 4, 15) }),
+    misses: session({ start: at("2026-10-28", 4, 5), end: at("2026-10-28", 4, 30) }),
+  },
+  "power-of-two": { earns: { xpTotal: 1024 }, misses: { xpTotal: 512 } },
   "st-patricks": {
     earns: session({ start: at("2027-03-17", 14), end: at("2027-03-17", 14, 25) }),
     misses: session({ start: at("2027-03-18", 14), end: at("2027-03-18", 14, 25) }),

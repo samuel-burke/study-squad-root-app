@@ -178,6 +178,13 @@ describe("badge rules", () => {
     expect(on("2027-03-17")).toEqual(["st-patricks"]);
     expect(on("2027-03-16")).toEqual([]);
     expect(on("2027-05-04")).toEqual(["may-fourth"]);
+    expect(on("2026-12-21")).toEqual(["shortest-day"]);
+    expect(on("2026-11-23")).toEqual(["fibonacci-day"]);
+    expect(on("2026-10-23")).toEqual(["mole-day"]);
+    // Day 256 is September 13, or September 12 in a leap year.
+    expect(on("2027-09-13")).toEqual(["programmers-day"]);
+    expect(on("2028-09-12")).toEqual(["programmers-day"]);
+    expect(on("2028-09-13")).toEqual([]);
     expect(on("2026-10-28", 13, 37)).toEqual(["leet"]);
     const overnight = session({ start: at("2026-10-28", 23, 40), end: at("2026-10-29", 0, 5) });
     expect(earned({ session: overnight })).toContain("midnight-oil");
@@ -195,6 +202,8 @@ describe("badge rules", () => {
     expect(from(["2026-10-28", 23, 30], ["2026-10-29", 3, 0])).toContain("three-am");
     expect(from(["2026-10-28", 23, 30], ["2026-10-29", 2, 30])).not.toContain("three-am");
     expect(from(["2026-10-28", 3, 10], ["2026-10-28", 3, 35])).not.toContain("three-am");
+    expect(from(["2026-10-28", 4, 4], ["2026-10-28", 4, 29])).toContain("sleep-not-found");
+    expect(from(["2026-10-28", 3, 40], ["2026-10-28", 4, 3])).not.toContain("sleep-not-found");
     // Cut short doesn't count.
     const cut = session({
       finished: false,
@@ -210,6 +219,13 @@ describe("badge rules", () => {
     expect(earned({ xpTotal: 778 })).toEqual([]);
     expect(earned({ xpTotal: 1077 })).toEqual([]);
     expect(earned({ xpTotal: 9001 })).toEqual(["over-9000"]);
+  });
+
+  it("Power of Two: an exact power of two from 1024 up", () => {
+    for (const xpTotal of [1024, 2048, 4096, 16384])
+      expect(earned({ xpTotal })).toContain("power-of-two");
+    for (const xpTotal of [0, 256, 512, 1000, 1023, 1025, 1536])
+      expect(earned({ xpTotal })).not.toContain("power-of-two");
   });
 
   it("Speedrun is a goal finished within a minute", () => {

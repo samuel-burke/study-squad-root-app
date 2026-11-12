@@ -1,4 +1,4 @@
-import { weekdayIndex, type DayKey, type LocalTime } from "../time/calendar";
+import { daysBetween, weekdayIndex, type DayKey, type LocalTime } from "../time/calendar";
 
 /**
  * Badges are permanent achievements. Each one is a pure check over facts the
@@ -115,6 +115,9 @@ export type BadgeColor = "ice" | "purple" | "sunrise" | "green" | "electric";
 
 export type BadgeGlyph =
   | "alarm"
+  | "bars"
+  | "bed"
+  | "braces"
   | "bolt"
   | "burst"
   | "calendar"
@@ -134,6 +137,7 @@ export type BadgeGlyph =
   | "lamp"
   | "list"
   | "map"
+  | "molecule"
   | "moon"
   | "mountain"
   | "people"
@@ -146,12 +150,14 @@ export type BadgeGlyph =
   | "shield"
   | "snowflake"
   | "sparkles"
+  | "spiral"
   | "sprout"
   | "star"
   | "starfield"
   | "summit"
   | "sun"
   | "sunrise"
+  | "sunset"
   | "sword"
   | "swords"
   | "target"
@@ -192,6 +198,11 @@ const focusingAt = (f: BadgeFacts, hour: number, minute: number) => {
 };
 /** "MM-DD" of a day key. */
 const monthDay = (day: DayKey) => day.slice(5);
+/** A finished session that ended on this "MM-DD". */
+const finishedOn = (f: BadgeFacts, date: string) => {
+  const s = finished(f);
+  return s !== undefined && monthDay(s.end.day) === date;
+};
 
 const streakBadge = (id: string, name: string, tier: BadgeTier, days: number): BadgeDefinition => ({
   id,
@@ -742,10 +753,74 @@ export const BADGES: readonly BadgeDefinition[] = [
     stamp: "5/4",
     category: "secret",
     secret: true,
+    earned: (f) => finishedOn(f, "05-04"),
+  },
+  {
+    id: "shortest-day",
+    name: "Shortest Day",
+    description: "Finish a session on December 21.",
+    glyph: "sunset",
+    tier: "secret",
+    category: "secret",
+    secret: true,
+    earned: (f) => finishedOn(f, "12-21"),
+  },
+  {
+    id: "fibonacci-day",
+    name: "Fibonacci Day",
+    description: "Finish a session on November 23 (1, 1, 2, 3).",
+    glyph: "spiral",
+    tier: "secret",
+    category: "secret",
+    secret: true,
+    earned: (f) => finishedOn(f, "11-23"),
+  },
+  {
+    id: "mole-day",
+    name: "Mole Day",
+    description: "Finish a session on October 23 (6.02 × 10²³).",
+    glyph: "molecule",
+    tier: "secret",
+    stamp: "6.02",
+    category: "secret",
+    secret: true,
+    earned: (f) => finishedOn(f, "10-23"),
+  },
+  {
+    id: "programmers-day",
+    name: "Programmer's Day",
+    description: "Finish a session on the 256th day of the year.",
+    glyph: "braces",
+    tier: "secret",
+    stamp: "256",
+    category: "secret",
+    secret: true,
     earned: (f) => {
       const s = finished(f);
-      return s !== undefined && monthDay(s.end.day) === "05-04";
+      return s !== undefined && daysBetween(`${s.end.day.slice(0, 4)}-01-01`, s.end.day) === 255;
     },
+  },
+  {
+    id: "sleep-not-found",
+    name: "Sleep Not Found",
+    description: "Be in the middle of a session at 4:04am.",
+    glyph: "bed",
+    tier: "secret",
+    stamp: "404",
+    category: "secret",
+    secret: true,
+    earned: (f) => focusingAt(f, 4, 4),
+  },
+  {
+    id: "power-of-two",
+    name: "Power of Two",
+    description: "Land on a total XP that's a power of two, like 1024 or 2048.",
+    glyph: "bars",
+    tier: "secret",
+    stamp: "2ⁿ",
+    category: "secret",
+    secret: true,
+    earned: (f) => f.xpTotal >= 1024 && (f.xpTotal & (f.xpTotal - 1)) === 0,
   },
   {
     id: "unstoppable",

@@ -18,6 +18,13 @@ const GLYPHS: Record<BadgeGlyph | "question", ReactNode> = {
       <path d="M12 10v3l2 2M5 3 2 6M22 6l-3-3" />
     </>
   ),
+  bars: <path d="M3 20h18M4 20v-1.5h2.5V20M9 20v-4h2.5v4M14 20v-8h2.5v8M19 20V4h2.5v16" />,
+  bed: (
+    <path d="M2 6v14M2 11h17a3 3 0 0 1 3 3v6M2 17h20M6 11V8.5A1.5 1.5 0 0 1 7.5 7h3A1.5 1.5 0 0 1 12 8.5V11M15 3h4l-4 4h4" />
+  ),
+  braces: (
+    <path d="M8 3H7a2 2 0 0 0-2 2v5a2 2 0 0 1-2 2 2 2 0 0 1 2 2v5a2 2 0 0 0 2 2h1M16 21h1a2 2 0 0 0 2-2v-5a2 2 0 0 1 2-2 2 2 0 0 1-2-2V5a2 2 0 0 0-2-2h-1" />
+  ),
   bolt: <path d="M13 2 4 14h7l-1 8 9-12h-7z" />,
   burst: (
     <>
@@ -77,6 +84,15 @@ const GLYPHS: Record<BadgeGlyph | "question", ReactNode> = {
     <path d="M10 6h10M10 12h10M10 18h10M3.5 6l1.5 1.5L7.5 5M3.5 12l1.5 1.5 2.5-2.5M3.5 18l1.5 1.5 2.5-2.5" />
   ),
   map: <path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2zM9 4v14M15 6v14" />,
+  molecule: (
+    <>
+      <circle cx="12" cy="12" r="3" />
+      <circle cx="5" cy="5.5" r="2" />
+      <circle cx="19" cy="5.5" r="2" />
+      <circle cx="12" cy="20.5" r="2" />
+      <path d="M9.8 10 6.5 7M14.2 10l3.3-3M12 15v3.5" />
+    </>
+  ),
   moon: <path d="M20 13.5A8.5 8.5 0 1 1 10.5 4a6.5 6.5 0 0 0 9.5 9.5z" />,
   mountain: <path d="M2 20 9 8l4 7 2.5-4L22 20z" />,
   people: (
@@ -110,8 +126,18 @@ const GLYPHS: Record<BadgeGlyph | "question", ReactNode> = {
   sparkles: (
     <path d="m12 3 1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9zM19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8zM5 2v4M3 4h4" />
   ),
+  spiral: (
+    <g transform="rotate(-90 12 12)">
+      <rect x="5.8" y="2" width="12.4" height="20" rx="1" strokeOpacity="0.45" />
+      <path d="M5.8 14.3h12.4M10.5 14.3V22M5.8 17.4h4.7M8.9 14.3v3.1" strokeOpacity="0.45" />
+      <path d="M8.9 17.4A1.5 1.5 0 0 0 10.5 15.8A1.5 1.5 0 0 0 8.9 14.3A3.1 3.1 0 0 0 5.8 17.4A4.6 4.6 0 0 0 10.5 22A7.7 7.7 0 0 0 18.2 14.3A12.3 12.3 0 0 0 5.8 2" />
+    </g>
+  ),
   sprout: <path d="M12 21v-9M12 12C12 8 9 6 5 6c0 4 3 6 7 6zM12 14c0-3 2.5-5 6-5 0 3-2.5 5-6 5z" />,
   star: <path d="m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z" />,
+  starfield: (
+    <path d="m11 3 2.2 4.8L18 10l-4.8 2.2L11 17l-2.2-4.8L4 10l4.8-2.2zM19 15.5l.8 1.7 1.7.8-1.7.8-.8 1.7-.8-1.7-1.7-.8 1.7-.8zM20 4h.01M4 19h.01M12 21h.01" />
+  ),
   summit: <path d="M2 20 9 8l4 7 2.5-4L22 20zM9 8V2.5l4.5 1.7L9 6" />,
   sun: (
     <>
@@ -121,6 +147,9 @@ const GLYPHS: Record<BadgeGlyph | "question", ReactNode> = {
   ),
   sunrise: (
     <path d="M2 18h20M5 22h14M17 18a5 5 0 0 0-10 0M12 2v6M4.2 10.2l1.4 1.4M18.4 11.6l1.4-1.4M2 14h2M20 14h2M9 5l3-3 3 3" />
+  ),
+  sunset: (
+    <path d="M2 19h20M6.5 19a5.5 5.5 0 0 1 11 0M12 3v7M9 7l3 3 3-3M3.5 14.5l1.5.9M20.5 14.5l-1.5.9M5 22h14" />
   ),
   sword: <path d="M14.5 17.5 3 6V3h3l11.5 11.5M13 19l6-6M16 16l4 4M19 21l2-2" />,
   swords: (

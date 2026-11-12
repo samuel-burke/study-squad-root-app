@@ -67,12 +67,21 @@ describe("recorded clips", () => {
     expect(FakeAudioContext.sources[0]!.stop).toHaveBeenCalled();
   });
 
-  it("are the boss defeated sound", async () => {
+  it("are the boss defeated sound, with its glass and whoosh effects", async () => {
     const { playEventSound, CLIPS, fetch } = await setup();
     playEventSound("bossDefeat");
     await settle();
     expect(fetch).toHaveBeenCalledWith(CLIPS.boss.url);
-    expect(FakeAudioContext.sources).toHaveLength(1);
+    expect(FakeAudioContext.sources).toHaveLength(3);
+  });
+
+  it("start a sound effect later when it is timed to an action", async () => {
+    const { playSound } = await setup();
+    playSound("/thud.mp3", 0.3, 2);
+    await settle();
+    const [when, offset] = FakeAudioContext.sources[0]!.start.mock.calls[0]!;
+    expect(when).toBeGreaterThan(1.9);
+    expect(offset).toBe(0);
   });
 
   it("stay quiet when loading fails, and try again next time", async () => {

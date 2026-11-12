@@ -1,6 +1,7 @@
 import { badgeById, type BadgeTier } from "@studyroom/core";
 import { useEffect, useId, useRef, useState, type CSSProperties } from "react";
 import { playClip } from "../lib/clips";
+import { playShowEffects } from "../lib/showEffects";
 import type { Medal3D } from "../lib/medal3d";
 import { clamp, SHOWS, ShowPainter, type DrawMedal, type Show } from "../lib/unlockShow";
 import { BadgeMedal, FRAMES, medalMetal } from "./BadgeMedal";
@@ -12,6 +13,16 @@ const EYEBROWS: Record<BadgeTier, string> = {
   platinum: "Platinum badge unlocked!",
   secret: "Secret badge found!",
 };
+
+/** The tier's music with its quiet action effects, and a function that stops both. */
+function playShow(tier: BadgeTier): () => void {
+  const music = playClip(tier);
+  const effects = playShowEffects(tier);
+  return () => {
+    music();
+    effects();
+  };
+}
 
 /** Seconds the moment stays up after the music ends, before moving on by itself. */
 const LINGER = 1.5;
@@ -106,12 +117,12 @@ export function BadgeUnlocked({
   badgeId,
   muted = false,
   onDismiss,
-  play = playClip,
+  play = playShow,
 }: {
   badgeId: string;
   muted?: boolean;
   onDismiss(): void;
-  /** Starts the tier's music, and returns a function that stops it. */
+  /** Starts the tier's music and effects, and returns a function that stops them. */
   play?: (tier: BadgeTier) => (() => void) | void;
 }) {
   const badge = badgeById(badgeId);

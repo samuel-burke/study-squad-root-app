@@ -6,7 +6,6 @@ const DAY_MS = 86_400_000;
 
 function daysLeft(boss: BossDto, now: number): string {
   const days = Math.max(0, Math.ceil((boss.endsAt - now) / DAY_MS));
-  if (boss.defeated) return days <= 1 ? "New boss tomorrow" : `New boss in ${days} days`;
   return days === 1 ? "1 day left" : `${days} days left`;
 }
 
@@ -30,7 +29,7 @@ export function BossCard({ boss, combo, now }: { boss: BossDto; combo: number; n
   const left = hpLeft(boss);
   const defeatedPct = percent(boss.damageXp, boss.maxHpXp);
   return (
-    <section aria-label="Weekly boss" className="card boss" data-defeated={boss.defeated}>
+    <section aria-label="Weekly boss" className="card boss">
       <div className="row-between">
         <div className="eyebrow">
           <SwordIcon />
@@ -67,19 +66,9 @@ export function BossCard({ boss, combo, now }: { boss: BossDto; combo: number; n
         </div>
       </div>
       <div className="boss-text">
-        {boss.defeated ? (
-          boss.lootXp > 0 ? (
-            `Defeated! Everyone who pitched in earned +${boss.lootXp} XP. A new boss spawns Monday.`
-          ) : (
-            "Defeated! A new boss spawns Monday."
-          )
-        ) : (
-          <>
-            Every XP you earn is damage, live each minute you focus. Right now the room hits at{" "}
-            <strong>{formatCombo(combo)}</strong>.
-            {boss.lootXp > 0 && <> Defeat it for +{boss.lootXp} XP each.</>}
-          </>
-        )}
+        Every XP you earn is damage, live each minute you focus. Right now the room hits at{" "}
+        <strong>{formatCombo(combo)}</strong>.
+        {boss.lootXp > 0 && <> Defeat it for +{boss.lootXp} XP each.</>}
       </div>
     </section>
   );
@@ -90,9 +79,7 @@ export function MobileBoss({ boss }: { boss: BossDto }) {
     <div className="mobile-boss">
       <div className="row-between">
         <span style={{ fontWeight: 700, color: "var(--coral-text)" }}>Boss: {boss.name}</span>
-        <span style={{ color: "var(--boss-muted)" }}>
-          {boss.defeated ? "Defeated" : `${hpText(boss).replace(" of ", " / ")} HP`}
-        </span>
+        <span style={{ color: "var(--boss-muted)" }}>{hpText(boss).replace(" of ", " / ")} HP</span>
       </div>
       <div className="bar" aria-hidden="true">
         <span style={{ width: `${100 - percent(boss.damageXp, boss.maxHpXp)}%` }} />

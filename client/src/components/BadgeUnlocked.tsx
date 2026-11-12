@@ -1,6 +1,7 @@
 import { badgeById, type BadgeTier } from "@studyroom/core";
 import { useEffect, useId, useRef, useState, type CSSProperties } from "react";
 import { playClip } from "../lib/clips";
+import { playShowEffects } from "../lib/showEffects";
 import type { Medal3D } from "../lib/medal3d";
 import { clamp, SHOWS, ShowPainter, type DrawMedal, type Show } from "../lib/unlockShow";
 import { BadgeMedal, FRAMES, medalMetal } from "./BadgeMedal";
@@ -13,6 +14,16 @@ const EYEBROWS: Record<BadgeTier, string> = {
   secret: "Secret badge found!",
 };
 
+/** The tier's music with its quiet action effects, and a function that stops both. */
+function playShow(tier: BadgeTier): () => void {
+  const music = playClip(tier);
+  const effects = playShowEffects(tier);
+  return () => {
+    music();
+    effects();
+  };
+}
+
 /** Seconds the moment stays up after the music ends, before moving on by itself. */
 const LINGER = 1.5;
 
@@ -21,7 +32,7 @@ export function showMs(tier: BadgeTier): number {
   return Math.round((SHOWS[tier].end + LINGER) * 1000);
 }
 
-/** The flat medal art as an image, on an 88 by 88 box so the ribbons and wreath fit. */
+/** The flat medal art as an image, on an 88 by 88 box so the ribbons fit. */
 export function medalImage(svg: SVGSVGElement): HTMLImageElement {
   const copy = svg.cloneNode(true) as SVGSVGElement;
   copy.setAttribute("viewBox", "-12 -12 88 88");
@@ -106,12 +117,12 @@ export function BadgeUnlocked({
   badgeId,
   muted = false,
   onDismiss,
-  play = playClip,
+  play = playShow,
 }: {
   badgeId: string;
   muted?: boolean;
   onDismiss(): void;
-  /** Starts the tier's music, and returns a function that stops it. */
+  /** Starts the tier's music and effects, and returns a function that stops them. */
   play?: (tier: BadgeTier) => (() => void) | void;
 }) {
   const badge = badgeById(badgeId);
@@ -197,15 +208,21 @@ export function BadgeUnlocked({
         const dt = t - show.land;
         const size = r * 4.9;
         if (size < 1) return;
-        // Gold comes in dim and platinum almost dark, a silhouette until its hit.
-        const rise = dt < 0 ? clamp(t / show.land) : 1;
-        const dark = show.build === "beam" && dt < 0 ? clamp(1 + dt / 1.2) ** 2 : 1;
-        const lit = show.build === "herald" ? 0.2 + 1.2 * rise ** 2 : 0.05 + 1.35 * dark;
+        // Gold and platinum come in as a dark silhouette, so you can't tell
+        // which badge it is: gold lights up as it rises, platinum just before its hit.
+        const reveal =
+          dt >= 0
+            ? 1
+            : show.build === "herald"
+              ? clamp(t / show.land) ** 3
+              : show.build === "beam"
+                ? clamp(1 + dt / 1.2) ** 2
+                : 1;
         const flash = dt > 0 && dt < 1 ? 3 * Math.exp(-dt * 4) : 0;
         const frame = medal3d.render(t, tilt, Math.round(size * dpr), {
-          key: lit + flash,
-          fill: dt > 0 ? 1.2 : 0.6 * dark,
-          env: 0.03 + 0.97 * dark,
+          key: 1.4 * reveal + flash,
+          fill: dt > 0 ? 1.2 : 0.6 * reveal,
+          env: reveal,
         });
         c.drawImage(frame, x - size / 2, y - size / 2, size, size);
       } else if (flat) {

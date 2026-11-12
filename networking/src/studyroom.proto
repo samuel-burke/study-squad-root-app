@@ -197,6 +197,8 @@ message RoomSnapshot {
 message DayStat {
   string day = 1;
   double focus_minutes = 2;
+  // A finished session that day, so it counts toward the streak.
+  bool counted = 3;
 }
 
 enum QuestUnit {

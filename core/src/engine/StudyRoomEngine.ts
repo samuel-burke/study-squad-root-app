@@ -2352,10 +2352,15 @@ export class StudyRoomEngine {
     // The current week runs only up to today; the client pads the rest.
     const from = addDays(weekKey(today), -(LIMITS.progressWindowDays - 7));
     const rows = await tx.stats.listForUser(userId, from, today);
-    const byDay = new Map(rows.map((r) => [r.day, r.focusMinutes]));
+    const byDay = new Map(rows.map((r) => [r.day, r]));
     const days = Array.from({ length: daysBetween(from, today) + 1 }, (_, i) => {
       const day = addDays(from, i);
-      return { day, focusMinutes: byDay.get(day) ?? 0 };
+      const row = byDay.get(day);
+      return {
+        day,
+        focusMinutes: row?.focusMinutes ?? 0,
+        counted: (row?.sessionsFinished ?? 0) > 0,
+      };
     });
     const member = await tx.members.get(userId);
     const members = new Map(member ? [[userId, member]] : []);

@@ -1,5 +1,6 @@
 import { CLIPS, playClip } from "./clips";
-import { withAudio } from "./sounds";
+import { playShowEffects } from "./showEffects";
+import { output, withAudio } from "./sounds";
 
 /**
  * Sounds for room moments: a round's celebration, the weekly boss going
@@ -152,13 +153,13 @@ function scheduleNoise(ctx: AudioContext, out: AudioNode, start: number, noise: 
 }
 
 /** Schedules a fanfare on `ctx`. Exported for tests. */
-export function scheduleFanfare(ctx: AudioContext, fanfare: Fanfare): void {
+export function scheduleFanfare(ctx: AudioContext, fanfare: Fanfare): GainNode {
   const start = ctx.currentTime + 0.02;
   const master = ctx.createGain();
   master.gain.value = fanfare.volume;
   // Soften the peaks when many notes stack up.
   const limiter = ctx.createDynamicsCompressor();
-  master.connect(limiter).connect(ctx.destination);
+  master.connect(limiter).connect(output(ctx));
   if (fanfare.reverb > 0) {
     const reverb = ctx.createConvolver();
     reverb.buffer = impulse(ctx, fanfare.reverb);
@@ -168,12 +169,15 @@ export function scheduleFanfare(ctx: AudioContext, fanfare: Fanfare): void {
   }
   for (const tone of fanfare.tones) scheduleTone(ctx, master, start, tone);
   for (const noise of fanfare.noises ?? []) scheduleNoise(ctx, master, start, noise);
+  return master;
 }
 
 /** Plays a room-moment sound. Any audio failure is swallowed. */
 export function playEventSound(sound: EventSound): void {
-  if (sound === "bossDefeat") playClip("boss");
-  else withAudio((ctx) => scheduleFanfare(ctx, EVENT_SOUNDS[sound]));
+  if (sound === "bossDefeat") {
+    playClip("boss");
+    playShowEffects("boss");
+  } else withAudio((ctx) => scheduleFanfare(ctx, EVENT_SOUNDS[sound]));
 }
 
 /** Seconds from the first note to the end of the last one, not counting reverb. */

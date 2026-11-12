@@ -36,11 +36,14 @@ const GLYPHS: Record<BadgeGlyph | "question", ReactNode> = {
   check: <path d="M20 6 9 17l-5-5" />,
   clover: (
     <>
-      <circle cx="9" cy="8.5" r="3.5" />
-      <circle cx="15" cy="8.5" r="3.5" />
-      <circle cx="9" cy="14.5" r="3.5" />
-      <circle cx="15" cy="14.5" r="3.5" />
-      <path d="M14 17l3 5" />
+      {[-45, 45, 135, 225].map((turn) => (
+        <path
+          key={turn}
+          d="M12 11C9.6 9.3 7.8 7.7 7.8 5.6a2.1 2.1 0 0 1 4.2-.6 2.1 2.1 0 0 1 4.2.6c0 2.1-1.8 3.7-4.2 5.4z"
+          transform={`rotate(${turn} 12 11)`}
+        />
+      ))}
+      <path d="M12 11c.5 4.5 1.5 8 3.5 11" />
     </>
   ),
   coin: (
@@ -97,13 +100,10 @@ const GLYPHS: Record<BadgeGlyph | "question", ReactNode> = {
   ),
   podium: <path d="M3 21h18M9 21V8h6v13M3 21v-8h6M15 21v-5h6v5" />,
   rocket: (
-    <>
-      <path d="M5 15c-1.5 1.3-2 5-2 5s3.7-.5 5-2M9 15l-3-3c1-4 4-9 12-9 0 8-5 11-9 12z" />
-      <circle cx="15" cy="9" r="1.5" />
-    </>
+    <path d="M9.5 12.5C7 14 5 16.5 4 20c3.5-1 6-3 7.5-5.5M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2zM9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5" />
   ),
   scroll: (
-    <path d="M7 3h11v14a3 3 0 0 1-3 3H6M7 3a2 2 0 0 0-2 2v2h2M10 8h5M10 12h5M6 20a2 2 0 0 1-2-2v-1h8v1a2 2 0 0 0 3 2" />
+    <path d="M15 12h-5M15 8h-5M19 17V5a2 2 0 0 0-2-2H4M8 21h12a2 2 0 0 0 2-2v-1a1 1 0 0 0-1-1H11a1 1 0 0 0-1 1v1a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v2a1 1 0 0 0 1 1h3" />
   ),
   shield: <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />,
   snowflake: <path d="M12 2v20M3.3 7l17.4 10M3.3 17 20.7 7M9 4l3 2 3-2M9 20l3-2 3 2" />,
@@ -267,15 +267,6 @@ export const FRAMES: Record<BadgeCategory, string> = {
 /** Facet lines for the gem, drawn over its face. */
 const GEM_FACETS = "M3 23h58M18 5l7 18 7-18 7 18 7-18M25 23l7 38 7-38";
 
-/** The leaves of a laurel wreath along one side. Mirrored for the other side. */
-const LAUREL = Array.from({ length: 6 }, (_, i) => {
-  const angle = ((118 + i * 22) * Math.PI) / 180;
-  const x = 32 + 29 * Math.cos(angle);
-  const y = 34 + 27 * Math.sin(angle);
-  const tilt = (angle * 180) / Math.PI + 90 + 35;
-  return { x, y, tilt };
-});
-
 /** Ribbon colours for the tails. Only secret badges wear them. */
 const RIBBONS: Partial<Record<MedalLook, [string, string]>> = {
   secret: ["#ff7ad9", "#8a3fd1"],
@@ -287,7 +278,7 @@ const GLINT = "M0 -4 1 -1 4 0 1 1 0 4-1 1-4 0-1-1z";
 /**
  * A badge drawn as a minted piece in its family's shape. The metal shows the
  * tier, and harder tiers get more dressing: silver and gold add a bevel, and
- * platinum adds a laurel wreath, glints and a passing shine. Secret badges are
+ * platinum adds glints and a passing shine. Secret badges are
  * holographic gems with ribbon tails. Locked badges keep their shape in plain
  * grey; secret ones you haven't found show a question mark.
  */
@@ -317,7 +308,6 @@ export function BadgeMedal({
   const tier = badge.tier;
   const dressed = !locked && !small;
   const ribbon = dressed ? RIBBONS[tier] : undefined;
-  const wreath = dressed && tier === "platinum";
   const shine = !locked && (tier === "platinum" || tier === "secret");
   const bevel = !locked && tier !== "bronze";
   const inset = "translate(32 32) scale(0.8) translate(-32 -32)";
@@ -359,29 +349,6 @@ export function BadgeMedal({
           <path d="M44 40l7 23-7-4-5 5-5-22z" fill={ribbon[1]} />
           <path d="M20 40 13 63l7-4 2-17z" fill={ribbon[0]} />
           <path d="M44 40l7 23-7-4-2-17z" fill={ribbon[0]} />
-        </g>
-      )}
-
-      {wreath && (
-        <g fill={metal.rim[1]} stroke={metal.rim[2]} strokeWidth="0.6">
-          {LAUREL.map((leaf, i) => (
-            <g key={i}>
-              <ellipse
-                cx={leaf.x}
-                cy={leaf.y}
-                rx="2.2"
-                ry="4.6"
-                transform={`rotate(${leaf.tilt} ${leaf.x} ${leaf.y})`}
-              />
-              <ellipse
-                cx={64 - leaf.x}
-                cy={leaf.y}
-                rx="2.2"
-                ry="4.6"
-                transform={`rotate(${-leaf.tilt} ${64 - leaf.x} ${leaf.y})`}
-              />
-            </g>
-          ))}
         </g>
       )}
 

@@ -291,7 +291,11 @@ const cardLookToProto = (c: CardLookDto): CardLook => ({
 export function progressToProto(progress: ProgressDto): Progress {
   return {
     me: myStatusToProto(progress.me),
-    days: progress.days.map((d) => ({ day: d.day, focusMinutes: d.focusMinutes })),
+    days: progress.days.map((d) => ({
+      day: d.day,
+      focusMinutes: d.focusMinutes,
+      counted: d.counted,
+    })),
     totalFocusMinutes: progress.totalFocusMinutes,
     quests: progress.quests.map(questToProto),
     badges: progress.badges.map((b) => ({ id: b.id, earnedAtMs: b.earnedAt })),
@@ -507,7 +511,11 @@ const cardLookFromProto = (c: CardLook | undefined): CardLookDto => ({
 export function progressFromProto(progress: Progress): ProgressDto {
   return {
     me: myStatusFromProto(progress.me),
-    days: progress.days.map((d) => ({ day: d.day, focusMinutes: d.focusMinutes })),
+    days: progress.days.map((d) => ({
+      day: d.day,
+      focusMinutes: d.focusMinutes,
+      counted: d.counted,
+    })),
     totalFocusMinutes: progress.totalFocusMinutes,
     quests: progress.quests.map(questFromProto),
     badges: (progress.badges ?? []).map((b) => ({ id: b.id, earnedAt: b.earnedAtMs })),

@@ -12,7 +12,7 @@ export default defineConfig({
         "client/src/**/*.{ts,tsx}",
       ],
       exclude: ["**/*.d.ts", "**/index.ts", "client/src/main.tsx", "server/src/main.ts"],
-      reporter: ["text-summary", "html", "lcov"],
+      reporter: ["text-summary", "json-summary", "html", "lcov"],
     },
   },
 });

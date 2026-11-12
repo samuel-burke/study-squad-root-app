@@ -651,6 +651,16 @@ h3 {
   text-align: center;
 }
 
+.ring-combo {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--amber-text);
+}
+
 .ring-time {
   font-family: var(--font-display);
   font-weight: 700;
@@ -959,40 +969,6 @@ h3 {
 
 .boss-text strong {
   color: var(--text);
-}
-
-.boss[data-defeated="true"] .boss-name::after {
-  content: " · defeated";
-  color: var(--teal-text);
-  font-size: 16px;
-}
-
-.combo .eyebrow {
-  color: var(--amber-text);
-}
-
-.combo-value {
-  font-family: var(--font-display);
-  font-size: 28px;
-  font-weight: 700;
-  color: var(--amber-text);
-}
-
-.pips {
-  display: flex;
-  gap: 4px;
-}
-
-.pip {
-  flex: 1;
-  height: 10px;
-  border-radius: 3px;
-  background: var(--pip);
-  transition: background 0.3s;
-}
-
-.pip[data-on="true"] {
-  background: var(--amber);
 }
 
 /* ---------------------------------------------------------------- session + goals */
@@ -1592,6 +1568,29 @@ textarea.input {
   box-shadow: inset 0 0 0 2px var(--outline-dim);
 }
 
+/* Focus time, but no finished session, so it didn't count toward the streak. */
+.heat.heat-missed,
+.heat-key-missed {
+  background: transparent;
+  box-shadow: inset 0 0 0 2px var(--heat-2);
+}
+
+.heat.heat-missed.heat-today {
+  box-shadow:
+    inset 0 0 0 2px var(--heat-2),
+    inset 0 0 0 4px var(--outline-dim);
+}
+
+.streak-hint {
+  margin: 10px 0 0;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.streak-hint strong {
+  color: var(--amber-text);
+}
+
 .heat-later {
   background: transparent;
   box-shadow: inset 0 0 0 1px var(--heat-0);
@@ -1703,21 +1702,6 @@ textarea.input {
 
 .mobile-timer .ring-time {
   font-size: 52px;
-}
-
-.combo-pill {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 12px;
-  border-radius: 999px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  font-size: 13px;
-}
-
-.combo-pill strong {
-  color: var(--amber-text);
 }
 
 .mobile-board {
@@ -2859,28 +2843,13 @@ textarea.input {
   flex-direction: column;
   gap: 8px;
 }
-.sched-item,
-.up-next-row {
+.sched-item {
   display: flex;
   align-items: center;
   gap: 10px;
   border: 1px solid var(--border);
   border-radius: 14px;
   padding: 10px 12px;
-}
-.up-next-row {
-  margin: 0 16px 12px;
-  background: var(--surface);
-}
-.up-next {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-.up-next-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
 }
 .sched-date {
   flex: none;
@@ -2906,15 +2875,6 @@ textarea.input {
 .sched-body {
   flex: 1;
   min-width: 0;
-}
-.sched-open {
-  border: none;
-  background: none;
-  padding: 0;
-  text-align: left;
-  color: inherit;
-  font: inherit;
-  cursor: pointer;
 }
 .sched-title {
   font-weight: 700;

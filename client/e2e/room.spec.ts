@@ -17,7 +17,7 @@ test.describe("focus room", () => {
       await expect(page.getByRole("region", { name: "Weekly boss" })).toContainText(
         /[\d,]+ of [\d,]+ HP left/,
       );
-      await expect(page.getByRole("region", { name: "Combo meter" })).toContainText("1.4x");
+      await expect(page.getByRole("region", { name: "Room timer" })).toContainText("1.4x combo");
     }
   });
 
@@ -40,23 +40,23 @@ test.describe("focus room", () => {
     page,
   }) => {
     await page.goto("/");
-    await page.getByRole("button", { name: "+ New table" }).click();
-    await page.getByPlaceholder("Table name, e.g. Calc II").fill("Calc II");
-    await page.getByRole("radio", { name: "50 / 10" }).click();
-    await page.getByRole("button", { name: "Start focusing" }).click();
+    await expect(page.getByRole("button", { name: "+ New table" })).toHaveCount(0);
+    const sheet = await openStartSheet(page);
+    await sheet.getByRole("radio", { name: /Start a new table/ }).click();
+    await sheet.getByPlaceholder("Table name, e.g. Calc II").fill("Calc II");
+    await sheet.getByRole("radio", { name: "50 / 10" }).click();
+    await sheet.getByRole("button", { name: "Start focusing" }).click();
     const board = page.getByRole("region", { name: "Who is in the room" });
     const calc = board.getByRole("region", { name: "Calc II" });
     await expect(calc.getByText("Your table")).toBeVisible();
     await expect(page.getByRole("timer")).toHaveText(/^(49:\d\d|50:00)$/);
     await expect(board.getByRole("region", { name: "Main table" })).toContainText("Ana R.");
-    await expect(page.getByText(/6 (people )?at 2 tables/)).toBeVisible();
     // Sitting at the main table closes the now empty Calc II.
     await board
       .getByRole("region", { name: "Main table" })
       .getByRole("button", { name: "Sit here" })
       .click();
     await expect(calc).toBeHidden();
-    await expect(page.getByText(/at 2 tables/)).toBeHidden();
   });
 
   test("joining adds your card and raises the combo", async ({ page }) => {

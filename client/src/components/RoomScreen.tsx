@@ -4,7 +4,6 @@ import type { Profile } from "../api/gateway";
 import { phasePill } from "../lib/view";
 import { BossCard, MobileBoss } from "./BossCard";
 import { BreakChallengeCard, myBreakKey } from "./BreakFun";
-import { ComboCard, ComboPill } from "./ComboCard";
 import type { GoalActions } from "./GoalList";
 import { AppLogo, ChartIcon, PeopleIcon, SlidersIcon, SoundOffIcon, SoundOnIcon } from "./Icons";
 import { MemberBoard } from "./MemberBoard";
@@ -36,8 +35,6 @@ export interface RoomScreenProps {
   onJoinTable(tableId: string): void;
   /** This week's top three, which opens the full leaderboard. */
   podium?: ReactNode;
-  /** The next scheduled session. */
-  upNext?: ReactNode;
   /** Shows the playing track under the timer. */
   miniPlayer?: ReactNode;
 }
@@ -179,16 +176,6 @@ export function RoomScreen(props: RoomScreenProps) {
         {props.miniPlayer}
         {challenge}
         {props.podium}
-        {props.upNext}
-        {room.features.comboEnabled && (
-          <div style={{ display: "flex", justifyContent: "center", marginBottom: 12 }}>
-            <ComboPill
-              combo={room.combo}
-              participants={room.roomParticipantCount}
-              tables={room.tables.length}
-            />
-          </div>
-        )}
         {board}
         <nav className="bottom-bar" aria-label="Session">
           <button type="button" className="btn btn-secondary" onClick={props.onOpenGoals}>
@@ -228,16 +215,8 @@ export function RoomScreen(props: RoomScreenProps) {
           {board}
         </main>
         <aside className="room-aside">
-          {props.upNext}
           {props.podium}
           {room.boss.enabled && <BossCard boss={room.boss} combo={room.combo} now={now} />}
-          {room.features.comboEnabled && (
-            <ComboCard
-              combo={room.combo}
-              participants={room.roomParticipantCount}
-              tables={room.tables.length}
-            />
-          )}
           <SessionPanel
             me={me}
             xpEnabled={room.features.xpEnabled}

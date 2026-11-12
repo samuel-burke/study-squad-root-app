@@ -92,7 +92,9 @@ export function BossDefeated({ boss, onDismiss }: { boss: BossDto; onDismiss(): 
     const start = performance.now();
     let raf = 0;
     const frame = () => {
-      const t = still ? BOSS_SHOW.land + 2 : (performance.now() - start) / 1000;
+      const t = still
+        ? BOSS_SHOW.land + 2
+        : Math.min((performance.now() - start) / 1000, BOSS_SHOW.end + LINGER);
       const el = ctx.canvas;
       const W = el.clientWidth;
       const H = el.clientHeight;
@@ -108,9 +110,16 @@ export function BossDefeated({ boss, onDismiss }: { boss: BossDto; onDismiss(): 
       // Frames stop once the show is over; its last frame stays up.
       if (!still && t < BOSS_SHOW.end + LINGER) raf = requestAnimationFrame(frame);
     };
-    raf = requestAnimationFrame(frame);
+    // Rotating the phone resizes the canvas, so the frame is drawn again to fit.
+    const redraw = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(frame);
+    };
+    redraw();
+    window.addEventListener("resize", redraw);
     return () => {
       closed = true;
+      window.removeEventListener("resize", redraw);
       cancelAnimationFrame(raf);
       medal?.dispose();
     };

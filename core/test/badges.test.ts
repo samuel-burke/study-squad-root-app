@@ -171,7 +171,7 @@ describe("badge rules", () => {
 
   it("room badges need a finished round at a high enough combo", () => {
     expect(earned({ session: session({ kind: "room", combo: 1.4 }) })).not.toContain("study-group");
-    expect(earned({ session: session({ kind: "room", combo: 1.5 }) })).toContain("study-group");
+    expect(earned({ session: session({ kind: "room", combo: 1.6 }) })).toContain("study-group");
     expect(earned({ session: session({ kind: "room", combo: 2, fullCycle: true }) })).toEqual(
       expect.arrayContaining(["study-group", "full-house", "full-cycle"]),
     );

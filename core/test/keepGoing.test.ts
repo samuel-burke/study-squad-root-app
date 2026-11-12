@@ -56,7 +56,7 @@ describe('"Keep going?" at the end of a cycle', () => {
       [3, true],
       [4, true],
     ]);
-    expect(ben.me.xpToday).toBe(220); // 4 rounds x 50 XP x 1.1 combo
+    expect(ben.me.xpToday).toBe(240); // 4 rounds x 50 XP x 1.2 combo
     expect(ben.me.streak).toBe(1);
   });
 

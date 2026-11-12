@@ -17,16 +17,20 @@ import {
 } from "../src";
 
 describe("comboFor", () => {
-  it("starts at 1.0x and adds 0.1x per extra person", () => {
+  it("starts at 1.0x and adds 0.2x per extra person", () => {
     expect(comboFor(0)).toBe(1);
     expect(comboFor(1)).toBe(1);
-    expect(comboFor(6)).toBe(1.5);
-    expect(formatCombo(comboFor(6))).toBe("1.5x");
+    expect(comboFor(2)).toBe(1.2);
+    expect(comboFor(3)).toBe(1.4);
+    expect(comboFor(4)).toBe(1.6);
+    expect(formatCombo(comboFor(4))).toBe("1.6x");
   });
 
-  it("caps at 2.0x", () => {
-    expect(comboFor(11)).toBe(2);
-    expect(comboFor(500)).toBe(2);
+  it("reaches 2.0x at 6 people and keeps going, with no cap", () => {
+    expect(comboFor(6)).toBe(2);
+    expect(comboFor(7)).toBe(2.2);
+    expect(comboFor(11)).toBe(3);
+    expect(comboFor(50)).toBe(10.8);
   });
 
   it("is always 1.0x when admins turn it off", () => {

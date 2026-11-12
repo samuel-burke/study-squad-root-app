@@ -176,12 +176,12 @@ const RULES: Record<string, Row> = {
     misses: session({ kind: "room", fullCycle: true, finished: false }),
   },
   "study-group": {
-    earns: session({ kind: "room", combo: 1.5 }),
+    earns: session({ kind: "room", combo: 1.6 }),
     misses: session({ kind: "room", combo: 1.4 }),
   },
   "full-house": {
     earns: session({ kind: "room", combo: 2 }),
-    misses: session({ kind: "room", combo: 1.9 }),
+    misses: session({ kind: "room", combo: 1.8 }),
   },
 
   "first-goal": { earns: lifetime({ goalsDone: 1 }), misses: lifetime({ goalsDone: 0 }) },

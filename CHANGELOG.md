@@ -4,6 +4,10 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ## [Unreleased]
 
+### Fixed
+
+- The date picker for scheduling a session lines up with the name field again instead of hanging off to the right (Safari and the Root mobile app).
+
 ### Changed
 
 - Badge unlocks and the boss defeated moment now stay open until you close them (Nice!, a tap anywhere, or Escape) instead of closing by themselves. When you earn several badges at once, the next one's animation and music only start after you close the one before.

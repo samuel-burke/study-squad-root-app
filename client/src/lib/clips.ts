@@ -5,7 +5,7 @@ import gold from "../assets/sounds/gold.mp3";
 import platinum from "../assets/sounds/platinum.mp3";
 import secret from "../assets/sounds/secret.mp3";
 import silver from "../assets/sounds/silver.mp3";
-import { withAudio } from "./sounds";
+import { output, withAudio } from "./sounds";
 
 /**
  * Recorded music for the big moments: a clip per badge tier, timed to its
@@ -81,7 +81,7 @@ export function playSound(url: string, volume: number, at = 0): () => void {
         source.buffer = buffer;
         const gain = ctx.createGain();
         gain.gain.value = volume;
-        source.connect(gain).connect(ctx.destination);
+        source.connect(gain).connect(output(ctx));
         source.start(ctx.currentTime + Math.max(0, -late), Math.max(0, late));
         stop = () => {
           gain.gain.setTargetAtTime(0, ctx.currentTime, 0.15);

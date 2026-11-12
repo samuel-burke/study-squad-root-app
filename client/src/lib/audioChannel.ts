@@ -1,4 +1,4 @@
-import { withAudio } from "./sounds";
+import { output, withAudio } from "./sounds";
 
 const FADE_SECONDS = 2;
 const NUDGE_SECONDS = 0.15;
@@ -60,7 +60,7 @@ export class AudioChannel {
     el.addEventListener("timeupdate", () => this.onTime(el.currentTime, el.duration || 0));
     this.gain = ctx.createGain();
     this.gain.gain.value = 0;
-    ctx.createMediaElementSource(el).connect(this.gain).connect(ctx.destination);
+    ctx.createMediaElementSource(el).connect(this.gain).connect(output(ctx));
     this.audio = el;
     return el;
   }

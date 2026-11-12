@@ -4,6 +4,10 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ## [Unreleased]
 
+### Added
+
+- Quiet recorded sound effects under the badge and boss moments, on their actions: a thud when a medal lands, whooshes as it moves, a spotlight and rising tension for gold, crackle and a lightning strike for platinum, twinkles as secret stars light, and glass when the boss card shatters. Credits are in CREDITS.md.
+
 ### Fixed
 
 - The silver badge medal now lands on the music's hit. It used to arrive about half a second early.

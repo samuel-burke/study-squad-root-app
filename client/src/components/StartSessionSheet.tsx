@@ -19,7 +19,7 @@ interface StartSessionSheetProps {
   me: MyStatusDto;
   now: number;
   busy: boolean;
-  initialMode: "room" | "solo" | "table";
+  initialMode: "room" | "solo";
   onClose(): void;
   onStartRoom(request: StartRequest): Promise<boolean>;
   onStartSolo(minutes: number, request: StartRequest): Promise<boolean>;
@@ -44,7 +44,7 @@ export function StartSessionSheet(props: StartSessionSheetProps) {
   const slots = Math.max(0, Math.min(2, LIMITS.maxOpenGoals - openGoals));
   const [goals, setGoals] = useState<string[]>(() => Array(slots).fill(""));
   const [goalsPrivate, setGoalsPrivate] = useState(me.goalsPrivate);
-  const [mode, setMode] = useState(props.initialMode);
+  const [mode, setMode] = useState<"room" | "solo" | "table">(props.initialMode);
   const [tableName, setTableName] = useState("");
   const [tablePreset, setTablePreset] = useState<"25-5" | "50-10">("25-5");
   const [preset, setPreset] = useState<number>(25);

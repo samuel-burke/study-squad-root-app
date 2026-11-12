@@ -31,7 +31,7 @@ import { useStudyRoom } from "./state/useStudyRoom";
 import { myTableView } from "./lib/view";
 
 type Overlay =
-  | { kind: "start"; mode: "room" | "solo" | "table" }
+  | { kind: "start"; mode: "room" | "solo" }
   | { kind: "goals" }
   | { kind: "settings" }
   | { kind: "sounds" }
@@ -202,7 +202,6 @@ export function App({ gateway }: { gateway: StudyRoomGateway }) {
             onJoinTable={(tableId) =>
               void actions.joinRoomTimer({ goals: [], goalsPrivate: me.goalsPrivate, tableId })
             }
-            onNewTable={() => setOverlay({ kind: "start", mode: "table" })}
             podium={
               <LeaderboardPodium
                 gateway={gateway}

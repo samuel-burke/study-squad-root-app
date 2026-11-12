@@ -4,6 +4,10 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ## [Unreleased]
 
+## [0.6.1] - 2026-11-12
+
+Your username on the leaderboard, steadier phone header, sturdier profile pictures, and badge moments that wait for you.
+
 ### Fixed
 
 - The home page leaderboard, the top 3 podium and your own profile now show your Root username instead of "You".
@@ -15,6 +19,7 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 - The live demo's members now have profile pictures (a cat, a dog, a sports car and so on), like a real Root community.
 - Badge unlocks and the boss defeated moment now stay open until you close them (Nice!, a tap anywhere, or Escape) instead of closing by themselves. When you earn several badges at once, the next one's animation and music only start after you close the one before.
+- The privacy policy now says each device may keep a copy of the last profile picture it loaded (effective November 12, 2026).
 
 ## [0.6.0] - 2026-11-12
 

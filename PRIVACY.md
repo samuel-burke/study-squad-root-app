@@ -1,6 +1,6 @@
 # Study Squad privacy policy
 
-_Effective November 11, 2026_
+_Effective November 12, 2026_
 
 Study Squad is a group study timer for [Root](https://www.rootapp.com) communities, made by Samuel Burke ("we", "us"). This page explains, in plain language, what Study Squad keeps, why, who sees it, and how you can delete it whenever you like.
 

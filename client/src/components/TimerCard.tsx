@@ -1,4 +1,5 @@
 import {
+  formatCombo,
   formatCountdown,
   MAIN_TABLE_ID,
   presetLabel,
@@ -6,6 +7,7 @@ import {
   type RoomStateDto,
 } from "@studyroom/core";
 import { nextLabel, phaseCaption, remainingFraction } from "../lib/view";
+import { BoltIcon } from "./Icons";
 import { TimerRing } from "./TimerRing";
 
 interface TimerCardProps {
@@ -56,6 +58,12 @@ export function TimerCard({
         {time}
       </div>
       <div className="small muted">{compact ? label : phaseCaption(timer)}</div>
+      {room.features.comboEnabled && (
+        <div className="ring-combo">
+          <BoltIcon size={13} stroke="var(--amber-strong)" />
+          {formatCombo(room.combo)} combo
+        </div>
+      )}
     </TimerRing>
   );
 

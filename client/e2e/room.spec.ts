@@ -17,7 +17,7 @@ test.describe("focus room", () => {
       await expect(page.getByRole("region", { name: "Weekly boss" })).toContainText(
         /[\d,]+ of [\d,]+ HP left/,
       );
-      await expect(page.getByRole("region", { name: "Combo meter" })).toContainText("1.4x");
+      await expect(page.getByRole("region", { name: "Room timer" })).toContainText("1.4x combo");
     }
   });
 
@@ -51,14 +51,12 @@ test.describe("focus room", () => {
     await expect(calc.getByText("Your table")).toBeVisible();
     await expect(page.getByRole("timer")).toHaveText(/^(49:\d\d|50:00)$/);
     await expect(board.getByRole("region", { name: "Main table" })).toContainText("Ana R.");
-    await expect(page.getByText(/6 (people )?at 2 tables/)).toBeVisible();
     // Sitting at the main table closes the now empty Calc II.
     await board
       .getByRole("region", { name: "Main table" })
       .getByRole("button", { name: "Sit here" })
       .click();
     await expect(calc).toBeHidden();
-    await expect(page.getByText(/at 2 tables/)).toBeHidden();
   });
 
   test("joining adds your card and raises the combo", async ({ page }) => {

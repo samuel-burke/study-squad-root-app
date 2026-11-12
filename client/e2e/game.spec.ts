@@ -239,7 +239,7 @@ test.describe("game rules", () => {
         .getByRole("list", { name: "Focus time, last 5 weeks" })
         .locator(".heat-today");
       await expect(today).toHaveClass(/heat-missed/);
-      await expect(page.getByText("didn't finish a session")).toBeVisible();
+      await expect(page.getByText("didn't count")).toBeVisible();
       await expect(page.locator(".streak-hint")).toContainText("keep your streak");
     });
 

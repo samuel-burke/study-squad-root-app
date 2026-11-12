@@ -183,8 +183,7 @@ export function ProgressScreen({
                 {progress.days.some((d) => !d.counted && d.focusMinutes > 0) && (
                   <>
                     {" · "}
-                    <span className="heat-key heat-key-missed" aria-hidden="true" /> didn't finish a
-                    session
+                    <span className="heat-key heat-key-missed" aria-hidden="true" /> didn't count
                   </>
                 )}
               </span>

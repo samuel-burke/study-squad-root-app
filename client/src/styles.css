@@ -961,12 +961,6 @@ h3 {
   color: var(--text);
 }
 
-.boss[data-defeated="true"] .boss-name::after {
-  content: " · defeated";
-  color: var(--teal-text);
-  font-size: 16px;
-}
-
 .combo .eyebrow {
   color: var(--amber-text);
 }

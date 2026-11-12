@@ -27,6 +27,8 @@ Recorded sound effects for badge and boss moments, a streak calendar that shows 
 - The bronze badge unlock no longer starts with a jolt: the medal and its music now ease in over a one second intro.
 - Gold and platinum unlocks start as a true dark silhouette. Gold lights up as it rises; platinum stays dark until just before the hit.
 - The blue laurel around platinum badges is gone.
+- The website now has a live demo you can try in the browser (1-minute rounds, marked DEMO), and publishes test coverage for a README badge.
+- Each upload to Root now also publishes a GitHub release with that version's changelog as its notes.
 
 ## [0.5.1] - 2026-11-11
 

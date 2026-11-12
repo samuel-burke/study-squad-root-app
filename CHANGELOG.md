@@ -12,6 +12,10 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 - The silver badge medal now lands on the music's hit. It used to arrive about half a second early.
 
+### Changed
+
+- The bronze badge unlock no longer starts with a jolt: the medal and its music now ease in over a one second intro.
+
 ## [0.5.1] - 2026-11-11
 
 Sharper badge engravings.

@@ -8,7 +8,7 @@ import type { BadgeTier } from "@studyroom/core";
  * boss going down (BOSS_SHOW) uses the same stage.
  */
 export type Build =
-  /** The medal is there from the start (bronze). */
+  /** The medal fades in over a one second intro (bronze). */
   | "none"
   /** Light gathers in the dark, then the medal appears on the hit (silver). */
   | "gather"
@@ -38,8 +38,8 @@ export interface Show {
 
 export const SHOWS: Record<BadgeTier, Show> = {
   bronze: {
-    land: 0.06,
-    end: 4.9,
+    land: 1.06,
+    end: 5.9,
     build: "none",
     colors: ["#6e3d1b", "#c27a3e", "#f6c08c"],
     shake: 3,
@@ -250,7 +250,7 @@ export class ShowPainter {
     const R = Math.min(W, H) * 0.13;
     const L = s.land;
     const dt = t - L;
-    const bp = s.build === "none" ? 1 : clamp(t / L);
+    const bp = clamp(t / L);
     const big = Math.max(W, H);
 
     ctx.fillStyle = "#050409";
@@ -503,7 +503,8 @@ export class ShowPainter {
     let show = true;
     // Once landed, the medal sways gently rather than turning.
     let tilt = dt > 0 ? Math.sin(dt * 0.8) * 0.25 : 0;
-    if (s.build === "none") mr = R * (0.6 + 0.4 * ease(t / 0.4));
+    // Bronze eases in over a short quiet intro, so the hit is no jump scare.
+    if (s.build === "none") mr = R * (0.6 + 0.4 * ease(bp));
     if (s.build === "gather") {
       if (dt < 0) show = false;
       else mr = R * (1 + 0.35 * Math.exp(-dt * 9));
@@ -527,7 +528,7 @@ export class ShowPainter {
       else mr = R * (0.4 + 0.6 * ease(dt / 0.35));
     }
     if (!show) return;
-    const a = s.build === "none" ? clamp(t / 0.15) : 1;
+    const a = s.build === "none" ? bp * bp : 1;
     ctx.globalCompositeOperation = "lighter";
     this.dot(cx, my, mr * 2.6, s.colors[1], (dt > 0 ? 0.55 : 0.35) * a);
     ctx.globalCompositeOperation = "source-over";

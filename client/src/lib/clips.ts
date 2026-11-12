@@ -15,7 +15,7 @@ import { withAudio } from "./sounds";
 export type Clip = BadgeTier | "boss";
 
 export const CLIPS: Record<Clip, { url: string; seconds: number }> = {
-  bronze: { url: bronze, seconds: 5 },
+  bronze: { url: bronze, seconds: 6 },
   silver: { url: silver, seconds: 6.5 },
   gold: { url: gold, seconds: 11.5 },
   platinum: { url: platinum, seconds: 12.2 },

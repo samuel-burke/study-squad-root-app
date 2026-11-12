@@ -4,6 +4,10 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ## [Unreleased]
 
+### Fixed
+
+- On phones, the top buttons (voice, sounds, progress, settings) stay right aligned in every phase. They used to slide left once a session started, and on large phones like the iPhone Pro Max the settings button could be cut off. The round pill now always sits on its own line below them on phones.
+
 ## [0.6.0] - 2026-11-12
 
 Recorded sound effects for badge and boss moments, a streak calendar that shows which days counted, a tidier room, and badge polish.

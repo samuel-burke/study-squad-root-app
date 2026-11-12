@@ -2,7 +2,7 @@ import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { BossDto } from "@studyroom/core";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { BOSS_SHOW_MS, BossDefeated } from "../src/components/BossDefeated";
+import { BossDefeated } from "../src/components/BossDefeated";
 import { CLIPS } from "../src/lib/clips";
 import { BOSS_SHOW } from "../src/lib/unlockShow";
 
@@ -38,22 +38,24 @@ describe("BossDefeated", () => {
     expect(screen.getByRole("dialog")).not.toHaveTextContent("XP");
   });
 
-  it("closes by itself after its music, or with Escape", () => {
+  it("stays open until closed, then closes with Escape", () => {
     vi.useFakeTimers();
     const onDismiss = vi.fn();
-    const { unmount } = render(<BossDefeated boss={boss} onDismiss={onDismiss} />);
-    act(() => vi.advanceTimersByTime(BOSS_SHOW_MS - 100));
+    render(<BossDefeated boss={boss} onDismiss={onDismiss} />);
+    act(() => vi.advanceTimersByTime(10 * 60_000));
     expect(onDismiss).not.toHaveBeenCalled();
-    act(() => vi.advanceTimersByTime(100));
-    expect(onDismiss).toHaveBeenCalledTimes(1);
-    unmount();
-
-    const escape = vi.fn();
-    render(<BossDefeated boss={boss} onDismiss={escape} />);
+    expect(screen.getByRole("dialog", { name: "The Procrastinator" })).toBeInTheDocument();
     act(() => {
       window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
     });
-    expect(escape).toHaveBeenCalledTimes(1);
+    expect(onDismiss).toHaveBeenCalledTimes(1);
+  });
+
+  it("closes with a tap anywhere", async () => {
+    const onDismiss = vi.fn();
+    render(<BossDefeated boss={boss} onDismiss={onDismiss} />);
+    await userEvent.click(screen.getByRole("dialog"));
+    expect(onDismiss).toHaveBeenCalledTimes(1);
   });
 
   it("lands inside its music", () => {

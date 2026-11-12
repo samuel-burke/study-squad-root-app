@@ -33,6 +33,13 @@ import {
 import type { GatewayHandlers, Profile, StartRequest, StudyRoomGateway } from "./gateway";
 import { GatewayError, toGatewayError } from "./gateway";
 
+/** Fake profile pictures (CC0 photos, see CREDITS.md), named by user id. */
+const AVATARS = import.meta.glob<string>("../assets/demo-avatars/*.jpg", {
+  eager: true,
+  query: "?url",
+  import: "default",
+});
+
 const MINUTE = 60_000;
 export const DEMO_USER_ID = "demo-you";
 
@@ -795,7 +802,11 @@ export class DemoGateway implements StudyRoomGateway {
   }
 
   async getProfiles(userIds: string[]): Promise<Profile[]> {
-    return userIds.map((userId) => ({ userId, name: this.nameOf(userId) }));
+    return userIds.map((userId) => ({
+      userId,
+      name: this.nameOf(userId),
+      avatarUrl: AVATARS[`../assets/demo-avatars/${userId}.jpg`],
+    }));
   }
 
   subscribe(handlers: GatewayHandlers) {

@@ -113,7 +113,7 @@ jobs:
       group: deploy-root
       cancel-in-progress: false
     permissions:
-      contents: write # pushes the root-v<version> tag after an upload
+      contents: write # pushes the root-v<version> tag and its GitHub release after an upload
     env:
       ROOT_AUTH_TOKEN: ${{ secrets.ROOT_AUTH_TOKEN }}
     steps:
@@ -165,3 +165,12 @@ jobs:
         run: |
           git tag "root-v${{ steps.check.outputs.version }}"
           git push origin "root-v${{ steps.check.outputs.version }}"
+      - name: Publish the GitHub release
+        if: steps.check.outputs.upload == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.check.outputs.version }}
+        # The notes are this version's section of CHANGELOG.md.
+        run: |
+          awk -v head="## [$VERSION]" 'index($0, head) == 1 { found = 1; next } /^## \[/ && found { exit } found' CHANGELOG.md > notes.md
+          gh release create "root-v$VERSION" --title "v$VERSION" --notes-file notes.md --latest

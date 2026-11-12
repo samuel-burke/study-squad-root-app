@@ -4,7 +4,7 @@ Every push to `main` that passes CI uploads the app to Root, through the **Deplo
 
 ## How it decides
 
-- It reads `version` from `root-manifest.json`. Root rejects a version it already has, so each upload is tagged `root-v<version>`, and a version with a tag is skipped.
+- It reads `version` from `root-manifest.json`. Root rejects a version it already has, so each upload is tagged `root-v<version>`, and a version with a tag is skipped. After tagging, it publishes a GitHub release titled `v<version>` with that version's CHANGELOG.md section as the notes, so add the section before merging to `main`.
 - With no `ROOT_AUTH_TOKEN` secret, it skips the upload and says so in the run summary.
 - It always builds from a clean `networking/gen`, since stale generated code once crashed the app on Root.
 

@@ -539,6 +539,32 @@ describe("Study Squad app", () => {
     expect(unlocked).toEqual(expect.arrayContaining(["Checked Off", "Speedrun"]));
   });
 
+  it("keeps each unlock up until closed, and only then starts the next", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const gateway = await DemoGateway.create({ bots: false, elapsedMinutes: 0 });
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    render(<App gateway={gateway} />);
+    await screen.findByRole("timer");
+    const panel = screen.getByRole("region", { name: "Your session" });
+    await user.click(within(panel).getByRole("button", { name: "Add a goal" }));
+    await user.type(within(panel).getByLabelText("New goal"), "Answer one email{Enter}");
+    await user.click(await within(panel).findByRole("checkbox", { name: "Answer one email" }));
+    await screen.findByRole("button", { name: "Nice!" });
+    const unlocked: string[] = [];
+    while (screen.queryByRole("button", { name: "Nice!" })) {
+      // One moment at a time, still up long after its show has ended.
+      const name = document.querySelector(".unlock h2")?.textContent ?? "";
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(60_000);
+      });
+      expect(document.querySelectorAll(".unlock")).toHaveLength(1);
+      expect(document.querySelector(".unlock h2")).toHaveTextContent(name);
+      unlocked.push(name);
+      await user.click(screen.getByRole("button", { name: "Nice!" }));
+    }
+    expect(unlocked).toEqual(expect.arrayContaining(["Checked Off", "Speedrun"]));
+  });
+
   it("plays a finished timer's unlocks from the break result alone", async () => {
     const gateway = await DemoGateway.create({
       bots: false,

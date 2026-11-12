@@ -1181,6 +1181,16 @@ textarea.input {
   line-height: 1.4;
 }
 
+/* Safari/iOS draw the date picker as a native control that ignores width and centres its text. */
+.input[type="datetime-local"] {
+  -webkit-appearance: none;
+  appearance: none;
+  display: block;
+}
+.input::-webkit-date-and-time-value {
+  text-align: left;
+}
+
 .input:focus {
   border-color: var(--amber-text);
   outline: none;

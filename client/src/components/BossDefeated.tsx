@@ -6,7 +6,7 @@ import { BOSS_SHOW, ShowPainter, type DrawMedal } from "../lib/unlockShow";
 import { BadgeMedal, FRAMES, METALS } from "./BadgeMedal";
 import { medalImage } from "./BadgeUnlocked";
 
-/** Seconds the moment stays up after the music ends, before moving on by itself. */
+/** Seconds the show keeps drawing after its music ends. */
 const LINGER = 1.5;
 
 /** The medal that rises from the wreck: a gold boss medal with crossed swords. */
@@ -20,14 +20,11 @@ const SLAYER: BadgeDefinition = {
   earned: () => false,
 };
 
-/** How long the moment stays up, in milliseconds, before moving on by itself. */
-export const BOSS_SHOW_MS = Math.round((BOSS_SHOW.end + LINGER) * 1000);
-
 /**
  * The full-screen moment when the room defeats the weekly boss: its card
  * shakes as the last hit drains its HP, shatters on the orchestra hit, and a
  * boss slayer medal rises, minted in 3D like the badges (see lib/unlockShow.ts). The music is the boss event
- * sound, which starts at the same moment. It moves on by itself, or with a
+ * sound, which starts at the same moment. It stays up until closed with a
  * tap anywhere, the button, or Escape.
  */
 export function BossDefeated({ boss, onDismiss }: { boss: BossDto; onDismiss(): void }) {
@@ -38,13 +35,9 @@ export function BossDefeated({ boss, onDismiss }: { boss: BossDto; onDismiss(): 
 
   useEffect(() => {
     button.current?.focus();
-    const timer = setTimeout(onDismiss, BOSS_SHOW_MS);
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onDismiss();
     window.addEventListener("keydown", onKey);
-    return () => {
-      clearTimeout(timer);
-      window.removeEventListener("keydown", onKey);
-    };
+    return () => window.removeEventListener("keydown", onKey);
   }, [onDismiss]);
 
   const { name, maxHpXp } = boss;
@@ -112,7 +105,7 @@ export function BossDefeated({ boss, onDismiss }: { boss: BossDto; onDismiss(): 
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
         painter.draw(t, W, H);
       }
-      // Frames stop once the moment would have closed by itself.
+      // Frames stop once the show is over; its last frame stays up.
       if (!still && t < BOSS_SHOW.end + LINGER) raf = requestAnimationFrame(frame);
     };
     raf = requestAnimationFrame(frame);

@@ -32,7 +32,6 @@ interface BoardProps {
   myTableId?: string;
   busy?: boolean;
   onJoinTable?(tableId: string): void;
-  onNewTable?(): void;
 }
 
 export interface HighFiveProps {
@@ -236,7 +235,6 @@ export function MemberBoard({
   myTableId = "",
   busy,
   onJoinTable,
-  onNewTable,
 }: BoardProps) {
   const voice = new Set(inVoice);
   const focusing = members.filter(isFocusing).length;
@@ -260,12 +258,6 @@ export function MemberBoard({
       ))}
     </ul>
   );
-  const newTable = onNewTable && (
-    <button type="button" className="btn btn-quiet btn-sm" onClick={onNewTable} disabled={busy}>
-      + New table
-    </button>
-  );
-
   // Only the main table running: one board, as before tables existed.
   let body: ReactNode = members.length === 0 ? <EmptyBoard /> : list(members);
   if (tables.some((t) => t.id !== MAIN_TABLE_ID)) {
@@ -330,7 +322,6 @@ export function MemberBoard({
       <div className="board-head">
         <h2>Focusing now · {focusing}</h2>
         {!compact && onBreak > 0 && <div className="small muted">{onBreak} on break</div>}
-        {newTable}
       </div>
       {body}
     </section>

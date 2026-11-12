@@ -40,10 +40,12 @@ test.describe("focus room", () => {
     page,
   }) => {
     await page.goto("/");
-    await page.getByRole("button", { name: "+ New table" }).click();
-    await page.getByPlaceholder("Table name, e.g. Calc II").fill("Calc II");
-    await page.getByRole("radio", { name: "50 / 10" }).click();
-    await page.getByRole("button", { name: "Start focusing" }).click();
+    await expect(page.getByRole("button", { name: "+ New table" })).toHaveCount(0);
+    const sheet = await openStartSheet(page);
+    await sheet.getByRole("radio", { name: /Start a new table/ }).click();
+    await sheet.getByPlaceholder("Table name, e.g. Calc II").fill("Calc II");
+    await sheet.getByRole("radio", { name: "50 / 10" }).click();
+    await sheet.getByRole("button", { name: "Start focusing" }).click();
     const board = page.getByRole("region", { name: "Who is in the room" });
     const calc = board.getByRole("region", { name: "Calc II" });
     await expect(calc.getByText("Your table")).toBeVisible();

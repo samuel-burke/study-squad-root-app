@@ -288,8 +288,8 @@ describe("contract round trip", () => {
     const progress: ProgressDto = {
       me,
       days: [
-        { day: "2026-10-27", focusMinutes: 0 },
-        { day: "2026-10-28", focusMinutes: 42.5 },
+        { day: "2026-10-27", focusMinutes: 0, counted: false },
+        { day: "2026-10-28", focusMinutes: 42.5, counted: true },
       ],
       totalFocusMinutes: 42.5,
       quests: [

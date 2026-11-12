@@ -148,13 +148,15 @@ export function ProgressScreen({
             <ol className="heatmap" aria-label="Focus time, last 5 weeks">
               {progress.days.map((d, i) => {
                 const isFrozen = frozen.has(d.day);
-                const label = `${d.day}: ${isFrozen ? "covered by a freeze" : formatHours(d.focusMinutes)}`;
+                const missed = !d.counted && d.focusMinutes > 0;
+                const label = `${d.day}: ${isFrozen ? "covered by a freeze" : formatHours(d.focusMinutes)}${missed ? ", no finished session" : ""}`;
                 return (
                   <li
                     key={d.day}
                     className={[
                       "heat",
                       isFrozen && "heat-frozen",
+                      missed && "heat-missed",
                       i === progress.days.length - 1 && "heat-today",
                     ]
                       .filter(Boolean)
@@ -178,9 +180,21 @@ export function ProgressScreen({
                     <span className="heat-key" aria-hidden="true" /> freeze
                   </>
                 )}
+                {progress.days.some((d) => !d.counted && d.focusMinutes > 0) && (
+                  <>
+                    {" · "}
+                    <span className="heat-key heat-key-missed" aria-hidden="true" /> didn't count
+                  </>
+                )}
               </span>
               <span>{formatHours(progress.totalFocusMinutes)} total</span>
             </div>
+            {!progress.days.at(-1)?.counted && (
+              <p className="streak-hint">
+                Finish a solo timer or stay to the end of a room round today to{" "}
+                <strong>{progress.me.streak > 0 ? "keep your streak" : "start a streak"}</strong>.
+              </p>
+            )}
           </section>
 
           {progress.quests.length > 0 && <WeeklyQuests quests={progress.quests} />}

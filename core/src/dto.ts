@@ -239,6 +239,8 @@ export interface PersonalResultDto {
 export interface DayStatDto {
   day: DayKey;
   focusMinutes: number;
+  /** A session was finished that day, so it counts toward the streak. */
+  counted: boolean;
 }
 
 export interface QuestDto {

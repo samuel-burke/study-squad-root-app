@@ -152,22 +152,22 @@ export function heatLevel(minutes: number): 0 | 1 | 2 | 3 {
 
 /**
  * Days in the heatmap that a freeze is covering: missed days inside the
- * current streak. Walks back from today (which only counts once it has focus
- * time) until it has passed `streak` active days; the empty days on the way
+ * current streak. Walks back from today (which only counts once a session is
+ * finished) until it has passed `streak` counted days; the other days on the way
  * were bridged by a freeze, including one still waiting for the next session.
  */
 export function freezeDays(
-  days: readonly { day: string; focusMinutes: number }[],
+  days: readonly { day: string; counted: boolean }[],
   streak: number,
 ): Set<string> {
   const frozen = new Set<string>();
   let i = days.length - 1;
-  if (i >= 0 && days[i]!.focusMinutes <= 0) i--;
+  if (i >= 0 && !days[i]!.counted) i--;
   let counted = 0;
   const gaps: string[] = [];
   for (; i >= 0 && counted < streak; i--) {
     const d = days[i]!;
-    if (d.focusMinutes > 0) {
+    if (d.counted) {
       counted++;
       for (const gap of gaps.splice(0)) frozen.add(gap);
     } else {

@@ -99,7 +99,7 @@ describe("small helpers", () => {
     const week = (minutes: number[]) =>
       minutes.map((m, i) => ({
         day: `2026-11-${String(2 + i).padStart(2, "0")}`,
-        focusMinutes: m,
+        counted: m > 0,
       }));
     const frozen = (minutes: number[], streak: number) => [...freezeDays(week(minutes), streak)];
 
@@ -115,6 +115,15 @@ describe("small helpers", () => {
 
     it("marks a covered day inside the streak", () => {
       expect(frozen([0, 0, 0, 40, 0, 40, 40, 0, 40], 4)).toEqual(["2026-11-09", "2026-11-06"]);
+    });
+
+    it("treats focus without a finished session as a missed day", () => {
+      // Samuel's week: Thu-Sun counted, Monday missed, Tue and Wed only had unfinished focus.
+      const days = week([0, 0, 0, 40, 40, 40, 40, 0, 0, 0]).map((d, i) =>
+        i >= 8 ? { ...d, counted: false } : d,
+      );
+      expect([...freezeDays(days, 0)]).toEqual([]);
+      expect([...freezeDays(days.slice(0, 9), 4)]).toEqual(["2026-11-09"]);
     });
 
     it("stops at the start of the streak, so older gaps stay plain", () => {

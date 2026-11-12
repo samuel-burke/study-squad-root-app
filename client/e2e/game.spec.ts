@@ -80,17 +80,17 @@ test.describe("game rules", () => {
   });
 
   test.describe("XP and levels", () => {
-    test("a room round pays focus XP times the combo, and unlocks Study Group", async ({
+    test("a room round pays focus XP times the combo, and unlocks Study Group and Full House", async ({
       page,
     }) => {
-      // Five simulated members are on the room timer, so six finish together: 1.5x.
+      // Five simulated members are on the room timer, so six finish together: 2.0x.
       await open(page, "?focus=2&break=0.5");
       await joinRoom(page);
       await wait(page, 2 * MINUTE);
-      // A whole minute at 2 XP, times 1.5.
-      await expect(breakMoment(page)).toContainText("+3 XP");
-      await expect(breakMoment(page)).toContainText("× 1.5 combo");
-      await expectEarned(page, ["Study Group"]);
+      // A whole minute at 2 XP, times 2.0.
+      await expect(breakMoment(page)).toContainText("+4 XP");
+      await expect(breakMoment(page)).toContainText("× 2.0 combo");
+      await expectEarned(page, ["Study Group", "Full House"]);
     });
 
     test("goals pay 25 XP each, finish the goals quest and level you up", async ({ page }) => {

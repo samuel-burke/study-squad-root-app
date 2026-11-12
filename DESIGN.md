@@ -35,7 +35,7 @@ Anyone can start a **table**: a smaller group in the room, like "Calc II", with 
 | Focus XP          | 2 XP per whole minute × combo                                     | Rewards time, not task count                                             |
 | Goal XP           | +25 once per goal, for the first 5 goals finished each day        | Unchecking, rechecking or adding quick goals can't farm it               |
 | Level curve       | Level _n_ needs 150 + 50·_n_ XP (level 7 needs 500)               | Matches the mockups; early levels come fast                              |
-| Combo             | 1.0x + 0.1x per extra person who **finishes** the round, max 2.0x | Rewards focusing together. People at other tables count too              |
+| Combo             | 1.0x + 0.2x per extra person who **finishes** the round, no cap (6 people is 2.0x) | Rewards focusing together. People at other tables count too              |
 | Finishing a round | At least 5 minutes in that round (or half the round, if shorter)  | Joining in the last seconds doesn't count toward the combo or the streak |
 | Leaving early     | Minutes so far are credited, round not finished                   | Honest time still counts                                                 |
 | Boss loot         | +100 XP × boss strength to every contributor                      | Happens once a week                                                      |

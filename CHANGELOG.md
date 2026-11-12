@@ -4,6 +4,10 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ## [Unreleased]
 
+### Changed
+
+- Badge unlocks and the boss defeated moment now stay open until you close them (Nice!, a tap anywhere, or Escape) instead of closing by themselves. When you earn several badges at once, the next one's animation and music only start after you close the one before.
+
 ## [0.6.0] - 2026-11-12
 
 Recorded sound effects for badge and boss moments, a streak calendar that shows which days counted, a tidier room, and badge polish.

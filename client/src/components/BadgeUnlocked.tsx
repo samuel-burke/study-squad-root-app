@@ -21,7 +21,7 @@ export function showMs(tier: BadgeTier): number {
   return Math.round((SHOWS[tier].end + LINGER) * 1000);
 }
 
-/** The flat medal art as an image, on an 88 by 88 box so the ribbons and wreath fit. */
+/** The flat medal art as an image, on an 88 by 88 box so the ribbons fit. */
 export function medalImage(svg: SVGSVGElement): HTMLImageElement {
   const copy = svg.cloneNode(true) as SVGSVGElement;
   copy.setAttribute("viewBox", "-12 -12 88 88");
@@ -197,15 +197,21 @@ export function BadgeUnlocked({
         const dt = t - show.land;
         const size = r * 4.9;
         if (size < 1) return;
-        // Gold comes in dim and platinum almost dark, a silhouette until its hit.
-        const rise = dt < 0 ? clamp(t / show.land) : 1;
-        const dark = show.build === "beam" && dt < 0 ? clamp(1 + dt / 1.2) ** 2 : 1;
-        const lit = show.build === "herald" ? 0.2 + 1.2 * rise ** 2 : 0.05 + 1.35 * dark;
+        // Gold and platinum come in as a dark silhouette, so you can't tell
+        // which badge it is: gold lights up as it rises, platinum just before its hit.
+        const reveal =
+          dt >= 0
+            ? 1
+            : show.build === "herald"
+              ? clamp(t / show.land) ** 3
+              : show.build === "beam"
+                ? clamp(1 + dt / 1.2) ** 2
+                : 1;
         const flash = dt > 0 && dt < 1 ? 3 * Math.exp(-dt * 4) : 0;
         const frame = medal3d.render(t, tilt, Math.round(size * dpr), {
-          key: lit + flash,
-          fill: dt > 0 ? 1.2 : 0.6 * dark,
-          env: 0.03 + 0.97 * dark,
+          key: 1.4 * reveal + flash,
+          fill: dt > 0 ? 1.2 : 0.6 * reveal,
+          env: reveal,
         });
         c.drawImage(frame, x - size / 2, y - size / 2, size, size);
       } else if (flat) {

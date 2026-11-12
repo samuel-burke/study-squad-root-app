@@ -464,6 +464,7 @@ export class DemoGateway implements StudyRoomGateway {
         await this.store.stats.add(DEMO_USER_ID, addDays(today, -back), {
           focusMinutes: minutes,
           xp: minutes * 2,
+          sessionsFinished: 1,
         });
     }
   }
@@ -475,7 +476,11 @@ export class DemoGateway implements StudyRoomGateway {
       const day = addDays(today, -back);
       streak = recordActiveDay(streak, day, this.config.streakFreezesEnabled).state;
       const minutes = 30 + ((back * 37) % 90);
-      await this.store.stats.add(DEMO_USER_ID, day, { focusMinutes: minutes, xp: minutes * 2 });
+      await this.store.stats.add(DEMO_USER_ID, day, {
+        focusMinutes: minutes,
+        xp: minutes * 2,
+        sessionsFinished: 1,
+      });
     }
     const you = await this.store.members.get(DEMO_USER_ID);
     if (you) await this.store.members.save({ ...you, streak });

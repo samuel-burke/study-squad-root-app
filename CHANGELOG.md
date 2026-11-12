@@ -4,6 +4,10 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ## [Unreleased]
 
+### Fixed
+
+- The silver badge medal now lands on the music's hit. It used to arrive about half a second early.
+
 ## [0.5.1] - 2026-11-11
 
 Sharper badge engravings.

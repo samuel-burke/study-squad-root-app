@@ -124,6 +124,11 @@ function render(template, values) {
   });
 }
 
+const DEMO_BANNER = `<div style="padding:8px 16px;text-align:center;font:13px/1.4 system-ui,sans-serif;background:rgba(245,183,49,.12);border-bottom:1px solid rgba(245,183,49,.4)">
+      <strong style="color:#d99a0b;letter-spacing:.06em">DEMO</strong>&nbsp; The other members are simulated and nothing is saved.
+    </div>
+    <div id="root">`;
+
 function build() {
   const layout = readFileSync(join(site, "layout.html"), "utf8");
   const privacy = markdownToHtml(readFileSync(join(root, "PRIVACY.md"), "utf8"));
@@ -168,7 +173,12 @@ ${privacy.body.replace(effective, "")}
   }
   // The in-browser demo (npm run build:demo -w @studyroom/client), when built.
   const demo = join(root, "client/dist-demo");
-  if (existsSync(demo)) cpSync(demo, join(out, "demo"), { recursive: true });
+  if (existsSync(demo)) {
+    cpSync(demo, join(out, "demo"), { recursive: true });
+    // Only the published demo gets the banner, so screenshots and tests don't.
+    const index = join(out, "demo/index.html");
+    writeFileSync(index, readFileSync(index, "utf8").replace('<div id="root">', DEMO_BANNER));
+  }
   // The coverage badge reads this (npm run test:coverage), when there is one.
   const coverage = join(root, "coverage/coverage-summary.json");
   if (existsSync(coverage)) {

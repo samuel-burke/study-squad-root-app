@@ -13,7 +13,7 @@ Until the custom domain is set up, the same pages are at `https://samuel-burke.g
 
 `PRIVACY.md` is the only copy of the policy. `scripts/build-site.mjs` turns it into a styled page, together with the files in `site/` (the page layout, the home and support pages and the stylesheet), and writes everything to `_site/`. It has no dependencies, so its markdown converter only knows what `PRIVACY.md` uses: headings, paragraphs, bold, italics, links, lists and tables.
 
-If `client/dist-demo/` exists (`npm run build:demo -w @studyroom/client`) it is copied to `demo/`, and if `coverage/coverage-summary.json` exists (`npm run test:coverage`) the script writes `coverage.json`, which the README's coverage badge reads through shields.io.
+If `client/dist-demo/` exists (`npm run build:demo -w @studyroom/client`) it is copied to `demo/` with a DEMO banner at the top (only there, so local runs, tests and screenshots don't show it), and if `coverage/coverage-summary.json` exists (`npm run test:coverage`) the script writes `coverage.json`, which the README's coverage badge reads through shields.io.
 
 The **Website** workflow (`.github/workflows/pages.yml`) builds the demo, runs the tests for coverage and publishes everything whenever `main` changes. CI builds it on every pull request too, so a broken page shows up before merging.
 

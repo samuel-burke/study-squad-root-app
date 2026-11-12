@@ -19,7 +19,7 @@ import { SHOWS } from "./unlockShow";
  */
 
 /** All effects sit well under the music. */
-const VOLUME = 0.3;
+const VOLUME = 0.5;
 
 /** The whoosh peaks this far in, so it is started early to peak on its action. */
 const WHOOSH_PEAK = 0.85;
@@ -69,16 +69,16 @@ const SYNTH: Partial<Record<Clip, Fanfare>> = {
       at: 0.25 + (i * 4.5) / 9,
       length: 0.6,
       wave: "sine" as const,
-      volume: 0.12,
+      volume: 0.4,
     })),
     reverb: 1.6,
-    volume: 0.25,
+    volume: 0.5,
   },
   boss: {
     tones: [],
     noises: [{ at: 0.2, length: 2.3, volume: 0.6, from: 70, to: 140 }],
     reverb: 1.2,
-    volume: 0.25,
+    volume: 0.4,
   },
 };
 

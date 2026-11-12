@@ -67,7 +67,7 @@ describe("recorded clips", () => {
     expect(FakeAudioContext.sources[0]!.stop).toHaveBeenCalled();
   });
 
-  it("are the boss defeated sound, with its glass and whoosh effects", async () => {
+  it("are the boss defeated sound, with its thud and whoosh effects", async () => {
     const { playEventSound, CLIPS, fetch } = await setup();
     playEventSound("bossDefeat");
     await settle();

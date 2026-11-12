@@ -4,6 +4,10 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ## [Unreleased]
 
+### Changed
+
+- The boss defeated moment lands with a heavy thud instead of breaking glass.
+
 ## [0.7.0] - 2026-11-12
 
 Color tiers that change the app's accent as your focus hours grow, a neon ring badge for each tier, 11 new badges, and a bigger combo for big groups.

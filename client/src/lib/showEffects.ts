@@ -1,5 +1,4 @@
 import crackle from "../assets/sfx/crackle.mp3";
-import glass from "../assets/sfx/glass.mp3";
 import lightning from "../assets/sfx/lightning.mp3";
 import spotlight from "../assets/sfx/spotlight.mp3";
 import tension from "../assets/sfx/tension.mp3";
@@ -13,8 +12,8 @@ import { SHOWS } from "./unlockShow";
 /**
  * Quiet recorded effects under each show's music, on its actions: a thud when
  * a medal lands, whooshes as it moves, a spotlight and tension for gold,
- * crackle and a lightning strike in the platinum beam, and glass for the boss
- * card. The secret stars and the boss rumble stay synthesised. Timings follow
+ * crackle and a lightning strike in the platinum beam, and a heavy thud as the
+ * boss card breaks. The secret stars and the boss rumble stay synthesised. Timings follow
  * lib/unlockShow.ts. Credits are in CREDITS.md.
  */
 
@@ -51,15 +50,15 @@ export const SHOW_EFFECTS: Record<Clip, Cue[]> = {
   ],
   // The stars collapse into the gem.
   secret: [swoosh(SHOWS.secret.land - 0.05), { url: thud, at: SHOWS.secret.land }],
-  // The card shatters, and the slayer medal rises.
+  // The card breaks with a heavy thud, and the slayer medal rises.
   boss: [
-    { url: glass, at: 2.45 },
+    { url: thud, at: 2.45 },
     { url: whoosh, at: 2.45, volume: 0.6 },
   ],
 };
 
 /** Every effect file, to load ahead of time. */
-export const SHOW_SOUNDS = [crackle, glass, lightning, spotlight, tension, thud, whoosh];
+export const SHOW_SOUNDS = [crackle, lightning, spotlight, tension, thud, whoosh];
 
 /** Synth parts: the secret stars lighting one by one, and the boss card's rumble. */
 const SYNTH: Partial<Record<Clip, Fanfare>> = {

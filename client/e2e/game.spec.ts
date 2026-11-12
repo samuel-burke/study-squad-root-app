@@ -179,11 +179,11 @@ test.describe("game rules", () => {
 
     test("defeating it pays loot and unlocks the boss badges", async ({ page }) => {
       await open(page, "?focus=1&break=0.5&bots=0&bossLeft=2");
-      await expect(boss(page)).toHaveAttribute("data-defeated", "false");
+      await expect(boss(page)).toBeVisible();
       await joinRoom(page);
       await wait(page, MINUTE + SECOND);
-      await expect(boss(page)).toHaveAttribute("data-defeated", "true");
-      await expect(boss(page)).toContainText("Defeated!");
+      // The defeated boss leaves the screen; its moment takes over.
+      await expect(boss(page)).toHaveCount(0);
       // The boss gets its own moment, before the badges it earned.
       await expect(page.locator(".unlock")).toHaveAttribute("data-tier", "boss");
       await expect(page.locator(".unlock")).toContainText("Boss defeated!");
@@ -199,7 +199,7 @@ test.describe("game rules", () => {
       await expect(boss(page)).toContainText("2 of 200 HP left");
       await joinRoom(page);
       await wait(page, MINUTE + SECOND);
-      await expect(boss(page)).toHaveAttribute("data-defeated", "true");
+      await expect(boss(page)).toHaveCount(0);
       await expectEarned(page, ["Giant Slayer", "Survived Finals"]);
     });
   });

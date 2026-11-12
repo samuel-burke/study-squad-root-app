@@ -174,7 +174,7 @@ export function RoomScreen(props: RoomScreenProps) {
     return (
       <div className="app">
         <Header {...props} />
-        {room.boss.enabled && <MobileBoss boss={room.boss} />}
+        {room.boss.enabled && !room.boss.defeated && <MobileBoss boss={room.boss} />}
         {timer}
         {props.miniPlayer}
         {challenge}
@@ -230,7 +230,9 @@ export function RoomScreen(props: RoomScreenProps) {
         <aside className="room-aside">
           {props.upNext}
           {props.podium}
-          {room.boss.enabled && <BossCard boss={room.boss} combo={room.combo} now={now} />}
+          {room.boss.enabled && !room.boss.defeated && (
+            <BossCard boss={room.boss} combo={room.combo} now={now} />
+          )}
           {room.features.comboEnabled && (
             <ComboCard
               combo={room.combo}

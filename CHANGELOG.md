@@ -4,6 +4,10 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ## [Unreleased]
 
+### Fixed
+
+- The home page leaderboard, the top 3 podium and your own profile now show your Root username instead of "You".
+
 ## [0.6.0] - 2026-11-12
 
 Recorded sound effects for badge and boss moments, a streak calendar that shows which days counted, a tidier room, and badge polish.

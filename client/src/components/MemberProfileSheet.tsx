@@ -30,7 +30,7 @@ export function MemberProfileSheet({
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
   const names = useProfiles(gateway, [userId]);
-  const name = you ? "You" : (names.get(userId)?.name ?? "Member");
+  const name = names.get(userId)?.name ?? (you ? "You" : "Member");
 
   useEffect(() => {
     let cancelled = false;

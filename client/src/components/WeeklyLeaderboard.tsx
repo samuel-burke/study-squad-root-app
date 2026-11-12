@@ -256,11 +256,11 @@ function LeaderboardRow({
   you: boolean;
   onOpen?(): void;
 }) {
-  const name = you ? "You" : (profile?.name ?? "Member");
+  const name = profile?.name ?? (you ? "You" : "Member");
   const time = amount(by, entry);
   return (
     <li className="member-row" data-you={you} aria-label={`Rank ${entry.rank}, ${name}, ${time}`}>
-      <OpenProfileButton name={name} onOpen={onOpen} />
+      <OpenProfileButton name={name} you={you} onOpen={onOpen} />
       <span className="rank tabular" aria-hidden="true">
         {entry.rank}
       </span>

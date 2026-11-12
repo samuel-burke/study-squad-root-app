@@ -14,7 +14,7 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ### Changed
 
-- All app sound (music, ambience, badge and boss moments, effects and chimes) now plays at half the volume. The balance between them is unchanged.
+- Sound effects, chimes and the badge and boss moments now play at half the volume. The study music and ambience are unchanged.
 
 ## [0.5.1] - 2026-11-11
 

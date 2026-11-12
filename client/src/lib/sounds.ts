@@ -111,7 +111,7 @@ function getContext(): AudioContext | null {
   return context;
 }
 
-/** Every app sound plays at this share of full volume: music, effects and chimes alike. */
+/** Effects, chimes and the badge and boss moments play at this share of full volume. The study music and ambience (audioChannel.ts) skip it. */
 const MASTER_VOLUME = 0.5;
 
 const outputs = new WeakMap<AudioContext, AudioNode>();

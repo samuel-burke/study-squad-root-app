@@ -1,6 +1,6 @@
 import { CLIPS, playClip } from "./clips";
 import { playShowEffects } from "./showEffects";
-import { withAudio } from "./sounds";
+import { output, withAudio } from "./sounds";
 
 /**
  * Sounds for room moments: a round's celebration, the weekly boss going
@@ -159,7 +159,7 @@ export function scheduleFanfare(ctx: AudioContext, fanfare: Fanfare): GainNode {
   master.gain.value = fanfare.volume;
   // Soften the peaks when many notes stack up.
   const limiter = ctx.createDynamicsCompressor();
-  master.connect(limiter).connect(ctx.destination);
+  master.connect(limiter).connect(output(ctx));
   if (fanfare.reverb > 0) {
     const reverb = ctx.createConvolver();
     reverb.buffer = impulse(ctx, fanfare.reverb);

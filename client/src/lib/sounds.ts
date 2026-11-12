@@ -111,6 +111,24 @@ function getContext(): AudioContext | null {
   return context;
 }
 
+/** Effects, chimes and the badge and boss moments play at this share of full volume. The study music and ambience (audioChannel.ts) skip it. */
+const MASTER_VOLUME = 0.5;
+
+const outputs = new WeakMap<AudioContext, AudioNode>();
+
+/** Where every app sound connects: one shared volume in front of the speakers. */
+export function output(ctx: AudioContext): AudioNode {
+  let out = outputs.get(ctx);
+  if (!out) {
+    const gain = ctx.createGain();
+    gain.gain.value = MASTER_VOLUME;
+    gain.connect(ctx.destination);
+    out = gain;
+    outputs.set(ctx, out);
+  }
+  return out;
+}
+
 /**
  * Browsers keep audio locked until the person interacts with the page, and
  * Safari only unlocks it inside the tap or click itself. Call this from every
@@ -127,7 +145,7 @@ export function unlockAudio(): void {
   try {
     const source = ctx.createBufferSource();
     source.buffer = ctx.createBuffer(1, 1, 22_050);
-    source.connect(ctx.destination);
+    source.connect(output(ctx));
     source.start(0);
     primed = true;
   } catch {
@@ -190,7 +208,7 @@ function scheduleNotes(ctx: AudioContext, { notes, wave }: (typeof MELODIES)[Sou
     gain.gain.setValueAtTime(0.0001, t0);
     gain.gain.exponentialRampToValueAtTime(VOLUME, t0 + 0.015);
     gain.gain.exponentialRampToValueAtTime(0.0001, t1);
-    osc.connect(gain).connect(ctx.destination);
+    osc.connect(gain).connect(output(ctx));
     osc.start(t0);
     osc.stop(t1 + 0.05);
   }
@@ -213,7 +231,7 @@ export function playChirp(chirp: Chirp): void {
     gain.gain.setValueAtTime(0.0001, t0);
     gain.gain.exponentialRampToValueAtTime(VOLUME * 0.8, t0 + 0.005);
     gain.gain.exponentialRampToValueAtTime(0.0001, t1);
-    osc.connect(gain).connect(ctx.destination);
+    osc.connect(gain).connect(output(ctx));
     osc.start(t0);
     osc.stop(t1 + 0.02);
   });

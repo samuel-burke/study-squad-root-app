@@ -12,6 +12,10 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 - The silver badge medal now lands on the music's hit. It used to arrive about half a second early.
 
+### Changed
+
+- Sound effects, chimes and the badge and boss moments now play at half the volume. The study music and ambience are unchanged.
+
 ## [0.5.1] - 2026-11-11
 
 Sharper badge engravings.

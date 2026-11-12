@@ -80,9 +80,11 @@ function Header({
       )}
       <div className="phase-pill" data-phase={room.timer.phase}>
         <span className="dot" />
-        {compact && room.timer.phase !== "idle" && room.timer.phase !== "longBreak"
-          ? `Round ${room.timer.round} of ${room.timer.rounds}`
-          : phasePill(room.timer)}
+        {!compact || room.timer.phase === "longBreak"
+          ? phasePill(room.timer)
+          : room.timer.phase === "idle"
+            ? "Timer free"
+            : `Round ${room.timer.round} of ${room.timer.rounds}`}
       </div>
       <div className="header-meta">
         <div className="present">

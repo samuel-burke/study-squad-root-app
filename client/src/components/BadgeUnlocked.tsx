@@ -24,13 +24,8 @@ function playShow(tier: BadgeTier): () => void {
   };
 }
 
-/** Seconds the moment stays up after the music ends, before moving on by itself. */
+/** Seconds the show keeps drawing after its music ends. */
 const LINGER = 1.5;
-
-/** The show's length in milliseconds, before it moves on by itself. */
-export function showMs(tier: BadgeTier): number {
-  return Math.round((SHOWS[tier].end + LINGER) * 1000);
-}
 
 /** The flat medal art as an image, on an 88 by 88 box so the ribbons fit. */
 export function medalImage(svg: SVGSVGElement): HTMLImageElement {
@@ -110,7 +105,7 @@ function loadPart(
  * The full-screen moment for a badge you just earned: a short cinematic for
  * its tier (see lib/unlockShow.ts) set to its music, unless sounds are muted.
  * The medal is a 3D minted piece where WebGL allows, and the flat medal
- * otherwise. It moves on by itself, or with a tap anywhere, the button, or
+ * otherwise. It stays up until closed with a tap anywhere, the button, or
  * Escape.
  */
 export function BadgeUnlocked({
@@ -133,7 +128,6 @@ export function BadgeUnlocked({
   const art = useRef<HTMLDivElement>(null);
   // If the page can't load the medal art as an image, the plain medal shows instead.
   const [plain, setPlain] = useState(false);
-  const ms = showMs(tier ?? "bronze");
 
   // The music plays once per badge, even if the mute setting changes mid-show,
   // and fades out when the moment closes.
@@ -151,14 +145,10 @@ export function BadgeUnlocked({
 
   useEffect(() => {
     button.current?.focus();
-    const timer = setTimeout(onDismiss, ms);
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onDismiss();
     window.addEventListener("keydown", onKey);
-    return () => {
-      clearTimeout(timer);
-      window.removeEventListener("keydown", onKey);
-    };
-  }, [onDismiss, ms]);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onDismiss]);
 
   // The show, drawn every frame from the moment it opens.
   useEffect(() => {
@@ -256,7 +246,7 @@ export function BadgeUnlocked({
     };
     const paint = () => drawAt(show.land + 2);
     let raf = 0;
-    // Frames stop once the moment would have closed by itself.
+    // Frames stop once the show is over; its last frame stays up.
     const frame = () => {
       const t = (performance.now() - start) / 1000;
       drawAt(t);

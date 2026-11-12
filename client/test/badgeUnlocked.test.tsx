@@ -2,7 +2,7 @@ import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { BADGES } from "@studyroom/core";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { BadgeUnlocked, showMs } from "../src/components/BadgeUnlocked";
+import { BadgeUnlocked } from "../src/components/BadgeUnlocked";
 import { CLIPS } from "../src/lib/clips";
 import { SHOWS } from "../src/lib/unlockShow";
 
@@ -30,26 +30,29 @@ describe("BadgeUnlocked", () => {
     expect(play).not.toHaveBeenCalled();
   });
 
-  it("closes with Escape, or by itself after a longer show for rarer tiers", () => {
+  it("stays open until closed, however long the show runs, then closes with Escape", () => {
     vi.useFakeTimers();
-    const bronze = vi.fn();
-    const { unmount } = render(
-      <BadgeUnlocked badgeId="streak-3" play={() => {}} onDismiss={bronze} />,
-    );
-    act(() => vi.advanceTimersByTime(showMs("bronze") - 100));
-    expect(bronze).not.toHaveBeenCalled();
-    act(() => vi.advanceTimersByTime(100));
-    expect(bronze).toHaveBeenCalledTimes(1);
-    unmount();
-
-    const platinum = vi.fn();
-    render(<BadgeUnlocked badgeId="streak-365" play={() => {}} onDismiss={platinum} />);
-    act(() => vi.advanceTimersByTime(showMs("bronze")));
-    expect(platinum).not.toHaveBeenCalled();
+    const play = vi.fn();
+    const onDismiss = vi.fn();
+    render(<BadgeUnlocked badgeId="streak-365" play={play} onDismiss={onDismiss} />);
+    act(() => vi.advanceTimersByTime(10 * 60_000));
+    expect(onDismiss).not.toHaveBeenCalled();
+    expect(screen.getByRole("dialog")).toHaveTextContent("Platinum badge unlocked!");
+    // The music plays once, not again while the moment waits.
+    expect(play).toHaveBeenCalledTimes(1);
     act(() => {
       window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
     });
-    expect(platinum).toHaveBeenCalledTimes(1);
+    expect(onDismiss).toHaveBeenCalledTimes(1);
+  });
+
+  it("closes with a tap anywhere, once per tap", async () => {
+    const onDismiss = vi.fn();
+    render(<BadgeUnlocked badgeId="streak-3" play={() => {}} onDismiss={onDismiss} />);
+    await userEvent.click(screen.getByRole("dialog"));
+    expect(onDismiss).toHaveBeenCalledTimes(1);
+    await userEvent.click(screen.getByRole("button", { name: "Nice!" }));
+    expect(onDismiss).toHaveBeenCalledTimes(2);
   });
 
   it("fades its music out when the moment closes early", async () => {
@@ -98,18 +101,17 @@ describe("every badge's unlock moment", () => {
 describe("tier shows", () => {
   const order = ["bronze", "silver", "gold", "platinum", "secret"] as const;
 
-  it("land inside their music and last at least 5 seconds", () => {
+  it("land inside their music", () => {
     for (const tier of order) {
       const show = SHOWS[tier];
       expect(show.land, tier).toBeLessThan(show.end);
       expect(show.end, tier).toBeLessThanOrEqual(CLIPS[tier].seconds);
-      expect(showMs(tier), tier).toBeGreaterThanOrEqual(5_000);
     }
   });
 
   it("never get shorter for a rarer tier", () => {
     for (let i = 1; i < order.length; i++) {
-      expect(showMs(order[i]!), order[i]).toBeGreaterThanOrEqual(showMs(order[i - 1]!));
+      expect(SHOWS[order[i]!].end, order[i]).toBeGreaterThanOrEqual(SHOWS[order[i - 1]!].end);
     }
   });
 });

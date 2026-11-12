@@ -6,6 +6,7 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ### Fixed
 
+- Profile pictures that fail to load, which happens often on mobile, now show the last copy that loaded on your device instead of initials, and saved pictures appear right away when the app opens. A picture that fails keeps being retried, waiting a little longer each time, instead of giving up after one retry.
 - The date picker for scheduling a session lines up with the name field again instead of hanging off to the right (Safari and the Root mobile app).
 
 ### Changed

@@ -8,13 +8,13 @@
 
 [![CI](https://github.com/samuel-burke/study-squad-root-app/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/samuel-burke/study-squad-root-app/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/samuel-burke/study-squad-root-app/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/samuel-burke/study-squad-root-app/actions/workflows/codeql.yml)
-[![Coverage](https://img.shields.io/endpoint?url=https%3A%2F%2Fstudysquad.samuelburke.dev%2Fcoverage.json)](docs/TESTING.md)
+[![Coverage](https://img.shields.io/endpoint?url=https%3A%2F%2Fsamuel-burke.github.io%2Fstudy-squad-root-app%2Fcoverage.json)](docs/TESTING.md)
 [![Release](https://img.shields.io/github/v/release/samuel-burke/study-squad-root-app?display_name=release&label=release)](https://github.com/samuel-burke/study-squad-root-app/releases/latest)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.8-3178c6?logo=typescript&logoColor=white)
 ![Node](https://img.shields.io/badge/node-%3E%3D22-339933?logo=node.js&logoColor=white)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-[**Try the live demo**](https://studysquad.samuelburke.dev/demo/?focus=1&break=0.5) · [Architecture](#architecture) · [Changelog](CHANGELOG.md) · [Privacy](https://studysquad.samuelburke.dev/privacy/)
+[**Try the live demo**](https://samuel-burke.github.io/study-squad-root-app/demo/?focus=1&break=0.5) · [Architecture](#architecture) · [Changelog](CHANGELOG.md) · [Privacy](https://samuel-burke.github.io/study-squad-root-app/privacy/)
 
 <img src="docs/screenshots/hero.gif" alt="A focus round ends: a gold badge unlocks, then the break moment shows XP earned, the streak and damage dealt to the weekly boss" width="100%">
 
@@ -97,7 +97,7 @@ See [DESIGN.md](DESIGN.md) for the reasoning behind each rule and [docs/API.md](
 
 ## Try it without a Root account
 
-The quickest way is the [live demo](https://studysquad.samuelburke.dev/demo/?focus=1&break=0.5) (1-minute rounds). To run the same demo locally, which runs the real engine in your browser with a few simulated members:
+The quickest way is the [live demo](https://samuel-burke.github.io/study-squad-root-app/demo/?focus=1&break=0.5) (1-minute rounds). To run the same demo locally, which runs the real engine in your browser with a few simulated members:
 
 ```bash
 npm install
@@ -200,11 +200,11 @@ The original mockups live in [docs/design](docs/design). Implementation choices 
 
 ## Support
 
-Need help? Email [hello@samuelburke.dev](mailto:hello@samuelburke.dev) or message **@5amuel** on Root. More options are on the [support page](https://studysquad.samuelburke.dev/support/).
+Need help? Email [hello@samuelburke.dev](mailto:hello@samuelburke.dev) or message **@5amuel** on Root. More options are on the [support page](https://samuel-burke.github.io/study-squad-root-app/support/).
 
 ## Contributing and security
 
-See [PRIVACY.md](PRIVACY.md) for what the app stores and how members delete it (also published at [studysquad.samuelburke.dev/privacy](https://studysquad.samuelburke.dev/privacy/), see [docs/WEBSITE.md](docs/WEBSITE.md)), [CONTRIBUTING.md](CONTRIBUTING.md) for the branch workflow and checks, [SECURITY.md](SECURITY.md) for how to report a vulnerability, and [CHANGELOG.md](CHANGELOG.md) for release notes.
+See [PRIVACY.md](PRIVACY.md) for what the app stores and how members delete it (also published at [samuel-burke.github.io/study-squad-root-app/privacy](https://samuel-burke.github.io/study-squad-root-app/privacy/), see [docs/WEBSITE.md](docs/WEBSITE.md)), [CONTRIBUTING.md](CONTRIBUTING.md) for the branch workflow and checks, [SECURITY.md](SECURITY.md) for how to report a vulnerability, and [CHANGELOG.md](CHANGELOG.md) for release notes.
 
 ## License
 

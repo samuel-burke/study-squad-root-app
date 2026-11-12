@@ -1098,6 +1098,19 @@ describe("progress", () => {
     expect(progress.me.streak).toBe(1);
   });
 
+  it("sends lifetime focus minutes for the color tier", async () => {
+    const { engine, advance } = createHarness();
+    expect((await engine.getSnapshot("ana")).me.lifetimeFocusMinutes).toBe(0);
+    await engine.startSolo("ana", 45);
+    await advance(45 * MINUTE);
+    await advance(40 * 24 * 60 * MINUTE);
+    await engine.startSolo("ana", 30);
+    await advance(30 * MINUTE);
+    // Counts every day ever, not just the last five weeks.
+    expect((await engine.getSnapshot("ana")).me.lifetimeFocusMinutes).toBe(75);
+    expect((await engine.getProgress("ana")).totalFocusMinutes).toBe(30);
+  });
+
   it("shows focus from a stopped solo, but doesn't count the day toward the streak", async () => {
     const { engine, advance } = createHarness();
     await engine.startSolo("ana", 45);

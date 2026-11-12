@@ -3183,3 +3183,93 @@ textarea.input {
     margin: 0 16px 10px;
   }
 }
+
+/* ---------------------------------------------------------------- color tiers
+   The accent follows the member's tier (lifetime focus hours). Spark has no
+   data-tier, so it keeps the default yellow with no glow. Each tier up glows more. */
+:root[data-tier="ember"] {
+  --accent: #ff8a1f;
+  --neon: 0.25;
+}
+:root[data-tier="blaze"] {
+  --accent: #ff3d6e;
+  --neon: 0.45;
+}
+:root[data-tier="nebula"] {
+  --accent: #b46bff;
+  --neon: 0.65;
+}
+:root[data-tier="supernova"] {
+  --accent: #ff4fd8;
+  --neon: 0.85;
+}
+:root[data-tier="starlight"] {
+  --accent: #eef6ff;
+  --neon: 1;
+}
+:root[data-theme="light"][data-tier="starlight"] {
+  --accent: #262d3d;
+  --glow-color: #8fb3ff;
+  --amber-ink: #ffffff;
+}
+
+:root[data-tier] {
+  --glow: color-mix(in srgb, var(--glow-color, var(--accent)) calc(var(--neon) * 70%), transparent);
+  --amber: var(--accent);
+  --amber-strong: var(--accent);
+  --amber-text: var(--accent);
+  --amber-hover: color-mix(in srgb, var(--accent) 80%, white);
+  --amber-bg: color-mix(in srgb, var(--accent) 14%, var(--surface));
+  --amber-you: color-mix(in srgb, var(--accent) 45%, var(--surface));
+  --amber-soft: color-mix(in srgb, var(--accent) 65%, var(--text-muted));
+  --level-bg: color-mix(in srgb, var(--accent) 12%, var(--surface));
+  --heat-1: color-mix(in srgb, var(--accent) 24%, var(--surface));
+  --heat-2: color-mix(in srgb, var(--accent) 58%, var(--surface));
+  --flame: var(--accent);
+}
+:root[data-theme="light"][data-tier] {
+  --amber-text: color-mix(in srgb, var(--accent) 62%, black);
+}
+:root[data-theme="light"][data-tier="starlight"] {
+  --amber-text: var(--accent);
+}
+
+:root[data-tier] :is(.boss, .boss-hit, .mobile-boss) {
+  --coral: var(--accent);
+  --coral-text: var(--amber-text);
+  --boss-bg: color-mix(in srgb, var(--accent) 7%, var(--surface));
+  --boss-border: color-mix(in srgb, var(--accent) 35%, var(--surface));
+  --boss-track: color-mix(in srgb, var(--accent) 18%, var(--surface));
+}
+:root[data-tier] .level-badge {
+  --teal-text: var(--amber-text);
+  --teal-bg: var(--level-bg);
+  box-shadow: 0 0 14px var(--glow);
+}
+:root[data-tier] .xp .bar > span {
+  background: var(--accent);
+}
+:root[data-tier] .ring svg {
+  overflow: visible;
+}
+:root[data-tier] .ring-progress {
+  filter: drop-shadow(0 0 6px var(--glow)) drop-shadow(0 0 14px var(--glow));
+}
+:root[data-tier] .btn-primary {
+  box-shadow: 0 0 16px var(--glow);
+}
+:root[data-tier] :is(.quest .bar, .xp .bar, .boss .bar, .mobile-boss .bar) > span,
+:root[data-tier] .round-dot[data-done="true"],
+:root[data-tier] .heat[data-level="3"] {
+  box-shadow: 0 0 10px var(--glow);
+}
+
+.tier-line {
+  margin: -4px 0 0;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.tier-line strong {
+  color: var(--amber-text);
+}

@@ -187,6 +187,8 @@ message MyStatus {
   int32 goal_xp_left_today = 16;
   // The table the member sits at. Empty when not at one.
   string table_id = 17;
+  // All focus minutes ever in this community. Sets the color tier.
+  int32 lifetime_focus_minutes = 18;
 }
 
 message RoomSnapshot {

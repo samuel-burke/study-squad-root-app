@@ -1,4 +1,4 @@
-import { formatHours, type ProgressDto, type QuestDto } from "@studyroom/core";
+import { formatHours, tierFor, type ProgressDto, type QuestDto } from "@studyroom/core";
 import { useEffect, useRef, useState } from "react";
 import { toGatewayError, type StudyRoomGateway } from "../api/gateway";
 import { freezeDays, heatLevel, percent } from "../lib/view";
@@ -140,6 +140,7 @@ export function ProgressScreen({
                 </span>
               )}
             </div>
+            <TierLine minutes={progress.me.lifetimeFocusMinutes} />
             <div className="heatmap heat-weekdays" aria-hidden="true">
               {WEEKDAY_LETTERS.map((letter, i) => (
                 <span key={i}>{letter}</span>
@@ -317,5 +318,16 @@ function DeleteMyData({ onDelete, onDone }: { onDelete(): Promise<boolean>; onDo
         </button>
       )}
     </section>
+  );
+}
+
+/** The member's color tier and the hours left to the next one. */
+function TierLine({ minutes }: { minutes: number }) {
+  const { tier, next } = tierFor(minutes);
+  return (
+    <p className="tier-line">
+      <strong>{tier.name}</strong> · {formatHours(minutes)} focused
+      {next ? ` · ${formatHours(next.hours * 60 - minutes)} to ${next.name}` : " · top tier"}
+    </p>
   );
 }

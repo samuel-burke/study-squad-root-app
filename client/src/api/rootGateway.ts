@@ -32,6 +32,7 @@ import {
   type StartRequest,
   type StudyRoomGateway,
 } from "./gateway";
+import { FIRST_SNAPSHOT, startupTimings } from "../lib/startupTimings";
 
 const client = studyRoomServiceClient;
 
@@ -110,6 +111,7 @@ class RootSelfTest implements SelfTestApi {
             )
           : profile,
       userAgent: navigator.userAgent,
+      startup: startupTimings(),
     };
   }
 }
@@ -132,6 +134,7 @@ export class RootGateway implements StudyRoomGateway {
     const sentAt = Date.now();
     const response = await call(request);
     const snapshot = snapshotFromProto(response);
+    if (!performance.getEntriesByName(FIRST_SNAPSHOT).length) performance.mark(FIRST_SNAPSHOT);
     this.clock.sample(sentAt, Date.now(), snapshot.room.serverNow);
     return snapshot;
   }

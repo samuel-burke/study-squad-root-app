@@ -15,6 +15,7 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 ### Changed
 
 - Sound effects, chimes and the badge and boss moments now play at half the volume. The study music and ambience are unchanged.
+- The bronze badge unlock no longer starts with a jolt: the medal and its music now ease in over a one second intro.
 
 ## [0.5.1] - 2026-11-11
 

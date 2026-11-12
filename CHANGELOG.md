@@ -6,7 +6,7 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ### Fixed
 
-- On phones, the top buttons (voice, sounds, progress, settings) stay right aligned in every phase. They used to slide left once a session started, and on large phones like the iPhone Pro Max the settings button could be cut off. The round pill now always sits on its own line below them on phones.
+- On phones, the round pill and the top buttons (voice, sounds, progress, settings) now share one row in every phase. The buttons used to slide left once a session started, the pill used to drop to its own line, and on large phones like the iPhone Pro Max the settings button could be cut off. To make room, phones hide the logo and the idle pill says "Timer free".
 
 ## [0.6.0] - 2026-11-12
 

@@ -9,7 +9,7 @@ import { MemberProfileSheet } from "./components/MemberProfileSheet";
 import { BreakMoment } from "./components/BreakMoment";
 import { Celebration } from "./components/Celebration";
 import { FeedbackSheet } from "./components/FeedbackSheet";
-import { ScheduleSheet, UpNext } from "./components/Schedule";
+import { SchedulePanel } from "./components/Schedule";
 import type { GoalActions } from "./components/GoalList";
 import { GoalsSheet } from "./components/GoalsSheet";
 import { LeaderboardPodium } from "./components/LeaderboardPodium";
@@ -36,7 +36,6 @@ type Overlay =
   | { kind: "settings" }
   | { kind: "sounds" }
   | { kind: "feedback" }
-  | { kind: "schedule" }
   | { kind: "member"; userId: string }
   | null;
 
@@ -186,19 +185,6 @@ export function App({ gateway }: { gateway: StudyRoomGateway }) {
             onOpenMember={(userId) => setOverlay({ kind: "member", userId })}
             onChallengeDone={() => void actions.completeBreakChallenge()}
             onHighFive={actions.sendHighFive}
-            upNext={
-              <UpNext
-                sessions={schedule.sessions}
-                youId={me.userId}
-                profiles={profiles}
-                compact={compact}
-                busy={busy}
-                onOpen={() => setOverlay({ kind: "schedule" })}
-                onRsvp={(id, going) =>
-                  void gateway.rsvpSession(id, going).then(schedule.setSessions, () => {})
-                }
-              />
-            }
             onJoinTable={(tableId) =>
               void actions.joinRoomTimer({ goals: [], goalsPrivate: me.goalsPrivate, tableId })
             }
@@ -225,6 +211,16 @@ export function App({ gateway }: { gateway: StudyRoomGateway }) {
           onClose={() => setOverlay(null)}
           onStartRoom={actions.joinRoomTimer}
           onStartSolo={actions.startSolo}
+          later={
+            <SchedulePanel
+              gateway={gateway}
+              sessions={schedule.sessions}
+              youId={me.userId}
+              profiles={profiles}
+              channelName={room.features.postChannelName}
+              onChange={schedule.setSessions}
+            />
+          }
         />
       )}
       {overlay?.kind === "goals" && (
@@ -261,17 +257,6 @@ export function App({ gateway }: { gateway: StudyRoomGateway }) {
           gateway={gateway}
           onClose={() => setOverlay(null)}
           onSendFeedback={() => setOverlay({ kind: "feedback" })}
-        />
-      )}
-      {overlay?.kind === "schedule" && (
-        <ScheduleSheet
-          gateway={gateway}
-          sessions={schedule.sessions}
-          youId={me.userId}
-          profiles={profiles}
-          channelName={room.features.postChannelName}
-          onChange={schedule.setSessions}
-          onClose={() => setOverlay(null)}
         />
       )}
       {overlay?.kind === "feedback" && (

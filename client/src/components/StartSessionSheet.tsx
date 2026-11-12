@@ -6,7 +6,7 @@ import {
   type MyStatusDto,
   type RoomStateDto,
 } from "@studyroom/core";
-import { useState, type FormEvent } from "react";
+import { useState, type FormEvent, type ReactNode } from "react";
 import type { StartRequest } from "../api/gateway";
 import { PeopleIcon, TimerIcon } from "./Icons";
 import { Sheet } from "./Sheet";
@@ -23,6 +23,8 @@ interface StartSessionSheetProps {
   onClose(): void;
   onStartRoom(request: StartRequest): Promise<boolean>;
   onStartSolo(minutes: number, request: StartRequest): Promise<boolean>;
+  /** The Later tab: scheduled sessions. */
+  later: ReactNode;
 }
 
 function roomHint(room: RoomStateDto, now: number) {
@@ -37,7 +39,7 @@ function roomHint(room: RoomStateDto, now: number) {
   return `On break · next round in ${formatCountdown(timer.phaseEndsAt - now)}${comboText}`;
 }
 
-/** "What are you working on?" Goals, privacy, and room vs solo timer. */
+/** "What are you working on?" Now: goals, privacy, and which timer. Later: scheduled sessions. */
 export function StartSessionSheet(props: StartSessionSheetProps) {
   const { room, me, now, busy, onClose } = props;
   const openGoals = me.goals.filter((g) => !g.done).length;
@@ -45,6 +47,7 @@ export function StartSessionSheet(props: StartSessionSheetProps) {
   const [goals, setGoals] = useState<string[]>(() => Array(slots).fill(""));
   const [goalsPrivate, setGoalsPrivate] = useState(me.goalsPrivate);
   const [mode, setMode] = useState<"room" | "solo" | "table">(props.initialMode);
+  const [later, setLater] = useState(false);
   const [tableName, setTableName] = useState("");
   const [tablePreset, setTablePreset] = useState<"25-5" | "50-10">("25-5");
   const [preset, setPreset] = useState<number>(25);
@@ -72,191 +75,212 @@ export function StartSessionSheet(props: StartSessionSheetProps) {
 
   return (
     <Sheet labelledBy="start-title" onClose={onClose}>
-      <form onSubmit={submit} style={{ display: "contents" }}>
-        <h1 id="start-title">What are you working on?</h1>
+      <h1 id="start-title">What are you working on?</h1>
+      <div className="segmented" role="group" aria-label="When">
+        {["Now", "Later"].map((label, i) => (
+          <button
+            key={label}
+            type="button"
+            aria-pressed={later === (i === 1)}
+            onClick={() => setLater(i === 1)}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      {later ? (
+        props.later
+      ) : (
+        <form onSubmit={submit} style={{ display: "contents" }}>
+          {slots > 0 && (
+            <div className="field">
+              <label htmlFor="goal-0" className="field-label">
+                Goals for this session
+              </label>
+              {goals.map((value, i) => (
+                <div key={i}>
+                  {i > 0 && (
+                    <label htmlFor={`goal-${i}`} className="visually-hidden">
+                      Another goal
+                    </label>
+                  )}
+                  <input
+                    id={`goal-${i}`}
+                    className="input"
+                    style={{ minHeight: 48, fontSize: 16 }}
+                    value={value}
+                    maxLength={LIMITS.goalTextMaxLength}
+                    placeholder={
+                      i === 0 ? "e.g. Make 20 flashcards" : "Add another goal (optional)"
+                    }
+                    data-autofocus={i === 0 ? true : undefined}
+                    onChange={(e) =>
+                      setGoals((list) => list.map((g, j) => (j === i ? e.target.value : g)))
+                    }
+                  />
+                </div>
+              ))}
+              {openGoals > 0 && (
+                <div className="tiny dim">
+                  You already have {openGoals} open {openGoals === 1 ? "goal" : "goals"}. They stay
+                  on your list.
+                </div>
+              )}
+            </div>
+          )}
 
-        {slots > 0 && (
-          <div className="field">
-            <label htmlFor="goal-0" className="field-label">
-              Goals for this session
-            </label>
-            {goals.map((value, i) => (
-              <div key={i}>
-                {i > 0 && (
-                  <label htmlFor={`goal-${i}`} className="visually-hidden">
-                    Another goal
-                  </label>
-                )}
+          <div className="setting-row">
+            <div>
+              <div style={{ fontWeight: 700 }}>Keep my goals private</div>
+              <div className="hint">Others will see "Focusing"</div>
+            </div>
+            <Toggle
+              label="Keep my goals private"
+              checked={goalsPrivate}
+              onChange={setGoalsPrivate}
+            />
+          </div>
+
+          <div className="field" role="radiogroup" aria-label="Timer">
+            <div className="field-label">Timer</div>
+            <button
+              type="button"
+              role="radio"
+              className="choice"
+              aria-checked={mode === "room"}
+              onClick={() => setMode("room")}
+            >
+              <PeopleIcon
+                size={22}
+                stroke={mode === "room" ? "var(--amber-strong)" : "var(--text-muted)"}
+              />
+              <span style={{ flex: 1 }}>
+                <span className="choice-title">Join the room timer</span>
+                <span className="choice-sub">{roomHint(room, now)}</span>
+              </span>
+            </button>
+            <button
+              type="button"
+              role="radio"
+              className="choice"
+              aria-checked={mode === "solo"}
+              onClick={() => setMode("solo")}
+            >
+              <TimerIcon
+                size={22}
+                stroke={mode === "solo" ? "var(--amber-strong)" : "var(--text-muted)"}
+              />
+              <span style={{ flex: 1 }}>
+                <span className="choice-title">Solo timer</span>
+                <span className="choice-sub">Pick your own length. Still shows on the board.</span>
+              </span>
+            </button>
+            <button
+              type="button"
+              role="radio"
+              className="choice"
+              aria-checked={mode === "table"}
+              onClick={() => setMode("table")}
+            >
+              <PeopleIcon
+                size={22}
+                stroke={mode === "table" ? "var(--amber-strong)" : "var(--text-muted)"}
+              />
+              <span style={{ flex: 1 }}>
+                <span className="choice-title">Start a new table</span>
+                <span className="choice-sub">
+                  A smaller group with its own timer. It still counts toward the room combo.
+                </span>
+              </span>
+            </button>
+            {mode === "table" && (
+              <>
+                <label htmlFor="table-name" className="visually-hidden">
+                  Table name
+                </label>
                 <input
-                  id={`goal-${i}`}
+                  id="table-name"
                   className="input"
-                  style={{ minHeight: 48, fontSize: 16 }}
-                  value={value}
-                  maxLength={LIMITS.goalTextMaxLength}
-                  placeholder={i === 0 ? "e.g. Make 20 flashcards" : "Add another goal (optional)"}
-                  data-autofocus={i === 0 ? true : undefined}
-                  onChange={(e) =>
-                    setGoals((list) => list.map((g, j) => (j === i ? e.target.value : g)))
-                  }
+                  value={tableName}
+                  maxLength={LIMITS.tableNameMaxLength}
+                  placeholder="Table name, e.g. Calc II"
+                  onChange={(e) => setTableName(e.target.value)}
                 />
+                <div className="minutes" role="radiogroup" aria-label="Table timer">
+                  {(["25-5", "50-10"] as const).map((key) => (
+                    <button
+                      key={key}
+                      type="button"
+                      role="radio"
+                      aria-checked={tablePreset === key}
+                      onClick={() => setTablePreset(key)}
+                    >
+                      {key.replace("-", " / ")}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+            {mode === "solo" && (
+              <div className="minutes" role="radiogroup" aria-label="Solo timer length">
+                {SOLO_LENGTHS.map((m) => (
+                  <button
+                    key={m}
+                    type="button"
+                    role="radio"
+                    aria-checked={custom === null && preset === m}
+                    onClick={() => {
+                      setPreset(m);
+                      setCustom(null);
+                    }}
+                  >
+                    {m} min
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={custom !== null}
+                  onClick={() => setCustom((c) => c ?? String(preset))}
+                >
+                  Custom
+                </button>
               </div>
-            ))}
-            {openGoals > 0 && (
-              <div className="tiny dim">
-                You already have {openGoals} open {openGoals === 1 ? "goal" : "goals"}. They stay on
-                your list.
+            )}
+            {mode === "solo" && custom !== null && (
+              <div className="custom-minutes">
+                <label htmlFor="custom-minutes">Minutes</label>
+                <input
+                  id="custom-minutes"
+                  type="number"
+                  inputMode="numeric"
+                  min={LIMITS.soloMinMinutes}
+                  max={LIMITS.soloMaxMinutes}
+                  step={1}
+                  value={custom}
+                  onChange={(e) => setCustom(e.target.value)}
+                  aria-describedby="custom-minutes-hint"
+                />
+                <span id="custom-minutes-hint" className="choice-sub">
+                  {LIMITS.soloMinMinutes} to {LIMITS.soloMaxMinutes} minutes
+                </span>
               </div>
             )}
           </div>
-        )}
 
-        <div className="setting-row">
-          <div>
-            <div style={{ fontWeight: 700 }}>Keep my goals private</div>
-            <div className="hint">Others will see "Focusing"</div>
-          </div>
-          <Toggle label="Keep my goals private" checked={goalsPrivate} onChange={setGoalsPrivate} />
-        </div>
-
-        <div className="field" role="radiogroup" aria-label="Timer">
-          <div className="field-label">Timer</div>
           <button
-            type="button"
-            role="radio"
-            className="choice"
-            aria-checked={mode === "room"}
-            onClick={() => setMode("room")}
+            type="submit"
+            className="btn btn-primary btn-start"
+            disabled={
+              busy ||
+              (mode === "solo" && !minutesValid) ||
+              (mode === "table" && tableName.trim() === "")
+            }
           >
-            <PeopleIcon
-              size={22}
-              stroke={mode === "room" ? "var(--amber-strong)" : "var(--text-muted)"}
-            />
-            <span style={{ flex: 1 }}>
-              <span className="choice-title">Join the room timer</span>
-              <span className="choice-sub">{roomHint(room, now)}</span>
-            </span>
+            Start focusing
           </button>
-          <button
-            type="button"
-            role="radio"
-            className="choice"
-            aria-checked={mode === "solo"}
-            onClick={() => setMode("solo")}
-          >
-            <TimerIcon
-              size={22}
-              stroke={mode === "solo" ? "var(--amber-strong)" : "var(--text-muted)"}
-            />
-            <span style={{ flex: 1 }}>
-              <span className="choice-title">Solo timer</span>
-              <span className="choice-sub">Pick your own length. Still shows on the board.</span>
-            </span>
-          </button>
-          <button
-            type="button"
-            role="radio"
-            className="choice"
-            aria-checked={mode === "table"}
-            onClick={() => setMode("table")}
-          >
-            <PeopleIcon
-              size={22}
-              stroke={mode === "table" ? "var(--amber-strong)" : "var(--text-muted)"}
-            />
-            <span style={{ flex: 1 }}>
-              <span className="choice-title">Start a new table</span>
-              <span className="choice-sub">
-                A smaller group with its own timer. It still counts toward the room combo.
-              </span>
-            </span>
-          </button>
-          {mode === "table" && (
-            <>
-              <label htmlFor="table-name" className="visually-hidden">
-                Table name
-              </label>
-              <input
-                id="table-name"
-                className="input"
-                value={tableName}
-                maxLength={LIMITS.tableNameMaxLength}
-                placeholder="Table name, e.g. Calc II"
-                onChange={(e) => setTableName(e.target.value)}
-              />
-              <div className="minutes" role="radiogroup" aria-label="Table timer">
-                {(["25-5", "50-10"] as const).map((key) => (
-                  <button
-                    key={key}
-                    type="button"
-                    role="radio"
-                    aria-checked={tablePreset === key}
-                    onClick={() => setTablePreset(key)}
-                  >
-                    {key.replace("-", " / ")}
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
-          {mode === "solo" && (
-            <div className="minutes" role="radiogroup" aria-label="Solo timer length">
-              {SOLO_LENGTHS.map((m) => (
-                <button
-                  key={m}
-                  type="button"
-                  role="radio"
-                  aria-checked={custom === null && preset === m}
-                  onClick={() => {
-                    setPreset(m);
-                    setCustom(null);
-                  }}
-                >
-                  {m} min
-                </button>
-              ))}
-              <button
-                type="button"
-                role="radio"
-                aria-checked={custom !== null}
-                onClick={() => setCustom((c) => c ?? String(preset))}
-              >
-                Custom
-              </button>
-            </div>
-          )}
-          {mode === "solo" && custom !== null && (
-            <div className="custom-minutes">
-              <label htmlFor="custom-minutes">Minutes</label>
-              <input
-                id="custom-minutes"
-                type="number"
-                inputMode="numeric"
-                min={LIMITS.soloMinMinutes}
-                max={LIMITS.soloMaxMinutes}
-                step={1}
-                value={custom}
-                onChange={(e) => setCustom(e.target.value)}
-                aria-describedby="custom-minutes-hint"
-              />
-              <span id="custom-minutes-hint" className="choice-sub">
-                {LIMITS.soloMinMinutes} to {LIMITS.soloMaxMinutes} minutes
-              </span>
-            </div>
-          )}
-        </div>
-
-        <button
-          type="submit"
-          className="btn btn-primary btn-start"
-          disabled={
-            busy ||
-            (mode === "solo" && !minutesValid) ||
-            (mode === "table" && tableName.trim() === "")
-          }
-        >
-          Start focusing
-        </button>
-      </form>
+        </form>
+      )}
     </Sheet>
   );
 }

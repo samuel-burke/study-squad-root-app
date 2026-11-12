@@ -140,20 +140,25 @@ describe("Study Squad app", () => {
     expect(opener).toHaveFocus();
   });
 
-  it("shows the next scheduled session, RSVPs, schedules and cancels", async () => {
+  it("keeps scheduled sessions in the start sheet's Later tab: RSVP, schedule, cancel", async () => {
     const { user } = await renderApp();
-    const card = screen.getByRole("region", { name: "Up next" });
-    expect(card).toHaveTextContent("Exam cram");
-    expect(card).toHaveTextContent("3 going");
-    await user.click(within(card).getByRole("button", { name: "I'm in" }));
-    expect(await within(card).findByRole("button", { name: "✓ Going" })).toHaveAttribute(
+    expect(screen.queryByText("Exam cram")).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Join room timer" }));
+    const dialog = screen.getByRole("dialog", { name: "What are you working on?" });
+    await user.click(within(dialog).getByRole("button", { name: "Later" }));
+    expect(within(dialog).getByRole("button", { name: "Later" })).toHaveAttribute(
       "aria-pressed",
       "true",
     );
-    expect(card).toHaveTextContent("4 going");
+    expect(dialog).toHaveTextContent("Exam cram");
+    expect(dialog).toHaveTextContent("3 going");
+    await user.click(within(dialog).getByRole("button", { name: "I'm in" }));
+    expect(await within(dialog).findByRole("button", { name: "✓ Going" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(dialog).toHaveTextContent("4 going");
 
-    await user.click(within(card).getByRole("button", { name: "All sessions" }));
-    const dialog = screen.getByRole("dialog", { name: "Scheduled sessions" });
     // Only your own sessions can be cancelled.
     expect(within(dialog).queryByRole("button", { name: "Cancel" })).not.toBeInTheDocument();
     const schedule = within(dialog).getByRole("button", { name: "Schedule" });

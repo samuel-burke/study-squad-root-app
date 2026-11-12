@@ -48,7 +48,7 @@ export const SHOWS: Record<BadgeTier, Show> = {
     legendary: false,
   },
   silver: {
-    land: 4.1,
+    land: 4.68,
     end: 6.4,
     build: "gather",
     colors: ["#6c7686", "#c9d3e2", "#ffffff"],

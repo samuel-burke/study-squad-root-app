@@ -1,5 +1,5 @@
 import type { LeaderboardDto } from "@studyroom/core";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import type { StudyRoomGateway } from "../src/api/gateway";
@@ -35,6 +35,21 @@ function fakeGateway(result: () => Promise<LeaderboardDto> = async () => board()
 }
 
 describe("LeaderboardPodium", () => {
+  it("shows your username on your own podium row", async () => {
+    const gateway = { ...fakeGateway(), currentUserId: () => "ana" };
+    render(
+      <LeaderboardPodium
+        gateway={gateway}
+        compact={false}
+        onOpenLeaderboard={vi.fn()}
+        onOpenMember={vi.fn()}
+      />,
+    );
+    const row = await screen.findByRole("listitem", { name: "Rank 2, Ana R., 2 hrs" });
+    expect(row).toHaveAttribute("data-you", "true");
+    expect(within(row).getByRole("button", { name: "View your profile" })).toBeInTheDocument();
+  });
+
   it("shows this week's top three by minutes on desktop and opens the full board", async () => {
     const gateway = fakeGateway();
     const onOpenLeaderboard = vi.fn();

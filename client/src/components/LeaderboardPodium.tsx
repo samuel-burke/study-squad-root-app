@@ -50,7 +50,7 @@ export function LeaderboardPodium({
   if (!board) return null;
 
   const nameOf = (userId: string) =>
-    userId === youId ? "You" : (profiles.get(userId)?.name ?? "Member");
+    profiles.get(userId)?.name ?? (userId === youId ? "You" : "Member");
   const myRank = !board.me.hidden && board.me.rank > 0 ? board.me.rank : null;
 
   if (compact) {

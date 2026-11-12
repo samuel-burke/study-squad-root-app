@@ -6,6 +6,7 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ### Fixed
 
+- The home page leaderboard, the top 3 podium and your own profile now show your Root username instead of "You".
 - On phones, the round pill and the top buttons (voice, sounds, progress, settings) now share one row in every phase. The buttons used to slide left once a session started, the pill used to drop to its own line, and on large phones like the iPhone Pro Max the settings button could be cut off. To make room, phones hide the logo and the idle pill says "Timer free".
 - Profile pictures that fail to load, which happens often on mobile, now show the last copy that loaded on your device instead of initials, and saved pictures appear right away when the app opens. A picture that fails keeps being retried, waiting a little longer each time, instead of giving up after one retry.
 - The date picker for scheduling a session lines up with the name field again instead of hanging off to the right (Safari and the Root mobile app).

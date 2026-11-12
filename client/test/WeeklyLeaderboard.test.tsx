@@ -74,7 +74,7 @@ describe("WeeklyLeaderboard", () => {
     expect(within(region).queryByRole("alert")).not.toBeInTheDocument();
   });
 
-  it("marks your own row as You", async () => {
+  it("marks your own row with your username", async () => {
     const gateway = fakeGateway({
       currentUserId: () => "ana",
       getLeaderboard: vi.fn(async () =>
@@ -82,7 +82,7 @@ describe("WeeklyLeaderboard", () => {
       ),
     });
     const { region } = renderBoard(gateway);
-    const you = await within(region).findByRole("listitem", { name: "Rank 2, You, 1 hr" });
+    const you = await within(region).findByRole("listitem", { name: "Rank 2, Ana R., 1 hr" });
     expect(you).toHaveAttribute("data-you", "true");
     expect(within(region).getAllByRole("listitem")).toHaveLength(3);
   });

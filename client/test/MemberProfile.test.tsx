@@ -89,6 +89,13 @@ describe("MemberProfileSheet", () => {
     );
   });
 
+  it("shows your own username, not You", async () => {
+    renderSheet(fakeGateway(), { you: true });
+    expect(await screen.findByRole("dialog", { name: "Priya" })).toHaveTextContent(
+      "This is what others see when they tap you",
+    );
+  });
+
   it("hides XP when the room has it turned off", async () => {
     renderSheet(fakeGateway(), { xpEnabled: false });
     expect(await screen.findByText("Lv 8")).toBeInTheDocument();

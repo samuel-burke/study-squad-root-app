@@ -77,7 +77,7 @@ function goalText(member: MemberCardDto) {
 /** Covers a card so tapping anywhere on it opens the member's profile. */
 export function OpenProfileButton({
   name,
-  you = name === "You",
+  you = false,
   onOpen,
 }: {
   name: string;

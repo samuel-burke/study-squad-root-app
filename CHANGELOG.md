@@ -4,6 +4,10 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ## [Unreleased]
 
+### Fixed
+
+- Profile pictures that fail to load, which happens often on mobile, now show the last copy that loaded on your device instead of initials, and saved pictures appear right away when the app opens. A picture that fails keeps being retried, waiting a little longer each time, instead of giving up after one retry.
+
 ## [0.6.0] - 2026-11-12
 
 Recorded sound effects for badge and boss moments, a streak calendar that shows which days counted, a tidier room, and badge polish.

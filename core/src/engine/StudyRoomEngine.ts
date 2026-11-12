@@ -2405,6 +2405,7 @@ export class StudyRoomEngine {
 
     const goals = await tx.goals.listForUser(userId, startOfDay(today, tz));
     const todayStats = await tx.stats.get(userId, today);
+    const lifetime = await tx.stats.lifetime(userId);
     return {
       userId,
       status,
@@ -2419,6 +2420,7 @@ export class StudyRoomEngine {
       goalXpLeftToday: this.config.xp.enabled
         ? Math.max(0, GAME.goalsWithXpPerDay - (todayStats?.goalsDone ?? 0))
         : 0,
+      lifetimeFocusMinutes: Math.floor(lifetime.focusMinutes),
       streak: currentStreak(streakState, today, this.config.streakFreezesEnabled),
       freezeAvailable: freezeAvailable(streakState, today, this.config.streakFreezesEnabled),
       goals: goals.map(goalToDto),

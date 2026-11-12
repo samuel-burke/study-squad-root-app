@@ -1876,21 +1876,17 @@ textarea.input {
   .brand.brand-compact {
     flex: none;
   }
-}
-
-/* Phones up to 420px wide (iPhone SE to iPhone 16): logo and buttons on top,
-   the round pill below. With the voice count the row needs about 410px. */
-@media (max-width: 420px) {
-  .app-header {
-    flex-wrap: wrap;
-  }
 
   .header-meta {
     margin-left: auto;
   }
+}
 
-  .phase-pill {
-    order: 3;
+/* Phones up to 480px wide (iPhone SE to Pro Max): the logo is hidden so the
+   round pill and the buttons share one row in every phase. */
+@media (max-width: 480px) {
+  .brand {
+    display: none;
   }
 
   .header-meta {

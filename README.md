@@ -14,7 +14,7 @@
 ![Node](https://img.shields.io/badge/node-%3E%3D22-339933?logo=node.js&logoColor=white)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-[**Try the live demo**](https://studysquad.samuelburke.dev/demo/?focus=1&break=0.5) · [Architecture](#architecture) · [Changelog](CHANGELOG.md) · [Privacy](https://studysquad.samuelburke.dev/privacy/)
+[**Try the live demo**](https://samuel-burke.github.io/study-squad-root-app/demo/?focus=1&break=0.5) · [Architecture](#architecture) · [Changelog](CHANGELOG.md) · [Privacy](https://studysquad.samuelburke.dev/privacy/)
 
 <img src="docs/screenshots/hero.gif" alt="A focus round ends: a gold badge unlocks, then the break moment shows XP earned, the streak and damage dealt to the weekly boss" width="100%">
 
@@ -97,7 +97,7 @@ See [DESIGN.md](DESIGN.md) for the reasoning behind each rule and [docs/API.md](
 
 ## Try it without a Root account
 
-The quickest way is the [live demo](https://studysquad.samuelburke.dev/demo/?focus=1&break=0.5) (1-minute rounds). To run the same demo locally, which runs the real engine in your browser with a few simulated members:
+The quickest way is the [live demo](https://samuel-burke.github.io/study-squad-root-app/demo/?focus=1&break=0.5) (1-minute rounds). To run the same demo locally, which runs the real engine in your browser with a few simulated members:
 
 ```bash
 npm install

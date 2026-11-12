@@ -12,6 +12,7 @@ export const TIERS = [
 ] as const;
 
 export type Tier = (typeof TIERS)[number];
+export type TierId = Tier["id"];
 
 /** The highest tier the member's lifetime focus minutes reach, and the one after it. */
 export function tierFor(focusMinutes: number): { tier: Tier; next?: Tier } {

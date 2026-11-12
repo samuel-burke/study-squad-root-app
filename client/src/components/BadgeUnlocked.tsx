@@ -5,6 +5,7 @@ import { playShowEffects } from "../lib/showEffects";
 import type { Medal3D } from "../lib/medal3d";
 import { clamp, SHOWS, ShowPainter, type DrawMedal, type Show } from "../lib/unlockShow";
 import { BadgeMedal, FRAMES, medalMetal } from "./BadgeMedal";
+import { RingUnlocked } from "./RingUnlocked";
 
 const EYEBROWS: Record<BadgeTier, string> = {
   bronze: "Badge unlocked",
@@ -101,6 +102,20 @@ function loadPart(
   });
 }
 
+interface UnlockProps {
+  badgeId: string;
+  muted?: boolean;
+  onDismiss(): void;
+  /** Starts the tier's music and effects, and returns a function that stops them. */
+  play?: (tier: BadgeTier) => (() => void) | void;
+}
+
+/** A color tier's ring gets its own neon unlock; every other badge gets the medal show. */
+export function BadgeUnlocked(props: UnlockProps) {
+  const ring = badgeById(props.badgeId)?.ring;
+  return ring ? <RingUnlocked {...props} /> : <MedalUnlocked {...props} />;
+}
+
 /**
  * The full-screen moment for a badge you just earned: a short cinematic for
  * its tier (see lib/unlockShow.ts) set to its music, unless sounds are muted.
@@ -108,18 +123,7 @@ function loadPart(
  * otherwise. It stays up until closed with a tap anywhere, the button, or
  * Escape.
  */
-export function BadgeUnlocked({
-  badgeId,
-  muted = false,
-  onDismiss,
-  play = playShow,
-}: {
-  badgeId: string;
-  muted?: boolean;
-  onDismiss(): void;
-  /** Starts the tier's music and effects, and returns a function that stops them. */
-  play?: (tier: BadgeTier) => (() => void) | void;
-}) {
+function MedalUnlocked({ badgeId, muted = false, onDismiss, play = playShow }: UnlockProps) {
   const badge = badgeById(badgeId);
   const tier = badge?.tier;
   const titleId = useId();

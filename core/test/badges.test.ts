@@ -9,6 +9,7 @@ import {
   newlyEarnedBadges,
   resolveCardStyle,
   resolveShowcase,
+  TIERS,
   type BadgeFacts,
   type BadgeFeature,
   type SessionFacts,
@@ -40,7 +41,7 @@ function earned(facts: Partial<BadgeFacts>): string[] {
 
 describe("badge catalog", () => {
   it("has unique ids, names and medals, with text for every badge", () => {
-    const medals = BADGES.map((b) => `${b.glyph}/${b.tier}/${b.stamp ?? ""}`);
+    const medals = BADGES.map((b) => `${b.glyph}/${b.tier}/${b.stamp ?? ""}/${b.ring ?? ""}`);
     expect(new Set(medals).size).toBe(medals.length);
     for (const key of ["id", "name"] as const) {
       const values = BADGES.map((b) => b[key]);
@@ -52,6 +53,22 @@ describe("badge catalog", () => {
       // Secret badges, and only those, wear the secret medal.
       expect(badge.tier === "secret", badge.id).toBe(badge.secret === true);
       expect((badge.stamp ?? "").length, badge.id).toBeLessThanOrEqual(4);
+    }
+  });
+
+  it("has a ring badge for each color tier after Spark, earned at its hours", () => {
+    const rings = BADGES.filter((b) => b.ring);
+    expect(rings.map((b) => b.ring)).toEqual(TIERS.slice(1).map((t) => t.id));
+    for (const t of TIERS.slice(1)) {
+      const badge = badgeById(`tier-${t.id}`)!;
+      expect(badge.name).toBe(t.name);
+      const facts = (focusMinutes: number): BadgeFacts => ({
+        xpTotal: 0,
+        level: 1,
+        lifetime: { focusMinutes, goalsDone: 0, sessionsFinished: 0, roomRoundsFinished: 0 },
+      });
+      expect(badge.earned(facts(t.hours * 60)), t.id).toBe(true);
+      expect(badge.earned(facts(t.hours * 60 - 1)), t.id).toBe(false);
     }
   });
 

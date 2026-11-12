@@ -76,12 +76,10 @@ export function App({ gateway }: { gateway: StudyRoomGateway }) {
   );
   useEventSounds(eventSoundState, sounds.muted);
 
-  // The accent color follows the member's tier. Spark keeps the default look.
+  // The accent color follows the member's tier (styles.css).
   const tier = tierFor(state.me?.lifetimeFocusMinutes ?? 0).tier.id;
   useEffect(() => {
-    const root = document.documentElement;
-    if (tier === "spark") delete root.dataset.tier;
-    else root.dataset.tier = tier;
+    document.documentElement.dataset.tier = tier;
   }, [tier]);
 
   // The boss going down gets its own full-screen moment, at the same time as

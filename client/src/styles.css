@@ -3185,8 +3185,12 @@ textarea.input {
 }
 
 /* ---------------------------------------------------------------- color tiers
-   The accent follows the member's tier (lifetime focus hours). Spark has no
-   data-tier, so it keeps the default yellow with no glow. Each tier up glows more. */
+   The accent follows the member's tier (lifetime focus hours). Spark keeps the
+   default yellow tokens with no glow. Each tier up glows more. */
+:root[data-tier="spark"] {
+  --accent: #f5b83d;
+  --neon: 0;
+}
 :root[data-tier="ember"] {
   --accent: #ff8a1f;
   --neon: 0.25;
@@ -3215,6 +3219,8 @@ textarea.input {
 
 :root[data-tier] {
   --glow: color-mix(in srgb, var(--glow-color, var(--accent)) calc(var(--neon) * 70%), transparent);
+}
+:root[data-tier]:not([data-tier="spark"]) {
   --amber: var(--accent);
   --amber-strong: var(--accent);
   --amber-text: var(--accent);
@@ -3227,7 +3233,7 @@ textarea.input {
   --heat-2: color-mix(in srgb, var(--accent) 58%, var(--surface));
   --flame: var(--accent);
 }
-:root[data-theme="light"][data-tier] {
+:root[data-theme="light"][data-tier]:not([data-tier="spark"]) {
   --amber-text: color-mix(in srgb, var(--accent) 62%, black);
 }
 :root[data-theme="light"][data-tier="starlight"] {
@@ -3245,6 +3251,10 @@ textarea.input {
   --teal-text: var(--amber-text);
   --teal-bg: var(--level-bg);
   box-shadow: 0 0 14px var(--glow);
+}
+:root[data-tier] .voice-count {
+  color: var(--amber-ink);
+  background: var(--accent);
 }
 :root[data-tier] .xp .bar > span {
   background: var(--accent);

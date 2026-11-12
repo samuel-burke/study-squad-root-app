@@ -5,7 +5,7 @@ export function baseFocusXp(minutes: number): number {
   return Math.floor(minutes) * GAME.xpPerFocusMinute;
 }
 
-/** Rounded to the nearest whole XP, since combo steps are 0.1x. */
+/** Rounded to the nearest whole XP, since combo steps are 0.2x. */
 export function focusXp(minutes: number, combo: number): number {
   return Math.round(baseFocusXp(minutes) * combo);
 }

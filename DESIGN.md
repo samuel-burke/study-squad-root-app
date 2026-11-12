@@ -30,16 +30,16 @@ Anyone can start a **table**: a smaller group in the room, like "Calc II", with 
 
 ## Rewards
 
-| Rule              | Value                                                             | Why                                                                      |
-| ----------------- | ----------------------------------------------------------------- | ------------------------------------------------------------------------ |
-| Focus XP          | 2 XP per whole minute × combo                                     | Rewards time, not task count                                             |
-| Goal XP           | +25 once per goal, for the first 5 goals finished each day        | Unchecking, rechecking or adding quick goals can't farm it               |
-| Level curve       | Level _n_ needs 150 + 50·_n_ XP (level 7 needs 500)               | Matches the mockups; early levels come fast                              |
-| Combo             | 1.0x + 0.1x per extra person who **finishes** the round, max 2.0x | Rewards focusing together. People at other tables count too              |
-| Finishing a round | At least 5 minutes in that round (or half the round, if shorter)  | Joining in the last seconds doesn't count toward the combo or the streak |
-| Leaving early     | Minutes so far are credited, round not finished                   | Honest time still counts                                                 |
-| Boss loot         | +100 XP × boss strength to every contributor                      | Happens once a week                                                      |
-| Weekly quests     | +30 to +40 XP per quest, once per week                            | At most three a week                                                     |
+| Rule              | Value                                                                              | Why                                                                      |
+| ----------------- | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| Focus XP          | 2 XP per whole minute × combo                                                      | Rewards time, not task count                                             |
+| Goal XP           | +25 once per goal, for the first 5 goals finished each day                         | Unchecking, rechecking or adding quick goals can't farm it               |
+| Level curve       | Level _n_ needs 150 + 50·_n_ XP (level 7 needs 500)                                | Matches the mockups; early levels come fast                              |
+| Combo             | 1.0x + 0.2x per extra person who **finishes** the round, no cap (6 people is 2.0x) | Rewards focusing together. People at other tables count too              |
+| Finishing a round | At least 5 minutes in that round (or half the round, if shorter)                   | Joining in the last seconds doesn't count toward the combo or the streak |
+| Leaving early     | Minutes so far are credited, round not finished                                    | Honest time still counts                                                 |
+| Boss loot         | +100 XP × boss strength to every contributor                                       | Happens once a week                                                      |
+| Weekly quests     | +30 to +40 XP per quest, once per week                                             | At most three a week                                                     |
 
 The live combo on screen counts everyone at any table, as a preview. The combo actually paid out at a table's round end counts that table's finishers plus everyone sitting at the other tables then. Solo timers never count.
 
@@ -115,7 +115,7 @@ Badges are permanent and come in two kinds: visible ones that say how to earn th
 
 - **Nothing new is tracked for badges.** Progress comes from what's already stored (daily stats, the session log, boss contributors); only the earned badges and the card look are new tables. Lifetime badges (hours focused, goals, rounds) therefore also reach members who earned them before badges existed, the next time they finish something.
 - **Badges never repeat** and keep the time they were first earned. The member's devices get one push per operation listing what it earned, which shows the unlock banner. A member with the app closed misses the banner but still finds the badge on the progress screen.
-- **Times of day** (Early Bird before 8am, Night Owl after 10pm, the 3am Three O'Clock Club) use when the session started, in the community time zone, and need a finished session so a timer left running doesn't count.
+- **Times of day** (Early Bird before 8am, Night Owl after 10pm) use when the session started, in the community time zone, and need a finished session so a timer left running doesn't count. The clock secrets (Three O'Clock Club at 3:00, 1337 at 13:37) count any finished session that was going at that minute, whether it started, ended or passed through it.
 - **Secret badges are only secret in the UI.** The catalog ships in the client bundle so cards can render badge names offline; anyone reading the code can find them, which is fine for Easter eggs.
 - **Badges that need another feature** declare it (`requires`): weekly quests, the weekly leaderboard, and the built-in boss roster with strengths. They stay out of the catalog until that feature adds itself to `LIVE_BADGE_FEATURES` and passes its facts to `awardBadges`. Weekly quests are live, so the three quest badges can be earned.
 

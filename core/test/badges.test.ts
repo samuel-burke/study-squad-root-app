@@ -9,6 +9,7 @@ import {
   newlyEarnedBadges,
   resolveCardStyle,
   resolveShowcase,
+  TIERS,
   type BadgeFacts,
   type BadgeFeature,
   type SessionFacts,
@@ -40,7 +41,7 @@ function earned(facts: Partial<BadgeFacts>): string[] {
 
 describe("badge catalog", () => {
   it("has unique ids, names and medals, with text for every badge", () => {
-    const medals = BADGES.map((b) => `${b.glyph}/${b.tier}/${b.stamp ?? ""}`);
+    const medals = BADGES.map((b) => `${b.glyph}/${b.tier}/${b.stamp ?? ""}/${b.ring ?? ""}`);
     expect(new Set(medals).size).toBe(medals.length);
     for (const key of ["id", "name"] as const) {
       const values = BADGES.map((b) => b[key]);
@@ -52,6 +53,22 @@ describe("badge catalog", () => {
       // Secret badges, and only those, wear the secret medal.
       expect(badge.tier === "secret", badge.id).toBe(badge.secret === true);
       expect((badge.stamp ?? "").length, badge.id).toBeLessThanOrEqual(4);
+    }
+  });
+
+  it("has a ring badge for each color tier after Spark, earned at its hours", () => {
+    const rings = BADGES.filter((b) => b.ring);
+    expect(rings.map((b) => b.ring)).toEqual(TIERS.slice(1).map((t) => t.id));
+    for (const t of TIERS.slice(1)) {
+      const badge = badgeById(`tier-${t.id}`)!;
+      expect(badge.name).toBe(t.name);
+      const facts = (focusMinutes: number): BadgeFacts => ({
+        xpTotal: 0,
+        level: 1,
+        lifetime: { focusMinutes, goalsDone: 0, sessionsFinished: 0, roomRoundsFinished: 0 },
+      });
+      expect(badge.earned(facts(t.hours * 60)), t.id).toBe(true);
+      expect(badge.earned(facts(t.hours * 60 - 1)), t.id).toBe(false);
     }
   });
 
@@ -103,7 +120,9 @@ describe("badge rules", () => {
       "early-bird",
     );
     expect(earned({ session: session({ start: at("2026-10-28", 22, 0) }) })).toContain("night-owl");
-    const late = earned({ session: session({ start: at("2026-10-28", 3, 10) }) });
+    const late = earned({
+      session: session({ start: at("2026-10-28", 2, 50), end: at("2026-10-28", 3, 15) }),
+    });
     expect(late).toEqual(expect.arrayContaining(["night-owl", "three-am"]));
     expect(late).not.toContain("early-bird");
   });
@@ -152,7 +171,7 @@ describe("badge rules", () => {
 
   it("room badges need a finished round at a high enough combo", () => {
     expect(earned({ session: session({ kind: "room", combo: 1.4 }) })).not.toContain("study-group");
-    expect(earned({ session: session({ kind: "room", combo: 1.5 }) })).toContain("study-group");
+    expect(earned({ session: session({ kind: "room", combo: 1.6 }) })).toContain("study-group");
     expect(earned({ session: session({ kind: "room", combo: 2, fullCycle: true }) })).toEqual(
       expect.arrayContaining(["study-group", "full-house", "full-cycle"]),
     );
@@ -175,9 +194,40 @@ describe("badge rules", () => {
     expect(on("2028-02-29")).toEqual(["leap-day"]);
     expect(on("2027-03-17")).toEqual(["st-patricks"]);
     expect(on("2027-03-16")).toEqual([]);
+    expect(on("2027-05-04")).toEqual(["may-fourth"]);
+    expect(on("2026-12-21")).toEqual(["shortest-day"]);
+    expect(on("2026-11-23")).toEqual(["fibonacci-day"]);
+    expect(on("2026-10-23")).toEqual(["mole-day"]);
+    // Day 256 is September 13, or September 12 in a leap year.
+    expect(on("2027-09-13")).toEqual(["programmers-day"]);
+    expect(on("2028-09-12")).toEqual(["programmers-day"]);
+    expect(on("2028-09-13")).toEqual([]);
     expect(on("2026-10-28", 13, 37)).toEqual(["leet"]);
     const overnight = session({ start: at("2026-10-28", 23, 40), end: at("2026-10-29", 0, 5) });
     expect(earned({ session: overnight })).toContain("midnight-oil");
+  });
+
+  it("1337 and Three O'Clock Club count any session going at that minute", () => {
+    const from = (start: [string, number, number], end: [string, number, number]) =>
+      earned({ session: session({ start: at(...start), end: at(...end) }) });
+    // Starting, ending, or passing through the minute all count.
+    expect(from(["2026-10-28", 13, 37], ["2026-10-28", 14, 2])).toContain("leet");
+    expect(from(["2026-10-28", 13, 12], ["2026-10-28", 13, 37])).toContain("leet");
+    expect(from(["2026-10-28", 12, 0], ["2026-10-28", 15, 0])).toContain("leet");
+    expect(from(["2026-10-28", 13, 38], ["2026-10-28", 14, 3])).not.toContain("leet");
+    // A long session from before midnight through 3am.
+    expect(from(["2026-10-28", 23, 30], ["2026-10-29", 3, 0])).toContain("three-am");
+    expect(from(["2026-10-28", 23, 30], ["2026-10-29", 2, 30])).not.toContain("three-am");
+    expect(from(["2026-10-28", 3, 10], ["2026-10-28", 3, 35])).not.toContain("three-am");
+    expect(from(["2026-10-28", 4, 4], ["2026-10-28", 4, 29])).toContain("sleep-not-found");
+    expect(from(["2026-10-28", 3, 40], ["2026-10-28", 4, 3])).not.toContain("sleep-not-found");
+    // Cut short doesn't count.
+    const cut = session({
+      finished: false,
+      start: at("2026-10-28", 13, 30),
+      end: at("2026-10-28", 13, 40),
+    });
+    expect(earned({ session: cut })).not.toContain("leet");
   });
 
   it("XP Easter eggs: a total ending in 777, and over 9000", () => {
@@ -186,6 +236,13 @@ describe("badge rules", () => {
     expect(earned({ xpTotal: 778 })).toEqual([]);
     expect(earned({ xpTotal: 1077 })).toEqual([]);
     expect(earned({ xpTotal: 9001 })).toEqual(["over-9000"]);
+  });
+
+  it("Power of Two: an exact power of two from 1024 up", () => {
+    for (const xpTotal of [1024, 2048, 4096, 16384])
+      expect(earned({ xpTotal })).toContain("power-of-two");
+    for (const xpTotal of [0, 256, 512, 1000, 1023, 1025, 1536])
+      expect(earned({ xpTotal })).not.toContain("power-of-two");
   });
 
   it("Speedrun is a goal finished within a minute", () => {

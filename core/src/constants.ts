@@ -12,8 +12,7 @@ export const GAME = {
   /** Bonus XP each contributor gets when a 1x boss is defeated, scaled by its strength. */
   bossLootXp: 100,
   /** Combo grows by this much per extra person who finishes a room round. */
-  comboStep: 0.1,
-  comboMax: 2,
+  comboStep: 0.2,
   /** Minimum focused minutes in a room round to count as "finished together". */
   minRoundMinutesToFinish: 5,
   /** Streak lengths that trigger a channel post. */

@@ -61,7 +61,7 @@ describe("room timer", () => {
     const snap = await engine.joinRoomTimer("marcus");
     expect(snap.room.timer.phaseEndsAt).toBe(T0 + FOCUS);
     expect(snap.room.members.map((m) => m.endsAt)).toEqual([T0 + FOCUS, T0 + FOCUS]);
-    expect(snap.room.combo).toBe(1.1);
+    expect(snap.room.combo).toBe(1.2);
   });
 
   it("is idempotent when someone joins twice", async () => {
@@ -81,9 +81,9 @@ describe("room timer", () => {
 
     expect(notifier.phases).toHaveLength(1);
     const phase = notifier.phases[0]!;
-    expect(phase).toMatchObject({ kind: "focus", round: 1, combo: 1.1 });
+    expect(phase).toMatchObject({ kind: "focus", round: 1, combo: 1.2 });
     expect(phase.finisherIds.sort()).toEqual(["ana", "marcus"]);
-    expect(phase.roomDamageXp).toBe(110); // 2 × 50 base XP × 1.1
+    expect(phase.roomDamageXp).toBe(120); // 2 × 50 base XP × 1.2
     expect(phase.room.timer.phase).toBe("break");
 
     const ana = notifier.personal.find((p) => p.userId === "ana")!.event;
@@ -92,15 +92,15 @@ describe("room timer", () => {
       round: 1,
       finished: true,
       baseXp: 50,
-      combo: 1.1,
-      xpEarned: 55,
+      combo: 1.2,
+      xpEarned: 60,
       streak: 1,
       streakExtended: true,
       goalPrompt: expect.objectContaining({ text: "Make 20 flashcards" }),
       breakEndsAt: T0 + FOCUS + BREAK,
     });
     expect(ana.me.status).toBe("roomBreak");
-    expect(notifier.lastRoom?.boss.damageXp).toBe(110);
+    expect(notifier.lastRoom?.boss.damageXp).toBe(120);
   });
 
   it("doesn't let a last-second joiner count toward the combo or a finished round", async () => {
@@ -570,20 +570,20 @@ describe("live stats", () => {
     expect((await engine.getSnapshot("ana")).me.xpTotal).toBe(20);
     await advance(2 * MINUTE + 30_000);
     await engine.leaveRoomTimer("lena");
-    // 12 whole minutes at the 1.2x combo of three people focusing.
-    expect((await engine.getSnapshot("lena")).me.xpTotal).toBe(29);
+    // 12 whole minutes at the 1.4x combo of three people focusing.
+    expect((await engine.getSnapshot("lena")).me.xpTotal).toBe(34);
     await advance(12 * MINUTE + 30_000);
-    // The round ends at 1.1x: 55 XP each, the same as before stats went live.
-    expect((await engine.getSnapshot("ana")).me.xpTotal).toBe(55);
-    expect((await engine.getSnapshot("kai")).me.xpTotal).toBe(55);
-    expect((await engine.getSnapshot("lena")).me.xpTotal).toBe(29);
+    // The round ends at 1.2x: 60 XP each, the same as before stats went live.
+    expect((await engine.getSnapshot("ana")).me.xpTotal).toBe(60);
+    expect((await engine.getSnapshot("kai")).me.xpTotal).toBe(60);
+    expect((await engine.getSnapshot("lena")).me.xpTotal).toBe(34);
     const board = await engine.getLeaderboard("ana");
     expect(board.entries.map((e) => [e.userId, e.focusMinutes])).toEqual([
       ["ana", 25],
       ["kai", 25],
       ["lena", 12],
     ]);
-    expect(notifier.personal.find((p) => p.userId === "ana")?.event.xpEarned).toBe(55);
+    expect(notifier.personal.find((p) => p.userId === "ana")?.event.xpEarned).toBe(60);
   });
 
   it("credits XP live each minute, and minutes with XP off", async () => {
@@ -629,12 +629,12 @@ describe("weekly boss", () => {
     expect((await engine.getSnapshot("ana")).room.boss.damageXp).toBe(40);
     expect(notifier.lastRoom?.boss.damageXp).toBe(40);
     await advance(15 * MINUTE);
-    // The round ends at 1.1x: 2 × 55 XP in total, no more and no less.
-    expect((await engine.getSnapshot("ana")).room.boss.damageXp).toBe(110);
-    expect(notifier.phases[0]!.roomDamageXp).toBe(110);
+    // The round ends at 1.2x: 2 × 60 XP in total, no more and no less.
+    expect((await engine.getSnapshot("ana")).room.boss.damageXp).toBe(120);
+    expect(notifier.phases[0]!.roomDamageXp).toBe(120);
     // Breaks deal nothing.
     await advance(BREAK - MINUTE);
-    expect((await engine.getSnapshot("ana")).room.boss.damageXp).toBe(110);
+    expect((await engine.getSnapshot("ana")).room.boss.damageXp).toBe(120);
   });
 
   it("deals only the rest when someone leaves a round or stops a solo early", async () => {
@@ -670,15 +670,15 @@ describe("weekly boss", () => {
     await store.bosses.save(newBoss("2026-10-26", "Professor Pop Quiz", 200));
     await engine.joinRoomTimer("ana");
     await engine.joinRoomTimer("kai");
-    await advance(FOCUS); // 2 × 55 XP = 110 damage
+    await advance(FOCUS); // 2 × 60 XP = 120 damage
     const before = (await engine.getSnapshot("ana")).room.boss;
-    expect(before).toMatchObject({ defeated: false, damageXp: 110, maxHpXp: 150 });
+    expect(before).toMatchObject({ defeated: false, damageXp: 120, maxHpXp: 150 });
     expect(before).toMatchObject({ strength: 0.75, lootXp: 75 });
     await advance(BREAK + FOCUS);
     const snap = await engine.getSnapshot("ana");
     expect(snap.room.boss).toMatchObject({ defeated: true, damageXp: 150, maxHpXp: 150 });
-    // 55 XP per round + 75 loot.
-    expect(snap.me.xpTotal).toBe(55 + 55 + 75);
+    // 60 XP per round + 75 loot.
+    expect(snap.me.xpTotal).toBe(60 + 60 + 75);
     expect(announcer.posts.filter((p) => p.kind === "boss")).toEqual([
       {
         kind: "boss",
@@ -775,7 +775,7 @@ describe("channel posts", () => {
     await engine.joinRoomTimer("d");
     await engine.idle();
     expect(announcer.posts.filter((p) => p.kind === "busy")).toEqual([
-      { kind: "busy", channelId: "channel-1", detail: { focusingCount: 3, combo: 1.1 } },
+      { kind: "busy", channelId: "channel-1", detail: { focusingCount: 3, combo: 1.2 } },
     ]);
     // Drop below the threshold and come back quickly: still quiet.
     await engine.leaveRoomTimer("a");
@@ -1096,6 +1096,19 @@ describe("progress", () => {
     expect(progress.days.at(-1)).toEqual({ day: "2026-10-28", focusMinutes: 45, counted: true });
     expect(progress.totalFocusMinutes).toBe(45);
     expect(progress.me.streak).toBe(1);
+  });
+
+  it("sends lifetime focus minutes for the color tier", async () => {
+    const { engine, advance } = createHarness();
+    expect((await engine.getSnapshot("ana")).me.lifetimeFocusMinutes).toBe(0);
+    await engine.startSolo("ana", 45);
+    await advance(45 * MINUTE);
+    await advance(40 * 24 * 60 * MINUTE);
+    await engine.startSolo("ana", 30);
+    await advance(30 * MINUTE);
+    // Counts every day ever, not just the last five weeks.
+    expect((await engine.getSnapshot("ana")).me.lifetimeFocusMinutes).toBe(75);
+    expect((await engine.getProgress("ana")).totalFocusMinutes).toBe(30);
   });
 
   it("shows focus from a stopped solo, but doesn't count the day toward the streak", async () => {

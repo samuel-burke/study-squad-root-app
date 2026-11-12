@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { BossDto } from "@studyroom/core";
+import { tierFor, type BossDto } from "@studyroom/core";
 import type { StudyRoomGateway } from "./api/gateway";
 import { BadgeUnlocked } from "./components/BadgeUnlocked";
 import { BossDefeated } from "./components/BossDefeated";
@@ -75,6 +75,12 @@ export function App({ gateway }: { gateway: StudyRoomGateway }) {
     [celebrationAt, boss, level],
   );
   useEventSounds(eventSoundState, sounds.muted);
+
+  // The accent color follows the member's tier (styles.css).
+  const tier = tierFor(state.me?.lifetimeFocusMinutes ?? 0).tier.id;
+  useEffect(() => {
+    document.documentElement.dataset.tier = tier;
+  }, [tier]);
 
   // The boss going down gets its own full-screen moment, at the same time as
   // its music. Not for a boss that was already beaten when the app opened.

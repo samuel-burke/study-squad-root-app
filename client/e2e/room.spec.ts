@@ -17,7 +17,7 @@ test.describe("focus room", () => {
       await expect(page.getByRole("region", { name: "Weekly boss" })).toContainText(
         /[\d,]+ of [\d,]+ HP left/,
       );
-      await expect(page.getByRole("region", { name: "Room timer" })).toContainText("1.4x combo");
+      await expect(page.getByRole("region", { name: "Room timer" })).toContainText("1.8x combo");
     }
   });
 
@@ -63,7 +63,7 @@ test.describe("focus room", () => {
     await page.goto("/");
     const sheet = await openStartSheet(page);
     await expect(sheet.getByRole("radio", { name: /Join the room timer/ })).toContainText(
-      "combo goes to 1.5x",
+      "combo goes to 2.0x",
     );
     await sheet.getByLabel("Goals for this session").fill("Make 20 flashcards");
     await sheet.getByRole("button", { name: "Start focusing" }).click();
@@ -72,7 +72,7 @@ test.describe("focus room", () => {
       "Make 20 flashcards",
     );
     await expect(page.getByRole("heading", { name: /Focusing now · 8/ })).toBeVisible();
-    await expect(page.getByText("1.5x").first()).toBeVisible();
+    await expect(page.getByText("2.0x").first()).toBeVisible();
   });
 
   test("private goals show as Focusing to everyone else", async ({ page }) => {

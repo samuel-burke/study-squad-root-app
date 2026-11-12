@@ -13,6 +13,7 @@ export * from "./timer/roomCycle";
 export * from "./game/combo";
 export * from "./game/xp";
 export * from "./game/streak";
+export * from "./game/tiers";
 export * from "./game/boss";
 export * from "./game/quests";
 export * from "./game/badges";

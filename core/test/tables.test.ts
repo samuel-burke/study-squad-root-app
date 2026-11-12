@@ -51,12 +51,12 @@ describe("study tables", () => {
     await engine.joinRoomTimer("devon", { tableId: snap.room.tables[1]!.id });
     expect((await engine.getSnapshot("ana")).room).toMatchObject({
       roomParticipantCount: 4,
-      combo: 1.3,
+      combo: 1.6,
     });
     // The main table's round pays its two finishers plus the two at Calc II.
     await advance(25 * MINUTE);
     const ana = notifier.personal.find((p) => p.userId === "ana")!.event;
-    expect(ana.combo).toBe(1.3);
+    expect(ana.combo).toBe(1.6);
   });
 
   it("moves a member between tables, crediting the old one and closing it once empty", async () => {
@@ -68,8 +68,8 @@ describe("study tables", () => {
     const snap = await engine.joinRoomTimer("kai", { tableId: "main" });
     expect(snap.room.tables.map((t) => t.id)).toEqual(["main"]);
     expect(snap.me.tableId).toBe("main");
-    // Ten minutes at Calc II, at the room's 1.1x combo.
-    expect(snap.me.xpToday).toBe(22);
+    // Ten minutes at Calc II, at the room's 1.2x combo.
+    expect(snap.me.xpToday).toBe(24);
     await expectError(engine.joinRoomTimer("ana", { tableId: calcId }), ErrorCode.NotFound);
   });
 

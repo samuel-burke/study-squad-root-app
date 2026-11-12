@@ -30,8 +30,8 @@ test("two members see each other join live, and the combo rises for both", async
       name: /^Ben, Room timer/,
     }),
   ).toContainText("Problem set 2");
-  await expect(ana.page.getByText("1.1x combo")).toBeVisible();
-  await expect(ben.page.getByText("1.1x combo")).toBeVisible();
+  await expect(ana.page.getByText("1.2x combo")).toBeVisible();
+  await expect(ben.page.getByText("1.2x combo")).toBeVisible();
 
   await expectNoErrors(ana, ben);
   await ana.close();

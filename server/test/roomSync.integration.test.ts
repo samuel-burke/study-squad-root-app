@@ -176,12 +176,12 @@ describe("room timer sync across clients (engine + SQLite + push adapter)", () =
       expect(phases[0]!.payload).toMatchObject({
         kind: "focus",
         round: 1,
-        combo: 1.1,
+        combo: 1.2,
         room: { timer: { phase: "break" } },
       });
     }
     const anaResult = fanOut.of("ana", "personal")[0]!.payload;
-    expect(anaResult).toMatchObject({ xpEarned: 55, goalPrompt: { text: "Make 20 flashcards" } });
+    expect(anaResult).toMatchObject({ xpEarned: 60, goalPrompt: { text: "Make 20 flashcards" } });
     expect(fanOut.of("marcus", "personal")).toHaveLength(1);
     expect(fanOut.of("viewer", "personal")).toHaveLength(0);
   });

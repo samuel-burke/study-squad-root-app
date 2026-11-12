@@ -29,6 +29,7 @@ Recorded sound effects for badge and boss moments, a streak calendar that shows 
 - The blue laurel around platinum badges is gone.
 - The website now has a live demo you can try in the browser (1-minute rounds, marked DEMO), and publishes test coverage for a README badge.
 - Each upload to Root now also publishes a GitHub release with that version's changelog as its notes.
+- The README has a new header with status badges, a live demo link and an animated preview, plus a Highlights section. The full feature list is folded below a shorter summary.
 
 ## [0.5.1] - 2026-11-11
 

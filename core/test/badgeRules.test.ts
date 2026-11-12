@@ -108,6 +108,10 @@ const RULES: Record<string, Row> = {
     earns: lifetime({ focusMinutes: 30000 }),
     misses: lifetime({ focusMinutes: 29999 }),
   },
+  "focus-1000h": {
+    earns: lifetime({ focusMinutes: 60000 }),
+    misses: lifetime({ focusMinutes: 59999 }),
+  },
   "early-bird": {
     earns: session({ start: at("2026-10-28", 4), end: at("2026-10-28", 4, 25) }),
     misses: session({ start: at("2026-10-28", 8), end: at("2026-10-28", 8, 25) }),
@@ -143,6 +147,10 @@ const RULES: Record<string, Row> = {
     earns: lifetime({ roomRoundsFinished: 100 }),
     misses: lifetime({ roomRoundsFinished: 99 }),
   },
+  "room-250": {
+    earns: lifetime({ roomRoundsFinished: 250 }),
+    misses: lifetime({ roomRoundsFinished: 249 }),
+  },
   "full-cycle": {
     earns: session({ kind: "room", fullCycle: true }),
     misses: session({ kind: "room", fullCycle: true, finished: false }),
@@ -159,11 +167,13 @@ const RULES: Record<string, Row> = {
   "first-goal": { earns: lifetime({ goalsDone: 1 }), misses: lifetime({ goalsDone: 0 }) },
   "goals-25": { earns: lifetime({ goalsDone: 25 }), misses: lifetime({ goalsDone: 24 }) },
   "goals-100": { earns: lifetime({ goalsDone: 100 }), misses: lifetime({ goalsDone: 99 }) },
+  "goals-500": { earns: lifetime({ goalsDone: 500 }), misses: lifetime({ goalsDone: 499 }) },
   "productive-day": { earns: today({ goalsDone: 5 }), misses: today({ goalsDone: 4 }) },
 
   "first-boss": { earns: boss({ defeats: 1 }), misses: {} },
   "boss-5": { earns: boss({ defeats: 5 }), misses: boss({ defeats: 4 }) },
   "boss-20": { earns: boss({ defeats: 20 }), misses: boss({ defeats: 19 }) },
+  "boss-50": { earns: boss({ defeats: 50 }), misses: boss({ defeats: 49 }) },
   "final-blow": { earns: boss({ finalBlow: true }), misses: boss({ finalBlow: false }) },
   "giant-slayer": { earns: boss({ strength: 2 }), misses: boss({ strength: 1.9 }) },
   "survived-finals": {
@@ -210,6 +220,31 @@ const RULES: Record<string, Row> = {
     earns: session({ start: at("2028-02-29", 14), end: at("2028-02-29", 14, 25) }),
     misses: session({ start: at("2028-02-28", 14), end: at("2028-02-28", 14, 25) }),
   },
+  "may-fourth": {
+    earns: session({ start: at("2027-05-04", 14), end: at("2027-05-04", 14, 25) }),
+    misses: session({ start: at("2027-05-03", 14), end: at("2027-05-03", 14, 25) }),
+  },
+  "shortest-day": {
+    earns: session({ start: at("2026-12-21", 14), end: at("2026-12-21", 14, 25) }),
+    misses: session({ start: at("2026-12-22", 14), end: at("2026-12-22", 14, 25) }),
+  },
+  "fibonacci-day": {
+    earns: session({ start: at("2026-11-23", 14), end: at("2026-11-23", 14, 25) }),
+    misses: session({ start: at("2026-11-22", 14), end: at("2026-11-22", 14, 25) }),
+  },
+  "mole-day": {
+    earns: session({ start: at("2026-10-23", 14), end: at("2026-10-23", 14, 25) }),
+    misses: session({ start: at("2026-10-22", 14), end: at("2026-10-22", 14, 25) }),
+  },
+  "programmers-day": {
+    earns: session({ start: at("2027-09-13", 14), end: at("2027-09-13", 14, 25) }),
+    misses: session({ start: at("2027-09-12", 14), end: at("2027-09-12", 14, 25) }),
+  },
+  "sleep-not-found": {
+    earns: session({ start: at("2026-10-28", 3, 50), end: at("2026-10-28", 4, 15) }),
+    misses: session({ start: at("2026-10-28", 4, 5), end: at("2026-10-28", 4, 30) }),
+  },
+  "power-of-two": { earns: { xpTotal: 1024 }, misses: { xpTotal: 512 } },
   "st-patricks": {
     earns: session({ start: at("2027-03-17", 14), end: at("2027-03-17", 14, 25) }),
     misses: session({ start: at("2027-03-18", 14), end: at("2027-03-18", 14, 25) }),

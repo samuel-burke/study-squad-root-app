@@ -8,6 +8,14 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 - Quiet recorded sound effects under the badge and boss moments, on their actions: a thud when a medal lands, whooshes as it moves, a spotlight and rising tension for gold, crackle and a lightning strike for platinum, twinkles as secret stars light, and glass when the boss card shatters. Credits are in CREDITS.md.
 
+## [0.5.1] - 2026-11-11
+
+Sharper badge engravings.
+
+### Fixed
+
+- The icon engraved into a 3D medal in a badge unlock is now sharp. It was drawn small and stretched, so its edges looked blocky.
+
 ## [0.5.0] - 2026-11-11
 
 A music player with bundled lo-fi tracks and ambience, a boss defeated moment, and colored badges.

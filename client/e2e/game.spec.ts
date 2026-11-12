@@ -227,6 +227,22 @@ test.describe("game rules", () => {
       await expectEarned(page, ["Saved by the Freeze"]);
     });
 
+    test("leaving before the round ends shows the time, but the day doesn't count yet", async ({
+      page,
+    }) => {
+      await open(page, "?focus=10&break=1&bots=0&streak=4&missed=1");
+      await joinRoom(page);
+      await wait(page, 3 * MINUTE);
+      await page.getByRole("button", { name: "Leave room timer" }).click();
+      await page.getByRole("button", { name: "Your progress" }).click();
+      const today = page
+        .getByRole("list", { name: "Focus time, last 5 weeks" })
+        .locator(".heat-today");
+      await expect(today).toHaveClass(/heat-missed/);
+      await expect(page.getByText("didn't count")).toBeVisible();
+      await expect(page.locator(".streak-hint")).toContainText("keep your streak");
+    });
+
     test("a broken 30 day streak restarts at 1 with Comeback and Phoenix", async ({ page }) => {
       await open(page, "?focus=1&break=0.5&bots=0&streak=30&missed=3");
       await joinRoom(page);

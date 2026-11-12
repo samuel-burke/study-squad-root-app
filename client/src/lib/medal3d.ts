@@ -16,17 +16,15 @@ interface Build {
   roughness: number;
   /** A raised rim around the face, this tall. 0 for none. */
   ring: number;
-  /** A larger, darker backplate at this scale. 0 for none. */
-  plate: number;
 }
 
 // Harder tiers are thicker, shinier and more dressed up.
 const BUILDS: Record<BadgeTier, Build> = {
-  bronze: { depth: 3, bevel: 1, roughness: 0.42, ring: 0, plate: 0 },
-  silver: { depth: 5, bevel: 1.5, roughness: 0.22, ring: 1.6, plate: 0 },
-  gold: { depth: 5, bevel: 1.5, roughness: 0.22, ring: 1.6, plate: 0 },
-  platinum: { depth: 8, bevel: 2.2, roughness: 0.08, ring: 2.2, plate: 1.16 },
-  secret: { depth: 8, bevel: 2.2, roughness: 0.1, ring: 0, plate: 1.12 },
+  bronze: { depth: 3, bevel: 1, roughness: 0.42, ring: 0 },
+  silver: { depth: 5, bevel: 1.5, roughness: 0.22, ring: 1.6 },
+  gold: { depth: 5, bevel: 1.5, roughness: 0.22, ring: 1.6 },
+  platinum: { depth: 8, bevel: 2.2, roughness: 0.08, ring: 2.2 },
+  secret: { depth: 8, bevel: 2.2, roughness: 0.1, ring: 0 },
 };
 
 /** How deep the icon is cut into the face, as a bump map scale. */
@@ -105,10 +103,8 @@ export function createMedal3D(
     .paths[0]!.toShapes()[0]!
     .getPoints(24)
     .map((p) => new THREE.Vector2(p.x - 32, 32 - p.y));
-  const shape = (scale: number, turn = 0) =>
-    new THREE.Shape(
-      outline.map((p) => p.clone().rotateAround(new THREE.Vector2(), turn).multiplyScalar(scale)),
-    );
+  const shape = (scale: number) =>
+    new THREE.Shape(outline.map((p) => p.clone().multiplyScalar(scale)));
   const extrude = (s: THREE.Shape, depth: number, bevel: number, segments = 5) =>
     new THREE.ExtrudeGeometry(s, {
       depth,
@@ -126,17 +122,6 @@ export function createMedal3D(
   const body = extrude(shape(1), b.depth, b.bevel);
   body.translate(0, 0, -b.depth / 2);
   medal.add(new THREE.Mesh(body, metalMaterial(color, b.roughness)));
-  if (b.plate) {
-    // Spiky frames turn the plate so its points show between the front ones.
-    const plate = extrude(
-      shape(b.plate, outline.length > 30 ? Math.PI / 20 : 0),
-      b.depth * 0.5,
-      1.2,
-      3,
-    );
-    plate.translate(0, 0, -b.depth * 0.85);
-    medal.add(new THREE.Mesh(plate, metalMaterial(color.clone().multiplyScalar(0.55), 0.3)));
-  }
   if (b.ring) {
     const ring = shape(1);
     ring.holes.push(new THREE.Path(outline.map((p) => p.clone().multiplyScalar(0.84)).reverse()));
@@ -171,7 +156,7 @@ export function createMedal3D(
   medal.add(plane);
   const back = new THREE.Mesh(plane.geometry, face);
   back.rotation.y = Math.PI;
-  back.position.z = -(front + 0.05) - (b.plate ? b.depth * 0.6 : 0);
+  back.position.z = -(front + 0.05);
   medal.add(back);
   if (stamp) {
     const bubbleTexture = new THREE.Texture(stamp);

@@ -32,7 +32,7 @@ export function showMs(tier: BadgeTier): number {
   return Math.round((SHOWS[tier].end + LINGER) * 1000);
 }
 
-/** The flat medal art as an image, on an 88 by 88 box so the ribbons and wreath fit. */
+/** The flat medal art as an image, on an 88 by 88 box so the ribbons fit. */
 export function medalImage(svg: SVGSVGElement): HTMLImageElement {
   const copy = svg.cloneNode(true) as SVGSVGElement;
   copy.setAttribute("viewBox", "-12 -12 88 88");
@@ -53,6 +53,9 @@ function partOnly(svg: SVGSVGElement, part: string): SVGSVGElement | null {
   return copy;
 }
 
+/** How soft the engraved icon's groove walls are, in medal units (an SVG blur). */
+const ENGRAVE_BLUR = 0.3;
+
 /** Draws a loaded image onto a 1024 pixel canvas. */
 function rasterize(img: HTMLImageElement): HTMLCanvasElement {
   const c = document.createElement("canvas");
@@ -62,25 +65,20 @@ function rasterize(img: HTMLImageElement): HTMLCanvasElement {
 }
 
 /**
- * A height map that cuts the icon into the face: white face, dark icon, with
- * softened edges for the groove's walls. Blurred by drawing it small and back.
+ * A height map that cuts the icon into the face: white face, dark icon. It is
+ * drawn at full size from an icon blurred a little (see ENGRAVE_BLUR), which
+ * gives the groove smooth walls without jagged edges.
  */
 function engraving(img: HTMLImageElement): HTMLCanvasElement {
-  const small = document.createElement("canvas");
-  small.width = small.height = 96;
-  const s = small.getContext("2d");
-  const c = document.createElement("canvas");
-  c.width = c.height = 512;
+  const c = rasterize(img);
   const ctx = c.getContext("2d");
-  if (!s || !ctx) return c;
-  s.drawImage(img, 0, 0, 96, 96);
-  s.globalCompositeOperation = "source-in";
-  s.fillStyle = "#000";
-  s.fillRect(0, 0, 96, 96);
+  if (!ctx) return c;
+  ctx.globalCompositeOperation = "source-in";
+  ctx.fillStyle = "#000";
+  ctx.fillRect(0, 0, c.width, c.height);
+  ctx.globalCompositeOperation = "destination-over";
   ctx.fillStyle = "#fff";
-  ctx.fillRect(0, 0, 512, 512);
-  ctx.imageSmoothingQuality = "high";
-  ctx.drawImage(small, 0, 0, 512, 512);
+  ctx.fillRect(0, 0, c.width, c.height);
   return c;
 }
 
@@ -89,10 +87,19 @@ function loadPart(
   svg: SVGSVGElement,
   part: string,
   draw: (img: HTMLImageElement) => HTMLCanvasElement,
+  blur = 0,
 ): Promise<HTMLCanvasElement | null> {
   return new Promise((resolve) => {
     const only = partOnly(svg, part);
     if (!only) return resolve(null);
+    if (blur) {
+      // An SVG filter, since Safari can't blur on a canvas.
+      only.insertAdjacentHTML(
+        "afterbegin",
+        `<filter id="part-blur"><feGaussianBlur stdDeviation="${blur}"/></filter>`,
+      );
+      only.querySelector(`.${part}`)?.setAttribute("filter", "url(#part-blur)");
+    }
     const img = medalImage(only);
     img.onload = () => resolve(draw(img));
     img.onerror = () => resolve(null);
@@ -173,7 +180,7 @@ export function BadgeUnlocked({
     // The 3D medal lays its number bubble on top as its own layer, so the
     // raised rim can't cover it, and cuts its icon into the face.
     const stamp = loadPart(svg, "medal-stamp", rasterize);
-    const glyph = loadPart(svg, "medal-glyph", engraving);
+    const glyph = loadPart(svg, "medal-glyph", engraving, ENGRAVE_BLUR);
     img.onload = () => {
       const c = rasterize(img);
       flat = c;
@@ -201,15 +208,21 @@ export function BadgeUnlocked({
         const dt = t - show.land;
         const size = r * 4.9;
         if (size < 1) return;
-        // Gold comes in dim and platinum almost dark, a silhouette until its hit.
-        const rise = dt < 0 ? clamp(t / show.land) : 1;
-        const dark = show.build === "beam" && dt < 0 ? clamp(1 + dt / 1.2) ** 2 : 1;
-        const lit = show.build === "herald" ? 0.2 + 1.2 * rise ** 2 : 0.05 + 1.35 * dark;
+        // Gold and platinum come in as a dark silhouette, so you can't tell
+        // which badge it is: gold lights up as it rises, platinum just before its hit.
+        const reveal =
+          dt >= 0
+            ? 1
+            : show.build === "herald"
+              ? clamp(t / show.land) ** 3
+              : show.build === "beam"
+                ? clamp(1 + dt / 1.2) ** 2
+                : 1;
         const flash = dt > 0 && dt < 1 ? 3 * Math.exp(-dt * 4) : 0;
         const frame = medal3d.render(t, tilt, Math.round(size * dpr), {
-          key: lit + flash,
-          fill: dt > 0 ? 1.2 : 0.6 * dark,
-          env: 0.03 + 0.97 * dark,
+          key: 1.4 * reveal + flash,
+          fill: dt > 0 ? 1.2 : 0.6 * reveal,
+          env: reveal,
         });
         c.drawImage(frame, x - size / 2, y - size / 2, size, size);
       } else if (flat) {

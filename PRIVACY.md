@@ -1,6 +1,6 @@
 # Study Squad privacy policy
 
-_Effective November 6, 2026_
+_Effective November 11, 2026_
 
 Study Squad is a group study timer for [Root](https://www.rootapp.com) communities, made by Samuel Burke ("we", "us"). This page explains, in plain language, what Study Squad keeps, why, who sees it, and how you can delete it whenever you like.
 
@@ -26,6 +26,7 @@ Everything Study Squad keeps is about your studying, and each piece has a job:
 | Badges you've earned and when, your card style and pinned badge | To show your badges and the look of your card                                                       |
 | Feedback notes you send, until they're delivered, and when      | So a note isn't lost if sending fails, and to limit notes per hour                                  |
 | Sessions you schedule, and which ones you tapped "I'm in" for   | To show them to the community and ping you when they start; they're removed once the session starts |
+| Which study table you're sitting at, and the names of tables    | To run each table's timer; an empty table closes on its own                                         |
 
 A few things Study Squad **uses but doesn't save**:
 
@@ -33,7 +34,7 @@ A few things Study Squad **uses but doesn't save**:
 - Whether you have Study Squad open right now, to show who's in the room.
 - Whether you're in the community voice channel an admin picked, to show headphones on your card. Study Squad never hears or records the call itself.
 - Messages in channels Study Squad can see, only to spot the developer's test commands (messages that start with `!`, from the developer's own account). Study Squad never saves, logs or answers anyone else's messages.
-- Whether sounds are muted. This is saved only on your own device, in your browser.
+- Your sound settings: whether sounds are muted, and the music, ambience and volumes you picked in **Sounds**. These are saved only on your own device, in your browser.
 
 Each community's Study Squad data lives in that community's own app storage, hosted by Root. Communities never see each other's data.
 
@@ -54,7 +55,7 @@ Each community's Study Squad data lives in that community's own app storage, hos
 
 - We never sell or share your data.
 - No ads, no analytics and no tracking.
-- No outside services, with one exception you choose: feedback you send. Study Squad's fonts and sounds are built into the app, so it doesn't contact Google or anyone else. A feedback note passes through a small service of ours hosted on Vercel and lands as an issue in a private GitHub repository only we can see, with a copy sent to our private Slack so we notice it. It carries no information about who sent it, and it's sent from the app's server, not your device.
+- No outside services, with one exception you choose: feedback you send. Study Squad's fonts, sounds and music are built into the app, so it doesn't contact Google or anyone else. A feedback note passes through a small service of ours hosted on Vercel and lands as an issue in a private GitHub repository only we can see, with a copy sent to our private Slack so we notice it. It carries no information about who sent it, and it's sent from the app's server, not your device.
 
 ## How long we keep it
 

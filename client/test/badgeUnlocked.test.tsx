@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { BADGES } from "@studyroom/core";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { BadgeUnlocked } from "../src/components/BadgeUnlocked";
+import * as clips from "../src/lib/clips";
 import { CLIPS } from "../src/lib/clips";
 import { SHOWS } from "../src/lib/unlockShow";
 
@@ -88,13 +89,42 @@ describe("every badge's unlock moment", () => {
     secret: "Secret badge found!",
   } as const;
 
-  it.each(BADGES.map((b) => [b.id, b] as const))("%s plays its tier's show", (id, badge) => {
-    const play = vi.fn();
-    render(<BadgeUnlocked badgeId={id} play={play} onDismiss={() => {}} />);
-    const dialog = screen.getByRole("dialog", { name: badge.name });
-    expect(dialog).toHaveTextContent(EYEBROWS[badge.tier]);
-    expect(dialog).toHaveTextContent(badge.description);
-    expect(play).toHaveBeenCalledExactlyOnceWith(badge.tier);
+  it.each(BADGES.filter((b) => !b.ring).map((b) => [b.id, b] as const))(
+    "%s plays its tier's show",
+    (id, badge) => {
+      const play = vi.fn();
+      render(<BadgeUnlocked badgeId={id} play={play} onDismiss={() => {}} />);
+      const dialog = screen.getByRole("dialog", { name: badge.name });
+      expect(dialog).toHaveTextContent(EYEBROWS[badge.tier]);
+      expect(dialog).toHaveTextContent(badge.description);
+      expect(play).toHaveBeenCalledExactlyOnceWith(badge.tier);
+    },
+  );
+});
+
+describe("color tier ring unlock", () => {
+  it.each(BADGES.filter((b) => b.ring).map((b) => [b.id, b] as const))(
+    "%s gets the neon ring unlock with its hum",
+    async (id, badge) => {
+      const hum = vi.spyOn(clips, "playSound").mockReturnValue(() => {});
+      const onDismiss = vi.fn();
+      render(<BadgeUnlocked badgeId={id} onDismiss={onDismiss} />);
+      const dialog = screen.getByRole("dialog", { name: badge.name });
+      expect(dialog).toHaveTextContent("New color unlocked");
+      expect(dialog).toHaveTextContent(badge.description);
+      expect(hum).toHaveBeenCalledTimes(1);
+      await userEvent.click(screen.getByRole("button", { name: "Nice!" }));
+      expect(onDismiss).toHaveBeenCalledTimes(1);
+      hum.mockRestore();
+    },
+  );
+
+  it("stays quiet when sounds are muted", () => {
+    const hum = vi.spyOn(clips, "playSound").mockReturnValue(() => {});
+    render(<BadgeUnlocked badgeId="tier-blaze" muted onDismiss={() => {}} />);
+    expect(screen.getByRole("dialog", { name: "Blaze" })).toBeInTheDocument();
+    expect(hum).not.toHaveBeenCalled();
+    hum.mockRestore();
   });
 });
 

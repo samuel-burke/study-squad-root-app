@@ -112,6 +112,26 @@ const RULES: Record<string, Row> = {
     earns: lifetime({ focusMinutes: 60000 }),
     misses: lifetime({ focusMinutes: 59999 }),
   },
+  "tier-ember": {
+    earns: lifetime({ focusMinutes: 600 }),
+    misses: lifetime({ focusMinutes: 599 }),
+  },
+  "tier-blaze": {
+    earns: lifetime({ focusMinutes: 3000 }),
+    misses: lifetime({ focusMinutes: 2999 }),
+  },
+  "tier-nebula": {
+    earns: lifetime({ focusMinutes: 9000 }),
+    misses: lifetime({ focusMinutes: 8999 }),
+  },
+  "tier-supernova": {
+    earns: lifetime({ focusMinutes: 24000 }),
+    misses: lifetime({ focusMinutes: 23999 }),
+  },
+  "tier-starlight": {
+    earns: lifetime({ focusMinutes: 60000 }),
+    misses: lifetime({ focusMinutes: 59999 }),
+  },
   "early-bird": {
     earns: session({ start: at("2026-10-28", 4), end: at("2026-10-28", 4, 25) }),
     misses: session({ start: at("2026-10-28", 8), end: at("2026-10-28", 8, 25) }),

@@ -1,3 +1,4 @@
+import { TIERS, type TierId } from "./tiers";
 import { daysBetween, weekdayIndex, type DayKey, type LocalTime } from "../time/calendar";
 
 /**
@@ -180,6 +181,8 @@ export interface BadgeDefinition {
   stamp?: string;
   /** Tints the medal in a themed metal. The tier still sets its shape and dressing. */
   color?: BadgeColor;
+  /** A color tier's neon ring instead of a medal (see tiers.ts). */
+  ring?: TierId;
   category: BadgeCategory;
   secret?: boolean;
   requires?: BadgeFeature;
@@ -236,6 +239,19 @@ const hoursBadge = (id: string, name: string, tier: BadgeTier, hours: number): B
   category: "focus",
   earned: (f) => (f.lifetime?.focusMinutes ?? 0) >= hours * 60,
 });
+
+/** One neon ring badge for each color tier after Spark. */
+const RING_METALS: BadgeTier[] = ["bronze", "silver", "gold", "platinum", "platinum"];
+const ringBadges: BadgeDefinition[] = TIERS.slice(1).map((t, i) => ({
+  id: `tier-${t.id}`,
+  name: t.name,
+  description: `Focus for ${t.hours} hours in total. The app glows ${t.name} now.`,
+  glyph: "timer",
+  tier: RING_METALS[i] ?? "platinum",
+  ring: t.id,
+  category: "focus",
+  earned: (f) => (f.lifetime?.focusMinutes ?? 0) >= t.hours * 60,
+}));
 
 const bossNamed = (id: string, name: string, boss: string, glyph: BadgeGlyph): BadgeDefinition => ({
   id,
@@ -303,6 +319,7 @@ export const BADGES: readonly BadgeDefinition[] = [
   hoursBadge("focus-250h", "Deep Diver", "gold", 250),
   hoursBadge("focus-500h", "Five Hundred Club", "platinum", 500),
   hoursBadge("focus-1000h", "Thousand Hour Club", "platinum", 1000),
+  ...ringBadges,
   {
     id: "early-bird",
     name: "Early Bird",

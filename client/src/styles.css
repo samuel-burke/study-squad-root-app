@@ -3218,7 +3218,11 @@ textarea.input {
 }
 
 :root[data-tier] {
-  --glow: color-mix(in srgb, var(--glow-color, var(--accent)) calc(var(--neon) * 70%), transparent);
+  --tier-glow: color-mix(
+    in srgb,
+    var(--glow-color, var(--accent)) calc(var(--neon) * 70%),
+    transparent
+  );
 }
 :root[data-tier]:not([data-tier="spark"]) {
   --amber: var(--accent);
@@ -3250,7 +3254,7 @@ textarea.input {
 :root[data-tier] .level-badge {
   --teal-text: var(--amber-text);
   --teal-bg: var(--level-bg);
-  box-shadow: 0 0 14px var(--glow);
+  box-shadow: 0 0 14px var(--tier-glow);
 }
 :root[data-tier] .voice-count {
   color: var(--amber-ink);
@@ -3263,15 +3267,15 @@ textarea.input {
   overflow: visible;
 }
 :root[data-tier] .ring-progress {
-  filter: drop-shadow(0 0 6px var(--glow)) drop-shadow(0 0 14px var(--glow));
+  filter: drop-shadow(0 0 6px var(--tier-glow)) drop-shadow(0 0 14px var(--tier-glow));
 }
 :root[data-tier] .btn-primary {
-  box-shadow: 0 0 16px var(--glow);
+  box-shadow: 0 0 16px var(--tier-glow);
 }
 :root[data-tier] :is(.quest .bar, .xp .bar, .boss .bar, .mobile-boss .bar) > span,
 :root[data-tier] .round-dot[data-done="true"],
 :root[data-tier] .heat[data-level="3"] {
-  box-shadow: 0 0 10px var(--glow);
+  box-shadow: 0 0 10px var(--tier-glow);
 }
 
 .tier-line {
@@ -3282,4 +3286,41 @@ textarea.input {
 
 .tier-line strong {
   color: var(--amber-text);
+}
+
+/* A color tier's ring unlock: the neon is drawn by lib/ring3d.ts, and the text sits below it. */
+.ring-unlock {
+  background: #000;
+  --amber: var(--glow);
+  --amber-hover: var(--glow);
+}
+.ring-unlock[data-tier-ring="ember"] {
+  --glow: #ff7a1a;
+}
+.ring-unlock[data-tier-ring="blaze"] {
+  --glow: #ff2e63;
+}
+.ring-unlock[data-tier-ring="nebula"] {
+  --glow: #a45cff;
+}
+.ring-unlock[data-tier-ring="supernova"] {
+  --glow: #ff3fd2;
+}
+.ring-unlock[data-tier-ring="starlight"] {
+  --glow: #e9f2ff;
+}
+.ring-unlock .unlock-text {
+  top: auto;
+  bottom: max(6%, 24px);
+}
+.unlock.ring-unlock .btn.btn-primary {
+  box-shadow: 0 0 18px color-mix(in srgb, var(--glow) 60%, transparent);
+}
+.ring-badge {
+  border-radius: 50%;
+  object-fit: cover;
+}
+.ring-badge[data-locked="true"] {
+  filter: grayscale(1) brightness(0.55);
+  opacity: 0.7;
 }

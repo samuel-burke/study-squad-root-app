@@ -7,6 +7,38 @@ import type {
 } from "@studyroom/core";
 import { useId, type ReactNode } from "react";
 
+/** Pictures of the color tiers' neon ring badges, rendered from lib/ring3d.ts. */
+const RING_ICONS = import.meta.glob<string>("../assets/tiers/*.webp", {
+  eager: true,
+  query: "?url",
+  import: "default",
+});
+
+/** A color tier's ring badge: its neon ring picture, dimmed while locked. */
+function RingBadge({
+  ring,
+  size,
+  locked,
+  className,
+}: {
+  ring: string;
+  size: number;
+  locked: boolean;
+  className?: string;
+}) {
+  return (
+    <img
+      className={className ? `badge-medal ring-badge ${className}` : "badge-medal ring-badge"}
+      data-locked={locked}
+      src={RING_ICONS[`../assets/tiers/${ring}.webp`]}
+      width={size}
+      height={size}
+      alt=""
+      aria-hidden="true"
+    />
+  );
+}
+
 /**
  * Line drawings for the middle of each medal, on a 24 by 24 grid in the
  * same style as the app's other icons.
@@ -323,6 +355,8 @@ export function BadgeMedal({
   className?: string;
 }) {
   const id = useId().replace(/:/g, "");
+  if (badge.ring)
+    return <RingBadge ring={badge.ring} size={size} locked={locked} className={className} />;
   const hidden = locked && badge.secret === true;
   const look: MedalLook = locked ? "locked" : badge.tier;
   const metal = locked ? METALS.locked : medalMetal(badge);

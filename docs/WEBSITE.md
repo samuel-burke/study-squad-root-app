@@ -1,10 +1,11 @@
 # Website
 
-Study Squad has a small website with a home page, a support page and the privacy policy, hosted free on GitHub Pages. It's the link to give Root's app listing as the privacy policy URL.
+Study Squad has a small website with a home page, a support page, the privacy policy and a live demo, hosted free on GitHub Pages. It's the link to give Root's app listing as the privacy policy URL.
 
 - Home: `https://studysquad.samuelburke.dev/`
 - Support: `https://studysquad.samuelburke.dev/support/`
 - Privacy policy: `https://studysquad.samuelburke.dev/privacy/`
+- Live demo: `https://studysquad.samuelburke.dev/demo/` (the same in-browser demo as `npm run demo`, with simulated members)
 
 Until the custom domain is set up, the same pages are at `https://samuel-burke.github.io/study-squad-root-app/`.
 
@@ -12,7 +13,9 @@ Until the custom domain is set up, the same pages are at `https://samuel-burke.g
 
 `PRIVACY.md` is the only copy of the policy. `scripts/build-site.mjs` turns it into a styled page, together with the files in `site/` (the page layout, the home and support pages and the stylesheet), and writes everything to `_site/`. It has no dependencies, so its markdown converter only knows what `PRIVACY.md` uses: headings, paragraphs, bold, italics, links, lists and tables.
 
-The **Website** workflow (`.github/workflows/pages.yml`) publishes it whenever a change to the policy or the site reaches `main`. CI builds it on every pull request too, so a broken page shows up before merging.
+If `client/dist-demo/` exists (`npm run build:demo -w @studyroom/client`) it is copied to `demo/` with a DEMO banner at the top (only there, so local runs, tests and screenshots don't show it), and if `coverage/coverage-summary.json` exists (`npm run test:coverage`) the script writes `coverage.json`, which the README's coverage badge reads through shields.io.
+
+The **Website** workflow (`.github/workflows/pages.yml`) builds the demo, runs the tests for coverage and publishes everything whenever `main` changes. CI builds it on every pull request too, so a broken page shows up before merging.
 
 To preview locally:
 

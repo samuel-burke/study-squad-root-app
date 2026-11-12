@@ -37,13 +37,13 @@ Study Squad is a group study timer for [Root](https://www.rootapp.com) communiti
 
 - **Shared room timer**, solo timers and study tables, with a live board of who's focusing and on what
 - **Scheduled sessions** with a mention in the channel when they start
-- **Game layer**: XP, levels, streaks, a weekly boss, quests and over 60 medals with their own unlock cinematics
+- **Game layer**: XP, levels, streaks, a weekly boss, quests, color tiers that change the app's accent as your hours grow, and over 80 badges with their own unlock cinematics
 - **Sounds**: 20 bundled lo-fi tracks with rain, café or forest ambience underneath
 - **Leaderboards** by minutes or XP, with a toggle to hide yourself
 - **Light and dark**, desktop and phone
 
 <details>
-<summary>All features (v0.6.1)</summary>
+<summary>All features (v0.7.0)</summary>
 
 - **Shared room timer** (25/5, 50/10 or custom, rounds of 4 with a long break) and **solo timers** that still show on the board
 - **Live focus board**: who's focusing, on what, how long is left, their rank and who's in voice. Goals can be private ("Focusing")
@@ -53,7 +53,7 @@ Study Squad is a group study timer for [Root](https://www.rootapp.com) communiti
 - **No drift**: the server stores when a cycle started; every client derives the countdown (and the countdown chirps) from that and a measured clock offset
 - **Goals list**: add, edit, drag to reorder (the top goal is the one on your card), and clear finished goals in one tap. Finished goals fold into one row and show how long they took. The first 5 goals finished each day pay +25 XP
 - **Break moment**: XP earned, streak, damage dealt to the boss, and "did you finish your goal?"
-- **Game layer**: XP and levels with no daily cap, a combo multiplier for focusing together, a weekly built-in boss with its own strength, weekly quests, over 60 medals to collect (some secret, some in their own colors) and card styles that unlock with level
+- **Game layer**: XP and levels with no daily cap, a combo multiplier for focusing together (+0.2x per extra person, no cap), color tiers from Spark to Starlight that set the app's accent by lifetime focus hours, a weekly built-in boss with its own strength, weekly quests, over 80 badges to collect (some secret, some in their own colors, plus a neon ring for each color tier) and card styles that unlock with level
 - **Big moments**: badge unlocks are short cinematics with recorded orchestral music for each tier and recorded sound effects on the action, and when the room defeats the weekly boss everyone sees it shatter and a gold boss slayer medal rise
 - **Leaderboard** by focus minutes or XP, for this week, month, year or all time. Members can hide themselves
 - **Streaks without guilt**: one finished session counts the day (the calendar outlines days that didn't count), one free freeze per week, and days start at 4am so late nights count

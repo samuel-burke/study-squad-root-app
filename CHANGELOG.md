@@ -4,10 +4,27 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-11-12
+
+Color tiers that change the app's accent as your focus hours grow, a neon ring badge for each tier, 11 new badges, and a bigger combo for big groups.
+
+### Added
+
+- Color tiers. Your lifetime focus hours in the community set your tier: Spark (0h), Ember (10h), Blaze (50h), Nebula (150h), Supernova (400h) and Starlight (1,000h). The whole app's accent follows your tier, glowing more at each step, and the streak card shows how far you are from the next one.
+- A neon ring badge for each tier after Spark, with its own unlock moment: the ring fills like the timer, flickers on and glows, to its own hum. Credits are in CREDITS.md.
+- 4 platinum badges: Thousand Hour Club (1,000 hours), Room Legend (250 room rounds), Goal Legend (500 goals) and Raid Leader (50 weekly bosses).
+- 7 secret badges for fun dates and math and coding jokes.
+- The owner-only self-test report now includes startup timings, to find out what makes cold starts on Root slow.
+
 ### Fixed
 
 - The study clock keeps counting down smoothly while music is playing. It used to freeze and jump, because each music progress update restarted the clock's timer before it could tick.
 - Rotating your phone after a badge unlock or the boss defeated moment has finished no longer squashes the medal. The last frame is redrawn to fit the new screen shape.
+
+### Changed
+
+- The combo now adds 0.2x per extra person with no cap (6 people is 2.0x, 11 is 3.0x). Study Group now needs 1.6x (4 people) and Full House 2.0x (6 people).
+- Three O'Clock Club and 1337 now count any finished session that is going at 3:00am or 13:37, not only ones that start or end then.
 
 ## [0.6.1] - 2026-11-12
 

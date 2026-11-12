@@ -43,7 +43,7 @@ Study Squad is a group study timer for [Root](https://www.rootapp.com) communiti
 - **Light and dark**, desktop and phone
 
 <details>
-<summary>All features (v0.6.0)</summary>
+<summary>All features (v0.6.1)</summary>
 
 - **Shared room timer** (25/5, 50/10 or custom, rounds of 4 with a long break) and **solo timers** that still show on the board
 - **Live focus board**: who's focusing, on what, how long is left, their rank and who's in voice. Goals can be private ("Focusing")

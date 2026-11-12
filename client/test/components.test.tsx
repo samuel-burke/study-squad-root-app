@@ -241,7 +241,7 @@ describe("Avatar", () => {
     expect(container.querySelector(".avatar")).toHaveTextContent(/^$/);
   });
 
-  it("falls back to initials when the picture fails, then tries it once more", () => {
+  it("falls back to initials when the picture fails, and keeps trying it, waiting longer each time", () => {
     vi.useFakeTimers();
     try {
       const { container } = render(
@@ -258,11 +258,13 @@ describe("Avatar", () => {
       const retried = container.querySelector("img");
       expect(retried).toHaveAttribute("src", "https://cdn.test/ana.png");
 
-      // A second failure stays on initials for good.
+      // The second wait is twice as long.
       fireEvent.error(retried!);
-      act(() => vi.advanceTimersByTime(AVATAR_RETRY_MS * 3));
+      act(() => vi.advanceTimersByTime(AVATAR_RETRY_MS * 2 - 1));
       expect(container.querySelector("img")).toBeNull();
       expect(container).toHaveTextContent("AL");
+      act(() => vi.advanceTimersByTime(1));
+      expect(container.querySelector("img")).toHaveAttribute("src", "https://cdn.test/ana.png");
     } finally {
       vi.useRealTimers();
     }

@@ -4,6 +4,23 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ## [Unreleased]
 
+## [0.6.1] - 2026-11-12
+
+Your username on the leaderboard, steadier phone header, sturdier profile pictures, and badge moments that wait for you.
+
+### Fixed
+
+- The home page leaderboard, the top 3 podium and your own profile now show your Root username instead of "You".
+- On phones, the round pill and the top buttons (voice, sounds, progress, settings) now share one row in every phase. The buttons used to slide left once a session started, the pill used to drop to its own line, and on large phones like the iPhone Pro Max the settings button could be cut off. To make room, phones hide the logo and the idle pill says "Timer free".
+- Profile pictures that fail to load, which happens often on mobile, now show the last copy that loaded on your device instead of initials, and saved pictures appear right away when the app opens. A picture that fails keeps being retried, waiting a little longer each time, instead of giving up after one retry.
+- The date picker for scheduling a session lines up with the name field again instead of hanging off to the right (Safari and the Root mobile app).
+
+### Changed
+
+- The live demo's members now have profile pictures (a cat, a dog, a sports car and so on), like a real Root community.
+- Badge unlocks and the boss defeated moment now stay open until you close them (Nice!, a tap anywhere, or Escape) instead of closing by themselves. When you earn several badges at once, the next one's animation and music only start after you close the one before.
+- The privacy policy now says each device may keep a copy of the last profile picture it loaded (effective November 12, 2026).
+
 ## [0.6.0] - 2026-11-12
 
 Recorded sound effects for badge and boss moments, a streak calendar that shows which days counted, a tidier room, and badge polish.
@@ -29,6 +46,7 @@ Recorded sound effects for badge and boss moments, a streak calendar that shows 
 - The blue laurel around platinum badges is gone.
 - The website now has a live demo you can try in the browser (1-minute rounds, marked DEMO), and publishes test coverage for a README badge.
 - Each upload to Root now also publishes a GitHub release with that version's changelog as its notes.
+- The README has a new header with status badges, a live demo link and an animated preview, plus a Highlights section. The full feature list is folded below a shorter summary.
 
 ## [0.5.1] - 2026-11-11
 

@@ -1,6 +1,6 @@
 # Study Squad privacy policy
 
-_Effective November 11, 2026_
+_Effective November 12, 2026_
 
 Study Squad is a group study timer for [Root](https://www.rootapp.com) communities, made by Samuel Burke ("we", "us"). This page explains, in plain language, what Study Squad keeps, why, who sees it, and how you can delete it whenever you like.
 
@@ -30,7 +30,7 @@ Everything Study Squad keeps is about your studying, and each piece has a job:
 
 A few things Study Squad **uses but doesn't save**:
 
-- Your Root nickname and picture, to show your card. Nicknames are held in memory for up to 10 minutes so the app doesn't have to keep asking Root.
+- Your Root nickname and picture, to show your card. Nicknames are held in memory for up to 10 minutes so the app doesn't have to keep asking Root. Each device that shows your card may keep a small copy of the last picture it loaded, in its own browser storage, so your picture still shows when Root is slow to send it.
 - Whether you have Study Squad open right now, to show who's in the room.
 - Whether you're in the community voice channel an admin picked, to show headphones on your card. Study Squad never hears or records the call itself.
 - Messages in channels Study Squad can see, only to spot the developer's test commands (messages that start with `!`, from the developer's own account). Study Squad never saves, logs or answers anyone else's messages.

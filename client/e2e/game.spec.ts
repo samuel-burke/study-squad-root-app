@@ -233,7 +233,10 @@ test.describe("game rules", () => {
       await open(page, "?focus=10&break=1&bots=0&streak=4&missed=1");
       await joinRoom(page);
       await wait(page, 3 * MINUTE);
+      // Badges earned while focusing stay up until closed.
+      await clearOverlays(page);
       await page.getByRole("button", { name: "Leave room timer" }).click();
+      await clearOverlays(page);
       await page.getByRole("button", { name: "Your progress" }).click();
       const today = page
         .getByRole("list", { name: "Focus time, last 5 weeks" })

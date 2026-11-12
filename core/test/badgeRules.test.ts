@@ -189,16 +189,16 @@ const RULES: Record<string, Row> = {
   "pole-position": { earns: rank(1), misses: rank(2) },
 
   "three-am": {
-    earns: session({ start: at("2026-10-28", 3), end: at("2026-10-28", 3, 25) }),
-    misses: session({ start: at("2026-10-28", 2), end: at("2026-10-28", 2, 25) }),
+    earns: session({ start: at("2026-10-28", 2, 50), end: at("2026-10-28", 3, 15) }),
+    misses: session({ start: at("2026-10-28", 3, 1), end: at("2026-10-28", 3, 26) }),
   },
   "midnight-oil": {
     earns: session({ start: at("2026-10-28", 23, 50), end: at("2026-10-29", 0, 15) }),
     misses: session({ start: at("2026-10-28", 23, 0), end: at("2026-10-28", 23, 25) }),
   },
   leet: {
-    earns: session({ start: at("2026-10-28", 13, 12), end: at("2026-10-28", 13, 37) }),
-    misses: session({ start: at("2026-10-28", 13, 13), end: at("2026-10-28", 13, 38) }),
+    earns: session({ start: at("2026-10-28", 13, 20), end: at("2026-10-28", 13, 45) }),
+    misses: session({ start: at("2026-10-28", 13, 38), end: at("2026-10-28", 14, 3) }),
   },
   "deep-thought": {
     earns: session({ plannedMinutes: 42 }),

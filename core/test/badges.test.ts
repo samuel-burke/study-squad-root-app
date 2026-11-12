@@ -103,7 +103,9 @@ describe("badge rules", () => {
       "early-bird",
     );
     expect(earned({ session: session({ start: at("2026-10-28", 22, 0) }) })).toContain("night-owl");
-    const late = earned({ session: session({ start: at("2026-10-28", 3, 10) }) });
+    const late = earned({
+      session: session({ start: at("2026-10-28", 2, 50), end: at("2026-10-28", 3, 15) }),
+    });
     expect(late).toEqual(expect.arrayContaining(["night-owl", "three-am"]));
     expect(late).not.toContain("early-bird");
   });
@@ -179,6 +181,27 @@ describe("badge rules", () => {
     expect(on("2026-10-28", 13, 37)).toEqual(["leet"]);
     const overnight = session({ start: at("2026-10-28", 23, 40), end: at("2026-10-29", 0, 5) });
     expect(earned({ session: overnight })).toContain("midnight-oil");
+  });
+
+  it("1337 and Three O'Clock Club count any session going at that minute", () => {
+    const from = (start: [string, number, number], end: [string, number, number]) =>
+      earned({ session: session({ start: at(...start), end: at(...end) }) });
+    // Starting, ending, or passing through the minute all count.
+    expect(from(["2026-10-28", 13, 37], ["2026-10-28", 14, 2])).toContain("leet");
+    expect(from(["2026-10-28", 13, 12], ["2026-10-28", 13, 37])).toContain("leet");
+    expect(from(["2026-10-28", 12, 0], ["2026-10-28", 15, 0])).toContain("leet");
+    expect(from(["2026-10-28", 13, 38], ["2026-10-28", 14, 3])).not.toContain("leet");
+    // A long session from before midnight through 3am.
+    expect(from(["2026-10-28", 23, 30], ["2026-10-29", 3, 0])).toContain("three-am");
+    expect(from(["2026-10-28", 23, 30], ["2026-10-29", 2, 30])).not.toContain("three-am");
+    expect(from(["2026-10-28", 3, 10], ["2026-10-28", 3, 35])).not.toContain("three-am");
+    // Cut short doesn't count.
+    const cut = session({
+      finished: false,
+      start: at("2026-10-28", 13, 30),
+      end: at("2026-10-28", 13, 40),
+    });
+    expect(earned({ session: cut })).not.toContain("leet");
   });
 
   it("XP Easter eggs: a total ending in 777, and over 9000", () => {

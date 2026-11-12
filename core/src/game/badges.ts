@@ -181,6 +181,15 @@ export interface BadgeDefinition {
 }
 
 const finished = (f: BadgeFacts) => (f.session?.finished ? f.session : undefined);
+/** Whether a finished session was still going at this clock time (it may cross midnight). */
+const focusingAt = (f: BadgeFacts, hour: number, minute: number) => {
+  const s = finished(f);
+  if (!s) return false;
+  const t = hour * 60 + minute;
+  const from = s.start.hour * 60 + s.start.minute;
+  const to = s.end.hour * 60 + s.end.minute;
+  return s.start.day === s.end.day ? from <= t && t <= to : t >= from || t <= to;
+};
 /** "MM-DD" of a day key. */
 const monthDay = (day: DayKey) => day.slice(5);
 
@@ -613,13 +622,13 @@ export const BADGES: readonly BadgeDefinition[] = [
   {
     id: "three-am",
     name: "Three O'Clock Club",
-    description: "Finish a session that starts between 3am and 4am.",
+    description: "Be in the middle of a session at 3am.",
     glyph: "moon",
     tier: "secret",
     stamp: "3:00",
     category: "secret",
     secret: true,
-    earned: (f) => finished(f)?.start.hour === 3,
+    earned: (f) => focusingAt(f, 3, 0),
   },
   {
     id: "midnight-oil",
@@ -637,15 +646,12 @@ export const BADGES: readonly BadgeDefinition[] = [
   {
     id: "leet",
     name: "1337",
-    description: "Finish a session at exactly 13:37.",
+    description: "Be in the middle of a session at 13:37.",
     glyph: "terminal",
     tier: "secret",
     category: "secret",
     secret: true,
-    earned: (f) => {
-      const s = finished(f);
-      return s !== undefined && s.end.hour === 13 && s.end.minute === 37;
-    },
+    earned: (f) => focusingAt(f, 13, 37),
   },
   {
     id: "deep-thought",

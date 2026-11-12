@@ -4,6 +4,10 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ## [Unreleased]
 
+### Fixed
+
+- The date picker for scheduling a session lines up with the name field again instead of hanging off to the right (Safari and the Root mobile app).
+
 ## [0.6.0] - 2026-11-12
 
 Recorded sound effects for badge and boss moments, a streak calendar that shows which days counted, a tidier room, and badge polish.

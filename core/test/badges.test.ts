@@ -175,6 +175,7 @@ describe("badge rules", () => {
     expect(on("2028-02-29")).toEqual(["leap-day"]);
     expect(on("2027-03-17")).toEqual(["st-patricks"]);
     expect(on("2027-03-16")).toEqual([]);
+    expect(on("2027-05-04")).toEqual(["may-fourth"]);
     expect(on("2026-10-28", 13, 37)).toEqual(["leet"]);
     const overnight = session({ start: at("2026-10-28", 23, 40), end: at("2026-10-29", 0, 5) });
     expect(earned({ session: overnight })).toContain("midnight-oil");

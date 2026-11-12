@@ -148,6 +148,7 @@ export type BadgeGlyph =
   | "sparkles"
   | "sprout"
   | "star"
+  | "starfield"
   | "summit"
   | "sun"
   | "sunrise"
@@ -211,7 +212,7 @@ const hoursBadge = (id: string, name: string, tier: BadgeTier, hours: number): B
   description: `Focus for ${hours} hours in total.`,
   glyph: "hourglass",
   tier,
-  stamp: `${hours}h`,
+  stamp: hours >= 1000 ? String(hours) : `${hours}h`,
   category: "focus",
   earned: (f) => (f.lifetime?.focusMinutes ?? 0) >= hours * 60,
 });
@@ -281,6 +282,7 @@ export const BADGES: readonly BadgeDefinition[] = [
   hoursBadge("focus-100h", "Centurion", "gold", 100),
   hoursBadge("focus-250h", "Deep Diver", "gold", 250),
   hoursBadge("focus-500h", "Five Hundred Club", "platinum", 500),
+  hoursBadge("focus-1000h", "Thousand Hour Club", "platinum", 1000),
   {
     id: "early-bird",
     name: "Early Bird",
@@ -393,6 +395,16 @@ export const BADGES: readonly BadgeDefinition[] = [
     earned: (f) => (f.lifetime?.roomRoundsFinished ?? 0) >= 100,
   },
   {
+    id: "room-250",
+    name: "Room Legend",
+    description: "Finish 250 rounds on the room timer.",
+    glyph: "columns",
+    tier: "platinum",
+    stamp: "250",
+    category: "room",
+    earned: (f) => (f.lifetime?.roomRoundsFinished ?? 0) >= 250,
+  },
+  {
     id: "full-cycle",
     name: "Full Cycle",
     description: "Stay on the room timer for every round of a cycle.",
@@ -453,6 +465,16 @@ export const BADGES: readonly BadgeDefinition[] = [
     earned: (f) => (f.lifetime?.goalsDone ?? 0) >= 100,
   },
   {
+    id: "goals-500",
+    name: "Goal Legend",
+    description: "Finish 500 goals.",
+    glyph: "target",
+    tier: "platinum",
+    stamp: "500",
+    category: "goals",
+    earned: (f) => (f.lifetime?.goalsDone ?? 0) >= 500,
+  },
+  {
     id: "productive-day",
     name: "Productive Day",
     description: "Finish 5 goals in one day.",
@@ -491,6 +513,16 @@ export const BADGES: readonly BadgeDefinition[] = [
     stamp: "20",
     category: "boss",
     earned: (f) => (f.boss?.defeats ?? 0) >= 20,
+  },
+  {
+    id: "boss-50",
+    name: "Raid Leader",
+    description: "Help defeat 50 weekly bosses.",
+    glyph: "swords",
+    tier: "platinum",
+    stamp: "50",
+    category: "boss",
+    earned: (f) => (f.boss?.defeats ?? 0) >= 50,
   },
   {
     id: "final-blow",
@@ -693,6 +725,20 @@ export const BADGES: readonly BadgeDefinition[] = [
     earned: (f) => {
       const s = finished(f);
       return s !== undefined && monthDay(s.end.day) === "03-17";
+    },
+  },
+  {
+    id: "may-fourth",
+    name: "May the Focus Be With You",
+    description: "Finish a session on May 4.",
+    glyph: "starfield",
+    tier: "secret",
+    stamp: "5/4",
+    category: "secret",
+    secret: true,
+    earned: (f) => {
+      const s = finished(f);
+      return s !== undefined && monthDay(s.end.day) === "05-04";
     },
   },
   {

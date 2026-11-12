@@ -4,18 +4,29 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-11-12
+
+Recorded sound effects for badge and boss moments, a streak calendar that shows which days counted, a tidier room, and badge polish.
+
 ### Added
 
 - Quiet recorded sound effects under the badge and boss moments, on their actions: a thud when a medal lands, whooshes as it moves, a spotlight and rising tension for gold, crackle and a lightning strike for platinum, twinkles as secret stars light, and glass when the boss card shatters. Credits are in CREDITS.md.
+- The progress calendar now outlines days that had focus time but no finished session, with a "didn't count" key. When today hasn't counted yet, a hint under the calendar says how to keep (or start) your streak.
 
 ### Fixed
 
 - The silver badge medal now lands on the music's hit. It used to arrive about half a second early.
+- On 3D platinum and secret medals, the back now lines up with the front on every shape (no offset shield or doubled gem edges).
+- Redrew the rocket (its thruster is attached and it has fins), four-leaf clover and scroll badge icons.
 
 ### Changed
 
+- A tidier room: the New table button is gone (start a table from the Start focusing sheet), scheduled sessions moved into that sheet's new Later tab (replacing the Up next card), and the combo shows inside the timer ring instead of its own card.
+- The boss card hides as soon as the boss is defeated and comes back when the next boss arrives.
 - Sound effects, chimes and the badge and boss moments now play at half the volume. The study music and ambience are unchanged.
 - The bronze badge unlock no longer starts with a jolt: the medal and its music now ease in over a one second intro.
+- Gold and platinum unlocks start as a true dark silhouette. Gold lights up as it rises; platinum stays dark until just before the hit.
+- The blue laurel around platinum badges is gone.
 
 ## [0.5.1] - 2026-11-11
 

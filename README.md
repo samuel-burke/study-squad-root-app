@@ -6,7 +6,7 @@ Study Squad is a group study timer for [Root](https://www.rootapp.com) communiti
 
 <picture>
   <source media="(prefers-color-scheme: light)" srcset="docs/screenshots/room-desktop-light.png">
-  <img src="docs/screenshots/room-desktop.png" alt="Study Squad focus room on desktop: the room timer, everyone focusing, Up next, the weekly leaderboard and the weekly boss">
+  <img src="docs/screenshots/room-desktop.png" alt="Study Squad focus room on desktop: the room timer, everyone focusing, the combo inside the timer, the weekly leaderboard and the weekly boss">
 </picture>
 
 <p>
@@ -15,7 +15,7 @@ Study Squad is a group study timer for [Root](https://www.rootapp.com) communiti
 </p>
 
 <p>
-  <img src="docs/screenshots/start-session-desktop.png" alt="Start a session: goals, private toggle, room or solo timer" width="49%">
+  <img src="docs/screenshots/start-session-desktop.png" alt="Start a session: Now and Later tabs, goals, private toggle, room timer, solo timer or a new table" width="49%">
   <img src="docs/screenshots/goals-desktop.png" alt="Your goals: edit, drag to reorder, finished goals folded with how long they took" width="49%">
 </p>
 
@@ -28,20 +28,20 @@ Study Squad is a group study timer for [Root](https://www.rootapp.com) communiti
   <img src="docs/screenshots/room-mobile.png" alt="Focus room on a phone, dark theme" width="200">
 </p>
 
-## Features (v0.5.1)
+## Features (v0.6.0)
 
 - **Shared room timer** (25/5, 50/10 or custom, rounds of 4 with a long break) and **solo timers** that still show on the board
 - **Live focus board**: who's focusing, on what, how long is left, their rank and who's in voice. Goals can be private ("Focusing")
-- **Study tables**: start a named table like "Calc II" with its own 25/5 or 50/10 timer and tap Sit here to join. Everyone at every table still counts toward the room's combo
-- **Scheduled sessions**: plan one from the Up next card, tap I'm in, and get a mention in the channel when it starts
+- **Study tables**: start a named table like "Calc II" with its own 25/5 or 50/10 timer and tap Sit here to join, all from the Start focusing sheet. Everyone at every table still counts toward the room's combo, shown inside the timer ring
+- **Scheduled sessions**: plan one from the Later tab of the Start focusing sheet, tap I'm in, and get a mention in the channel when it starts
 - **Sounds**: a music player with 20 calm lo-fi tracks (CC0) plus rain, storm, café, fireplace or forest ambience layered underneath, each with its own volume. It fades out on breaks and ships inside the app, so nothing is loaded from outside
 - **No drift**: the server stores when a cycle started; every client derives the countdown (and the countdown chirps) from that and a measured clock offset
 - **Goals list**: add, edit, drag to reorder (the top goal is the one on your card), and clear finished goals in one tap. Finished goals fold into one row and show how long they took. The first 5 goals finished each day pay +25 XP
 - **Break moment**: XP earned, streak, damage dealt to the boss, and "did you finish your goal?"
 - **Game layer**: XP and levels with no daily cap, a combo multiplier for focusing together, a weekly built-in boss with its own strength, weekly quests, over 60 medals to collect (some secret, some in their own colors) and card styles that unlock with level
-- **Big moments**: badge unlocks are short cinematics with recorded orchestral music for each tier, and when the room defeats the weekly boss everyone sees it shatter and a gold boss slayer medal rise
+- **Big moments**: badge unlocks are short cinematics with recorded orchestral music for each tier and recorded sound effects on the action, and when the room defeats the weekly boss everyone sees it shatter and a gold boss slayer medal rise
 - **Leaderboard** by focus minutes or XP, for this week, month, year or all time. Members can hide themselves
-- **Streaks without guilt**: one finished session counts the day, one free freeze per week, and days start at 4am so late nights count
+- **Streaks without guilt**: one finished session counts the day (the calendar outlines days that didn't count), one free freeze per week, and days start at 4am so late nights count
 - **Keep going?** at the end of each cycle, so a forgotten timer can't farm XP all day
 - **Voice**: admins pick the community's voice channel from a dropdown in Room settings. The room shows a Join voice button (it asks first) and headphones next to whoever is in the call
 - **Channel posts**: daily recap, "room is busy", streak milestones, boss defeats, and a squad bot that cheers on the people studying. Bot @mentions are off by default, so names are plain text unless an admin turns pings on

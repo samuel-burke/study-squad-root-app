@@ -34,7 +34,6 @@ export interface RoomScreenProps {
   /** Resolves true once the high-five went through. */
   onHighFive(userId: string, emoji: string): Promise<boolean>;
   onJoinTable(tableId: string): void;
-  onNewTable(): void;
   /** This week's top three, which opens the full leaderboard. */
   podium?: ReactNode;
   /** The next scheduled session. */
@@ -166,7 +165,6 @@ export function RoomScreen(props: RoomScreenProps) {
       myTableId={me.tableId}
       busy={busy}
       onJoinTable={props.onJoinTable}
-      onNewTable={props.onNewTable}
     />
   );
 

@@ -248,14 +248,20 @@ export function BadgeUnlocked({
     let raf = 0;
     // Frames stop once the show is over; its last frame stays up.
     const frame = () => {
-      const t = (performance.now() - start) / 1000;
+      const t = Math.min((performance.now() - start) / 1000, show.end + LINGER);
       drawAt(t);
       if (t < show.end + LINGER) raf = requestAnimationFrame(frame);
     };
-    if (still) raf = requestAnimationFrame(paint);
-    else raf = requestAnimationFrame(frame);
+    // Rotating the phone resizes the canvas, so the frame is drawn again to fit.
+    const redraw = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(still ? paint : frame);
+    };
+    redraw();
+    window.addEventListener("resize", redraw);
     return () => {
       closed = true;
+      window.removeEventListener("resize", redraw);
       cancelAnimationFrame(raf);
       medal3d?.dispose();
     };

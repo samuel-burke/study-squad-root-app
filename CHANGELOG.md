@@ -4,6 +4,10 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ## [Unreleased]
 
+### Fixed
+
+- Rotating your phone after a badge unlock or the boss defeated moment has finished no longer squashes the medal. The last frame is redrawn to fit the new screen shape.
+
 ## [0.6.1] - 2026-11-12
 
 Your username on the leaderboard, steadier phone header, sturdier profile pictures, and badge moments that wait for you.

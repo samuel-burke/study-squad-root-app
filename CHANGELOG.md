@@ -10,6 +10,7 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ### Changed
 
+- The live demo starts you on the room timer as a returning member, so your first cycle unlocks one thing per round (Full House, the Blaze color tier, the boss and level 8, Full Cycle) instead of a pile of badges at once.
 - The boss defeated moment lands with a heavy thud instead of breaking glass.
 - Until you join, the room timer's ring and round pill are grey, so the room's clock doesn't look like your own session.
 

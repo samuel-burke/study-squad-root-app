@@ -85,3 +85,24 @@ test("Discord's picture-in-picture window shows the timer mini view", async ({ b
   await expect(page.getByRole("button", { name: "Join room timer" })).toHaveCount(0);
   await context.close();
 });
+
+test("a dropped connection shows Reconnecting… and comes back on its own", async ({ browser }) => {
+  const context = await browser.newContext();
+  const page = await context.newPage();
+  // Sits between the app and the host, so the test can cut the line.
+  const sockets: { close(options?: { code?: number }): Promise<void> }[] = [];
+  await page.routeWebSocket("**/ws", (ws) => {
+    ws.connectToServer();
+    sockets.push(ws);
+  });
+  await page.goto(`/?devUser=${ANA}&devGuild=${GUILD}`);
+  await expect(page.getByRole("timer")).toBeVisible();
+
+  await sockets[0]!.close({ code: 4000 });
+  const root = page.locator("html");
+  await expect(root).toHaveAttribute("data-connection", "lost");
+  await expect(root).not.toHaveAttribute("data-connection", "lost", { timeout: 10_000 });
+  expect(sockets.length).toBe(2);
+  await expect(page.getByRole("timer")).toBeVisible();
+  await context.close();
+});

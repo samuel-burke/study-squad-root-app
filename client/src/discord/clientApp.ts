@@ -55,6 +55,9 @@ const toBase64 = (bytes: Uint8Array) => {
 };
 const fromBase64 = (b64: string) => Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
 
+/** Fired after the socket comes back, so the app reloads what it missed. */
+export const RECONNECTED_EVENT = "studysquad:reconnected";
+
 /** Something the member should read, like "Ask an admin to add the bot". */
 export class SignInError extends Error {
   override name = "SignInError";
@@ -93,6 +96,11 @@ function connect(hello: object): Promise<void> {
       const msg = JSON.parse(String(event.data)) as Reply & { path?: string; userId?: string };
       if (msg.t === "hello") {
         userId = msg.userId!;
+        if (document.documentElement.dataset.connection === "lost") {
+          // Back after a drop: hide the banner and fetch whatever was missed.
+          delete document.documentElement.dataset.connection;
+          window.dispatchEvent(new Event(RECONNECTED_EVENT));
+        }
         return resolve();
       }
       if (msg.t === "denied") return reject(new SignInError(msg.message));
@@ -114,7 +122,9 @@ function connect(hello: object): Promise<void> {
       for (const waiting of pending.values()) waiting.reject(new Error("connection lost"));
       pending.clear();
       if (event.code === 4003) return;
-      // Reconnect after a moment, unless sign-in itself was refused.
+      // Shows "Reconnecting…" (styles.css), then reconnects after a moment,
+      // unless sign-in itself was refused.
+      document.documentElement.dataset.connection = "lost";
       setTimeout(() => {
         if (socket === ws) connect(hello).catch(() => {});
       }, 2000);

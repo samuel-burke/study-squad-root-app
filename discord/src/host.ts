@@ -141,6 +141,7 @@ export function createHost(options: HostOptions) {
 
   function onSocket(socket: WebSocket) {
     const deviceId = randomUUID();
+    const limit = rateLimiter();
     let session: { userId: string; guildId: string } | null = null;
     const reply = (body: Record<string, unknown>) => socket.send(JSON.stringify(body));
     const fail = (id: number, error: unknown) => {
@@ -183,6 +184,11 @@ export function createHost(options: HostOptions) {
         return;
       }
       const { userId, guildId } = session;
+      if (!limit())
+        return fail(
+          (message as Message).id,
+          new CallError(8, "Slow down a little, then try again."),
+        );
       try {
         if (message.t === "call") {
           const bytes = await guilds.call(
@@ -278,4 +284,22 @@ function send(res: http.ServerResponse, status: number, body: unknown) {
 function isPlainSettings(value: unknown): value is PlainSettings {
   const isObject = (v: unknown) => typeof v === "object" && v !== null && !Array.isArray(v);
   return isObject(value) && Object.values(value as object).every(isObject);
+}
+
+/**
+ * A token bucket per socket: bursts of 30 requests, then 10 a second. Far
+ * above what a person tapping does; it stops a broken or hostile client
+ * from flooding its server.
+ */
+export function rateLimiter(capacity = 30, perSecond = 10, now: () => number = Date.now) {
+  let tokens = capacity;
+  let last = now();
+  return () => {
+    const t = now();
+    tokens = Math.min(capacity, tokens + ((t - last) / 1000) * perSecond);
+    last = t;
+    if (tokens < 1) return false;
+    tokens -= 1;
+    return true;
+  };
 }

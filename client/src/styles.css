@@ -3378,3 +3378,19 @@ textarea.input {
   height: 100%;
   background: var(--amber-strong);
 }
+
+/* Discord build: the socket dropped and is reconnecting (src/discord/clientApp.ts). */
+:root[data-connection="lost"] body::before {
+  content: "Reconnecting…";
+  position: fixed;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--amber-strong);
+  color: #111;
+  font-size: 13px;
+  font-weight: 700;
+}

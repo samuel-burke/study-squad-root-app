@@ -120,12 +120,21 @@ function broadcastType(broadcastPath: string): { toBinary(message: unknown): Uin
   return type;
 }
 
+/**
+ * Nobody is on a timer, going by the last room update. The engine pushes the
+ * room every minute while anyone is, so a quiet room can sleep (guilds.ts).
+ */
+let quiet = true;
+
 function sendBroadcast(
   broadcastPath: string,
   message: unknown,
   to: "all" | string | { userId: string }[],
   except?: { deviceId?: string },
 ) {
+  if (broadcastPath.endsWith("/BroadcastRoomUpdated")) {
+    quiet = ((message as { room?: { members?: unknown[] } }).room?.members?.length ?? 0) === 0;
+  }
   const userIds =
     to === "all" || to === data.guildId
       ? [...attached.keys()]
@@ -231,6 +240,9 @@ export const rootServer = {
           case "settings":
             saveSettings(message.plain);
             send({ t: "settings-saved", id: message.id });
+            break;
+          case "status":
+            send({ t: "status", id: message.id, quiet });
             break;
           case "stop":
             void onStopping().finally(() => send({ t: "stopped" }));

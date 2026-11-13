@@ -3,6 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import { discordCommunity, rootPermissions, toDiscordMentions } from "../src/community";
+import { rateLimiter } from "../src/host";
 import { DiscordApi, memberName } from "../src/discordApi";
 import { JOB_EVENT, JobScheduler } from "../src/jobs";
 import { readManifest, toRootSettings } from "../src/rootSettings";
@@ -161,14 +162,14 @@ describe("JobScheduler", () => {
     jobs.on(JOB_EVENT.Job, (job: { tag: string; jobTime: number }) =>
       fired.push(`${job.tag}@${job.jobTime}`),
     );
-    jobs.runDue(); // the first poll after start; nothing is due yet
+    jobs.runDue(); // nothing is due yet
     now = 2500;
     jobs.runDue();
     jobs.runDue();
     expect(fired).toEqual(["a@2000"]);
 
-    // Restarted after "b" came due: it fires as missed.
-    now = 6000;
+    // Restarted well after "b" came due: it fires as missed.
+    now = 5000 + 3 * 60_000;
     const restarted = new JobScheduler(f, () => now);
     const missed: string[] = [];
     restarted.on(JOB_EVENT.JobMissed, (job: { tag: string }) => missed.push(job.tag));
@@ -187,5 +188,48 @@ describe("JobScheduler", () => {
     await expect(
       jobs.create({ resourceId: "x", tag: "x", start: 1, jobInterval: 2 }),
     ).rejects.toThrow();
+  });
+});
+
+describe("rateLimiter", () => {
+  it("allows a burst, then refills over time", () => {
+    let now = 0;
+    const allow = rateLimiter(3, 1, () => now);
+    expect([allow(), allow(), allow(), allow()]).toEqual([true, true, true, false]);
+    now = 1000;
+    expect([allow(), allow()]).toEqual([true, false]);
+  });
+});
+
+describe("channel posts", () => {
+  it("go out one at a time per channel, in order, even if one fails", async () => {
+    const order: string[] = [];
+    let release: () => void = () => {};
+    const fetch = vi.fn(async (_url: string | URL | Request, init?: RequestInit) => {
+      const { content } = JSON.parse(String(init!.body)) as { content: string };
+      order.push(`start ${content}`);
+      if (content === "first") await new Promise<void>((r) => (release = r));
+      order.push(`end ${content}`);
+      return content === "second" ? json(500, {}) : json(200, { id: content });
+    });
+    const community = discordCommunity(
+      "99999",
+      new DiscordApi({ botToken: "t", base: "http://d", fetch }),
+    );
+    const posts = ["first", "second", "third"].map((content) =>
+      community.channelMessages.create({ channelId: "5", content }),
+    );
+    await vi.waitFor(() => expect(order).toEqual(["start first"]));
+    release();
+    const results = await Promise.allSettled(posts);
+    expect(results.map((r) => r.status)).toEqual(["fulfilled", "rejected", "fulfilled"]);
+    expect(order).toEqual([
+      "start first",
+      "end first",
+      "start second",
+      "end second",
+      "start third",
+      "end third",
+    ]);
   });
 });

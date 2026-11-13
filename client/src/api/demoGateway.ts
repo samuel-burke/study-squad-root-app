@@ -11,7 +11,11 @@ import {
   DEFAULT_CONFIG,
   EMPTY_STREAK,
   ErrorCode,
+  levelFromXp,
+  newlyEarnedBadges,
   newBoss,
+  questProgress,
+  questsForWeek,
   recordActiveDay,
   squadPost,
   weekKey,
@@ -50,6 +54,8 @@ export interface DemoOptions {
   /** How far into round 1 the room is when the page opens. */
   elapsedMinutes: number;
   bots: boolean;
+  /** With bots, you start on the room timer, so your first round starts with the room's. */
+  joined?: boolean;
   // Test knobs. Each one is left out unless its URL parameter is given.
   /** HP the weekly boss has left, in XP. */
   bossHpLeft?: number;
@@ -157,8 +163,8 @@ const BOTS: Bot[] = [
 
 /**
  * You start at level 7 on a 5-day streak, so finishing a round makes it 6.
- * You start with no badges, so your first round, goal and streak earn them
- * live, with their unlock moments, the way a new member would.
+ * Without the simulated room (`bots=0`, the test bench) you hold no badges,
+ * so each test earns its own.
  */
 const YOU = {
   xp: 2315,
@@ -166,6 +172,49 @@ const YOU = {
 };
 /** The weekly boss starts 39% down. */
 const BOSS_DAMAGE_SHARE = 0.39;
+
+/**
+ * With the simulated room, you're a member a few weeks in, already on the
+ * room timer when the page opens. You hold every badge your history earned,
+ * plus these, and the XP, focus hours and boss are set so each round of your
+ * first cycle has one new moment of its own:
+ * 1. Full House (six of you finish at 2.0x)
+ * 2. Blaze, the 50 hour color tier: the app turns red
+ * 3. the room defeats the boss: First Boss, and the loot takes you to level 8
+ *    (checking off a goal gets you there sooner)
+ * 4. Full Cycle
+ * Fifty and Focused is held early so it doesn't share Blaze's moment.
+ * Timed for the live demo's 1 minute rounds; longer rounds scale.
+ */
+const RETURNING_BADGES = [
+  "squad-up",
+  "study-group",
+  "first-goal",
+  "quest-first",
+  "marathon",
+  "focus-50h",
+];
+/** Bots have done the everyday room things before, so their cards keep their hand-picked badges. */
+const BOT_ROUTINE_BADGES = [
+  "first-session",
+  "squad-up",
+  "study-group",
+  "full-house",
+  "full-cycle",
+  "marathon",
+  "quest-first",
+  "first-boss",
+];
+/** Your XP per round at the room's 2.0x combo, per minute of focus. */
+const ROUND_XP_PER_MINUTE = 4;
+/**
+ * Boss HP left per minute of focus. The room deals about 28 a round, so it
+ * falls at the end of round 3, or then too if you checked off a goal after
+ * round 1.
+ */
+const BOSS_LEFT_PER_MINUTE = 87;
+const BLAZE_MINUTES = 50 * 60;
+const LEVEL_8_XP = 2450;
 
 /** One of each medal, in tier order, for `?unlock=all`. */
 function onePerTier(): string[] {
@@ -201,6 +250,7 @@ export function demoOptionsFromSearch(search: string): DemoOptions {
     breakMinutes: positive("break"),
     elapsedMinutes: positive("elapsed") ?? (params.has("focus") ? 0 : 10.5),
     bots: params.get("bots") !== "0",
+    joined: params.get("bots") !== "0" && params.get("join") !== "0",
   };
   const bossHpLeft = whole("bossLeft", 1_000_000);
   if (bossHpLeft !== undefined && bossHpLeft > 0) options.bossHpLeft = bossHpLeft;
@@ -397,6 +447,8 @@ export class DemoGateway implements StudyRoomGateway {
     ]);
     if (this.options.bots) await this.engine.setVoiceMembers(["bot-ana", "bot-priya"]);
     await this.engine.start();
+    if (this.options.joined)
+      await this.engine.joinRoomTimer(DEMO_USER_ID, { goals: ["Explore Study Squad"] });
   }
 
   private async seedHistory() {
@@ -412,18 +464,23 @@ export class DemoGateway implements StudyRoomGateway {
       });
     const yourStreak = this.options.streak ?? YOU.streak;
     const missed = this.options.missedDays ?? 0;
-    await member(DEMO_USER_ID, this.options.xp ?? YOU.xp, yourStreak, addDays(today, -1 - missed));
+    // Out of reach of three rounds' XP alone, so the boss loot is what levels you up.
+    const pacedXp = LEVEL_8_XP - 3.5 * ROUND_XP_PER_MINUTE * this.roundMinutes();
+    const xp = this.options.xp ?? (this.options.bots ? pacedXp : YOU.xp);
+    await member(DEMO_USER_ID, xp, yourStreak, addDays(today, -1 - missed));
     const earnedAt = Date.now() - 30 * 24 * 60 * MINUTE;
     const award = async (userId: string, badges: readonly string[]) => {
       for (const [i, badgeId] of badges.entries())
         await this.store.badges.award({ userId, badgeId, earnedAt: earnedAt + i * MINUTE });
     };
-    await award(DEMO_USER_ID, this.options.badges ?? []);
+    await award(DEMO_USER_ID, this.options.badges ?? (this.options.bots ? RETURNING_BADGES : []));
     if (this.options.activeDaysAgo) await this.seedActiveDays(today, this.options.activeDaysAgo);
     else await this.seedYourHistory(today, yourStreak, missed);
     await this.seedWeekHours(today);
     await this.seedBoss();
     if (!this.options.bots) return;
+    await this.topUpToBlaze(today);
+    await this.settleHistory(DEMO_USER_ID, today);
     // Some earlier weeks, so month, year and all time rank differently from this week.
     for (const [i, bot] of BOTS.entries()) {
       for (let back = 120; back > 0; back--) {
@@ -448,9 +505,58 @@ export class DemoGateway implements StudyRoomGateway {
     for (const bot of BOTS) {
       await member(bot.userId, bot.xp, bot.streak);
       await award(bot.userId, bot.badges);
+      await this.settleHistory(bot.userId, today, BOT_ROUTINE_BADGES);
       if (bot.cardStyle)
         await this.store.cards.save({ userId: bot.userId, style: bot.cardStyle, showcase: null });
     }
+  }
+
+  /** Your minutes of focus in one room round. */
+  private roundMinutes() {
+    return Math.floor(this.options.focusMinutes ?? 25);
+  }
+
+  /** Older focus, out of the heatmap's view, so you reach 50 hours as round 2 ends. */
+  private async topUpToBlaze(today: string) {
+    const { focusMinutes } = await this.store.stats.lifetime(DEMO_USER_ID);
+    // A second short after round 1, so round 2 crosses it.
+    const minutes = BLAZE_MINUTES - this.roundMinutes() - 1 / 60 - focusMinutes;
+    if (minutes > 0)
+      await this.store.stats.add(DEMO_USER_ID, addDays(today, -60), { focusMinutes: minutes });
+  }
+
+  /**
+   * Pays out what a member's seeded history already earned, quietly, so it
+   * doesn't all land on your first round: this week's finished quests and
+   * the badges their XP, streak and focus hours reach.
+   */
+  private async settleHistory(userId: string, today: string, routine: readonly string[] = []) {
+    const week = weekKey(today);
+    const days = await this.store.stats.listForUser(userId, week, addDays(week, 6));
+    for (const quest of questsForWeek(week)) {
+      if (!questProgress(quest, { days, sessions: [] }).done) continue;
+      const reward = { userId, weekKey: week, questId: quest.id, xp: quest.xp, rewardedAt: 0 };
+      await this.store.quests.markRewarded(reward);
+    }
+    const you = await this.store.members.get(userId);
+    if (!you) return;
+    const held = new Set((await this.store.badges.list([userId])).map((b) => b.badgeId));
+    const earned = newlyEarnedBadges(
+      {
+        xpTotal: you.xpTotal,
+        level: levelFromXp(you.xpTotal).level,
+        streak: { length: you.streak.streak, comebackFrom: 0, freezeSaved: false },
+        lifetime: { ...(await this.store.stats.lifetime(userId)), roomRoundsFinished: 0 },
+      },
+      held,
+    );
+    for (const badgeId of new Set([...earned, ...routine.filter((id) => !held.has(id))]))
+      // Before the hand-picked ones, so cards keep showing those.
+      await this.store.badges.award({
+        userId,
+        badgeId,
+        earnedAt: Date.now() - 60 * 24 * 60 * MINUTE,
+      });
   }
 
   /** Five weeks of history: any missed days, then the streak's active days, a gap before that, then a mixed record. */
@@ -514,7 +620,10 @@ export class DemoGateway implements StudyRoomGateway {
       left !== undefined
         ? Math.max(0, boss.maxHpXp - left)
         : this.options.bots
-          ? Math.round(boss.maxHpXp * BOSS_DAMAGE_SHARE)
+          ? Math.max(
+              Math.round(boss.maxHpXp * BOSS_DAMAGE_SHARE),
+              boss.maxHpXp - BOSS_LEFT_PER_MINUTE * this.roundMinutes(),
+            )
           : 0;
     if (damageXp > 0 || this.options.bossName) await this.store.bosses.save({ ...boss, damageXp });
   }

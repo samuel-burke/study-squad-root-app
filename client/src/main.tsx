@@ -21,6 +21,16 @@ async function createGateway(): Promise<StudyRoomGateway> {
     else followSystemTheme();
     return DemoGateway.create(demoOptionsFromSearch(window.location.search));
   }
+  if (import.meta.env.MODE === "discord") {
+    const [{ RootGateway }, { signIn }] = await Promise.all([
+      import("./api/rootGateway"),
+      import("./discord/clientApp"),
+    ]);
+    // Discord doesn't share its theme with Activities.
+    followSystemTheme();
+    await signIn();
+    return new RootGateway();
+  }
   const [{ RootGateway }, { followRootTheme }] = await Promise.all([
     import("./api/rootGateway"),
     import("./api/rootTheme"),
@@ -42,9 +52,11 @@ createGateway().then(
   // A failed chunk load would otherwise leave a blank screen.
   (error: unknown) => {
     console.error("Study Squad failed to load", error);
+    // Discord sign-in problems say what to do, e.g. "Ask an admin to add the bot".
+    const said = error instanceof Error && error.name === "SignInError" ? error.message : "";
     root.render(
       <div className="status-screen" role="alert">
-        Study Squad couldn&apos;t load. Close and reopen the app.
+        {said || "Study Squad couldn't load. Close and reopen the app."}
       </div>,
     );
   },

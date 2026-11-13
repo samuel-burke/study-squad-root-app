@@ -48,6 +48,7 @@
     "smoke:package": "node scripts/package-smoke.mjs rootapp.pkg",
     "test:e2e": "npm run e2e -w @studyroom/client",
     "test:e2e:root": "npm run e2e:root -w @studyroom/client",
+    "test:e2e:discord": "npm run e2e:discord -w @studyroom/client",
     "verify": "node scripts/stamp-gen-version.mjs --check && npm run format:check && npm run lint && npm run typecheck && npm test && npm run build",
     "server": "npm run server -w @studyroom/server",
     "client": "npm run client -w @studyroom/client",

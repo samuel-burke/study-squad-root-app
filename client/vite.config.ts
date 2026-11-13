@@ -20,6 +20,9 @@ function buildInfo() {
 // `vite --mode demo` runs the real engine in the browser with simulated
 // members, so the UI can be developed and tested without a Root dev token.
 //
+// `vite build --mode discord` is the Discord Activity: RootGateway again, with
+// @rootsdk/client-app swapped for the Discord sign-in and socket (src/discord/).
+//
 // `vite build --mode fakeroot` is the real Root client (RootGateway), but with
 // @rootsdk/client-app swapped for the fake Root host's browser half, so the
 // full-stack e2e tests (e2e-root/) can run the real server in CI.
@@ -35,6 +38,9 @@ export default defineConfig(({ mode }) => ({
       ...(mode === "fakeroot"
         ? { "@rootsdk/client-app": source("../fake-root/client-app.js") }
         : {}),
+      ...(mode === "discord"
+        ? { "@rootsdk/client-app": source("./src/discord/clientApp.ts") }
+        : {}),
     },
   },
   build: {
@@ -45,5 +51,10 @@ export default defineConfig(({ mode }) => ({
   },
   server: {
     port: 5173,
+    // `vite --mode discord` talks to a local Discord host (npm start -w @studyroom/discord).
+    proxy:
+      mode === "discord"
+        ? { "/api": "http://127.0.0.1:8080", "/ws": { target: "ws://127.0.0.1:8080", ws: true } }
+        : undefined,
   },
 }));

@@ -1,5 +1,6 @@
 import type { VoiceDto } from "@studyroom/core";
 import { useState } from "react";
+import { onDiscord } from "../lib/platform";
 import { HeadphonesIcon } from "./Icons";
 import { Sheet } from "./Sheet";
 
@@ -11,7 +12,7 @@ import { Sheet } from "./Sheet";
  */
 export function VoiceButton({ voice, compact }: { voice: VoiceDto; compact: boolean }) {
   const [asking, setAsking] = useState(false);
-  if (!voice.joinUrl) return null;
+  if (!voice.joinUrl || onDiscord) return null;
   const count = voice.userIds.length;
   const where = voice.channelName ? ` #${voice.channelName}` : "";
   const label = count > 0 ? `Join voice${where}, ${count} in there` : `Join voice${where}`;

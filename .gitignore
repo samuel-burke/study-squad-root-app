@@ -24,6 +24,8 @@ client/test-results/
 client/test-results-root/
 client/playwright-report-root/
 client/playwright-report/
+client/test-results-discord/
+client/playwright-report-discord/
 client/blob-report/
 
 # editor / OS

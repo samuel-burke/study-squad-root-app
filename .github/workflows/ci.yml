@@ -68,6 +68,9 @@ jobs:
       # (fake-root/), with several members open at once. See docs/TESTING.md.
       - name: Full-stack e2e on the fake Root host
         run: npm run test:e2e:root
+      # The Discord Activity: the Discord host, server and client on a fake Discord API.
+      - name: Discord Activity e2e
+        run: npm run test:e2e:discord
       - name: Upload Playwright report
         if: failure()
         uses: actions/upload-artifact@v7
@@ -76,6 +79,7 @@ jobs:
           path: |
             client/playwright-report/
             client/playwright-report-root/
+            client/playwright-report-discord/
           retention-days: 14
 
   package:

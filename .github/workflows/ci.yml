@@ -178,3 +178,33 @@ jobs:
         run: |
           awk -v head="## [$VERSION]" 'index($0, head) == 1 { found = 1; next } /^## \[/ && found { exit } found' CHANGELOG.md > notes.md
           gh release create "root-v$VERSION" --title "v$VERSION" --notes-file notes.md --latest
+
+  deploy-discord:
+    name: Deploy Discord Activity
+    needs: [verify, e2e]
+    # Only main ships, like the Root deploy.
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    concurrency:
+      group: deploy-discord
+      cancel-in-progress: false
+    env:
+      FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+      DISCORD_CLIENT_ID: ${{ vars.DISCORD_CLIENT_ID }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Decide whether to deploy
+        id: check
+        run: |
+          if [ -z "$FLY_API_TOKEN" ] || [ -z "$DISCORD_CLIENT_ID" ]; then
+            echo "::notice::No FLY_API_TOKEN secret or DISCORD_CLIENT_ID variable, so the Discord Activity isn't deployed. See docs/DISCORD.md."
+            echo "deploy=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "deploy=true" >> "$GITHUB_OUTPUT"
+          fi
+      - if: steps.check.outputs.deploy == 'true'
+        uses: superfly/flyctl-actions/setup-flyctl@1.5
+      - name: Deploy to Fly.io
+        if: steps.check.outputs.deploy == 'true'
+        run: flyctl deploy --remote-only --build-arg VITE_DISCORD_CLIENT_ID="$DISCORD_CLIENT_ID"

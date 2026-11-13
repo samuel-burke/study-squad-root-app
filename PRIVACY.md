@@ -1,8 +1,8 @@
 # Study Squad privacy policy
 
-_Effective November 12, 2026_
+_Effective November 13, 2026_
 
-Study Squad is a group study timer for [Root](https://www.rootapp.com) communities, made by Samuel Burke ("we", "us"). This page explains, in plain language, what Study Squad keeps, why, who sees it, and how you can delete it whenever you like.
+Study Squad is a group study timer for [Root](https://www.rootapp.com) communities and [Discord](https://discord.com) servers, made by Samuel Burke ("we", "us"). This page explains, in plain language, what Study Squad keeps, why, who sees it, and how you can delete it whenever you like.
 
 **The short version:** Study Squad only keeps your study activity (your goals, timers and progress) so the app can work. We never sell it, there are no ads and no tracking, and you can delete all of it yourself in a few taps.
 
@@ -37,6 +37,19 @@ A few things Study Squad **uses but doesn't save**:
 - Your sound settings: whether sounds are muted, and the music, ambience and volumes you picked in **Sounds**. These are saved only on your own device, in your browser.
 
 Each community's Study Squad data lives in that community's own app storage, hosted by Root. Communities never see each other's data.
+
+## On Discord
+
+Study Squad on Discord works the same way, with "server" in place of "community", and these differences:
+
+- **Signing in:** when you open the Activity, Discord asks you to let Study Squad see your basic account info (the `identify` permission). Study Squad uses it once to learn your Discord user ID. It never sees your email, messages or other servers.
+- **Where data lives:** each Discord server's Study Squad data is kept in its own database on our server, hosted by [Fly.io](https://fly.io) in the United States, instead of on Root. Servers never see each other's data.
+- **Names and pictures:** the Study Squad bot reads your server nickname, picture and roles from Discord to show your card and to check whether you can change server settings. Names are held in memory for up to 5 minutes and aren't saved.
+- **Not used on Discord:** voice channels and channel messages. Study Squad doesn't read who is in voice or what anyone writes.
+- **Server settings** are changed in the Activity by people with Manage Server, instead of in Root's App settings.
+- **Logs:** our server's logs record things like user IDs and errors, are only used to keep the app working, and are kept for a limited time by Fly.io.
+
+Your Discord account itself is covered by [Discord's privacy policy](https://discord.com/privacy). Deleting your data works the same way, in the Activity, for each Discord server you used it in.
 
 ## Who sees what
 

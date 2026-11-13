@@ -1,0 +1,12 @@
+**/node_modules
+**/dist
+**/dist-*
+networking/gen
+coverage
+data
+.git
+client/test-results*
+client/playwright-report*
+*.pkg
+.env
+.env.*

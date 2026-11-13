@@ -20,6 +20,7 @@ export type ToWorker =
   | { t: "attach"; userId: string; deviceId: string }
   | { t: "detach"; userId: string; deviceId: string }
   | { t: "settings"; id: number; plain: PlainSettings }
+  | { t: "status"; id: number }
   | { t: "stop" };
 
 /** Worker to main thread. */
@@ -30,4 +31,5 @@ export type FromWorker =
   | { t: "reply"; id: number; code: number; message: string }
   | { t: "push"; path: string; bytes: Uint8Array; deviceIds: string[] }
   | { t: "settings-saved"; id: number }
+  | { t: "status"; id: number; quiet: boolean }
   | { t: "stopped" };

@@ -39,6 +39,23 @@ export function rootPermissions(bitfield: string) {
  * one Discord server. A Discord server's @everyone role id is the server's id.
  */
 export function discordCommunity(guildId: string, api: DiscordApi) {
+  // One post at a time per channel, so a burst (a recap plus badge posts)
+  // goes out in order and doesn't trip Discord's per-channel rate limit.
+  const queues = new Map<string, Promise<unknown>>();
+  const postInOrder = (channelId: string, content: string) => {
+    const message = toDiscordMentions(content);
+    const previous = queues.get(channelId) ?? Promise.resolve();
+    const next = previous
+      .catch(() => undefined)
+      .then(() => api.post(channelId, message.content, message.userIds));
+    queues.set(channelId, next);
+    void next
+      .finally(() => {
+        if (queues.get(channelId) === next) queues.delete(channelId);
+      })
+      .catch(() => undefined);
+    return next;
+  };
   return {
     communities: {
       get: async () => {
@@ -74,10 +91,8 @@ export function discordCommunity(guildId: string, api: DiscordApi) {
       // the developer's chat commands are Root only for now.
       on: () => undefined,
       off: () => undefined,
-      create: async ({ channelId, content }: { channelId: string; content: string }) => {
-        const message = toDiscordMentions(content);
-        return api.post(channelId, message.content, message.userIds);
-      },
+      create: ({ channelId, content }: { channelId: string; content: string }) =>
+        postInOrder(channelId, content),
     },
     communityMembers: {
       get: async ({ userId }: { userId: string }) => ({

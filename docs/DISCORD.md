@@ -50,10 +50,10 @@ button and voice channel picker are hidden on Discord.
 
 In the Developer Portal, under Activities → URL Mappings:
 
-| Prefix         | Target                                          |
-| -------------- | ----------------------------------------------- |
-| `/`            | the host's address (e.g. `study-squad.fly.dev`) |
-| `/discord-cdn` | `cdn.discordapp.com` (avatars)                  |
+| Prefix         | Target                                                          |
+| -------------- | --------------------------------------------------------------- |
+| `/`            | the host's address (`terraform output url`, without `https://`) |
+| `/discord-cdn` | `cdn.discordapp.com` (avatars)                                  |
 
 ## Discord-only screens
 
@@ -86,6 +86,28 @@ DISCORD_CLIENT_ID=... DISCORD_CLIENT_SECRET=... DISCORD_BOT_TOKEN=... npm start 
 `npx vitest run --project discord` tests the host end to end against a fake
 Discord API.
 
-Each Discord server's worker uses about 27 MB, so a 1 GB machine holds
-roughly 30 active servers. Stopping idle servers' workers is the next step
-once that matters.
+Each Discord server's worker uses about 27 MB and is capped at 128 MB. A
+server's worker sleeps after 15 minutes with nobody in the Activity and
+nobody on a timer, and wakes for the next visitor or its next scheduled job
+(a recap or session reminder), so memory follows active servers, not
+installs. Each socket is rate limited, the bot posts to each channel one
+message at a time, and the Activity reconnects on its own after a drop.
+
+## Deploy
+
+The host runs on AWS, set up with Terraform in `infra/`. See
+[INFRA.md](INFRA.md) for the setup, costs, backups and day-to-day commands.
+
+One-time setup in the **Discord Developer Portal**
+(https://discord.com/developers/applications):
+
+1. New Application, "Study Squad". Copy the **Application ID**.
+2. OAuth2: copy the **Client Secret**. Add redirect `https://127.0.0.1`
+   (the Activity flow doesn't use it, but Discord wants one).
+3. Bot: Reset Token and copy the **bot token**. No privileged intents are needed.
+4. Activities → Settings: turn on Activities. URL Mappings as in the table above.
+5. Installation: Guild Install with scopes `bot` and `applications.commands`,
+   bot permissions View Channels and Send Messages. Share that install link.
+
+The three values go into AWS SSM Parameter Store (INFRA.md, step 3), never
+into the repo or a chat.

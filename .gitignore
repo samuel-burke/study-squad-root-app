@@ -42,3 +42,8 @@ client/blob-report/
 scripts/store-screenshots/raw/
 scripts/store-screenshots/out/
 /data/
+
+# Terraform
+infra/.terraform/
+infra/*.tfstate*
+infra/terraform.tfvars

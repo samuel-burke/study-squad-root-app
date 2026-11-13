@@ -1,0 +1,10 @@
+# Streams every Discord server's database to S3 as it changes (docs/INFRA.md).
+# New databases are picked up live, so a server that starts using Study
+# Squad is backed up from its first write.
+dbs:
+  - dir: ${DATA_DIR}
+    pattern: "*.sqlite3"
+    recursive: true
+    watch: true
+    replica:
+      url: s3://${LITESTREAM_BUCKET}/data

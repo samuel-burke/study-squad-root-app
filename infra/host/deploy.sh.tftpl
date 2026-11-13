@@ -1,0 +1,67 @@
+#!/bin/bash
+# Runs one image of the Study Squad host behind Caddy (HTTPS). CI calls it
+# through SSM after each push to main: study-squad-deploy <ecr image uri>.
+# If the new image doesn't pass /healthz, it puts the last good one back.
+set -euo pipefail
+image="$1"
+region="${region}"
+state=/srv/study-squad
+umask 077
+
+aws ecr get-login-password --region "$region" |
+  docker login --username AWS --password-stdin "$${image%%/*}" >/dev/null
+docker pull --quiet "$image"
+
+# Every parameter under ${param_path} becomes an environment variable.
+aws ssm get-parameters-by-path --region "$region" --path "${param_path}" --with-decryption \
+  --query 'Parameters[].[Name,Value]' --output text |
+  awk -F'\t' '{ name = $1; sub(".*/", "", name); print name "=" $2 }' >/run/study-squad.env
+
+docker network create study-squad >/dev/null 2>&1 || true
+
+start_app() {
+  docker container rm --force app >/dev/null 2>&1 || true
+  # Port 8080 is published on localhost only, for the health check below.
+  docker run -d --name app --network study-squad --restart unless-stopped \
+    --stop-timeout 30 -p 127.0.0.1:8080:8080 \
+    --env-file /run/study-squad.env \
+    -e LITESTREAM_BUCKET="${backup_bucket}" -e AWS_REGION="$region" \
+    -v "$state/app:/data" \
+    --log-driver awslogs --log-opt awslogs-region="$region" \
+    --log-opt awslogs-group="${log_group}" --log-opt awslogs-stream=app \
+    "$1" >/dev/null
+}
+
+healthy() {
+  for _ in $(seq 60); do
+    curl -fsS http://127.0.0.1:8080/healthz >/dev/null 2>&1 && return 0
+    sleep 2
+  done
+  return 1
+}
+
+previous=$(cat "$state/current-image" 2>/dev/null || true)
+start_app "$image"
+if ! healthy; then
+  echo "New image failed its health check." >&2
+  docker logs --tail 50 app >&2 || true
+  if [ -n "$previous" ] && [ "$previous" != "$image" ]; then
+    echo "Rolling back to $previous" >&2
+    start_app "$previous"
+    healthy || echo "The previous image isn't healthy either." >&2
+  fi
+  exit 1
+fi
+echo "$image" >"$state/current-image"
+
+# Caddy gets and renews the HTTPS certificate; its data sits on the data disk.
+if ! docker ps --format '{{.Names}}' | grep -qx caddy; then
+  docker container rm --force caddy >/dev/null 2>&1 || true
+  docker run -d --name caddy --network study-squad --restart unless-stopped \
+    -p 80:80 -p 443:443 -v "$state/caddy:/data" \
+    --log-driver awslogs --log-opt awslogs-region="$region" \
+    --log-opt awslogs-group="${log_group}" --log-opt awslogs-stream=caddy \
+    caddy:2.10 caddy reverse-proxy --from "${domain}" --to app:8080 >/dev/null
+fi
+docker image prune --all --force --filter "until=168h" >/dev/null
+echo "Deployed $image"

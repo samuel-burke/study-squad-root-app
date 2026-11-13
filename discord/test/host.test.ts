@@ -286,3 +286,86 @@ describe("Discord host", () => {
     );
   });
 });
+
+describe("Discord host: sleeping servers", () => {
+  const discord = fakeDiscord();
+  let host: ReturnType<typeof createHost>;
+  let url = "";
+  const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "discord-sleep-"));
+
+  beforeAll(async () => {
+    await new Promise<void>((r) => discord.listen(0, "127.0.0.1", r));
+    const apiPort = (discord.address() as { port: number }).port;
+    host = createHost({
+      clientId: "client",
+      clientSecret: "secret",
+      botToken: "bot-token",
+      apiBase: `http://127.0.0.1:${apiPort}/api`,
+      dataDir,
+      serverMain: path.join(repo, "server/dist/main.js"),
+      manifestPath: path.join(repo, "root-manifest.json"),
+      // Longer than the server's 1 s room push bundling, so the room it reports is current.
+      idleMs: 1500,
+      jobPollMs: 100,
+    });
+    const address = (await host.listen(0, "127.0.0.1")) as { port: number };
+    url = `ws://127.0.0.1:${address.port}/ws`;
+  });
+
+  afterAll(async () => {
+    await host.close();
+    discord.close();
+  });
+
+  it("sleeps once everyone has left and nobody is on a timer, and wakes when someone opens it", async () => {
+    const { member } = await Member.open(url, {
+      t: "auth",
+      accessToken: "ana-token",
+      guildId: GUILD,
+    });
+    await member.call("GetRoom");
+    member.close();
+    await expect.poll(() => host.guilds.isRunning(GUILD), { timeout: 5000 }).toBe(false);
+
+    const again = await Member.open(url, { t: "auth", accessToken: "ana-token", guildId: GUILD });
+    expect(again.first).toMatchObject({ t: "hello" });
+    expect(shared.RoomSnapshot.fromBinary(await again.member.call("GetRoom")).me.userId).toBe(ANA);
+    again.member.close();
+    await expect.poll(() => host.guilds.isRunning(GUILD), { timeout: 5000 }).toBe(false);
+  });
+
+  it("stays awake while someone is on a timer, even with the Activity closed", async () => {
+    const { member } = await Member.open(url, {
+      t: "auth",
+      accessToken: "owner-token",
+      guildId: GUILD,
+    });
+    await member.call(
+      "JoinRoomTimer",
+      shared.JoinRoomTimerRequest.toBinary({ goals: [], goalsPrivate: true }),
+    );
+    member.close();
+    await new Promise((r) => setTimeout(r, 3500));
+    expect(host.guilds.isRunning(GUILD)).toBe(true);
+
+    // Leaving the timer lets it sleep.
+    const back = await Member.open(url, { t: "auth", accessToken: "owner-token", guildId: GUILD });
+    await back.member.call("LeaveRoomTimer");
+    back.member.close();
+    await expect.poll(() => host.guilds.isRunning(GUILD), { timeout: 5000 }).toBe(false);
+  });
+
+  it("wakes a sleeping server when one of its jobs comes due", async () => {
+    expect(host.guilds.isRunning(GUILD)).toBe(false);
+    const jobsFile = path.join(dataDir, GUILD, "jobs.json");
+    fs.writeFileSync(
+      jobsFile,
+      JSON.stringify([{ id: 99, tag: "probe", resourceId: "probe", start: Date.now() }]),
+    );
+    await expect.poll(() => host.guilds.isRunning(GUILD), { timeout: 5000 }).toBe(true);
+    // Its worker fired the job, so it's gone from the file.
+    await expect
+      .poll(() => JSON.parse(fs.readFileSync(jobsFile, "utf8")), { timeout: 5000 })
+      .toEqual([]);
+  });
+});

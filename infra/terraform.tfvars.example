@@ -1,0 +1,3 @@
+# Copy to terraform.tfvars (git-ignored). Everything here is optional.
+# domain      = "study.example.com"   # needs an A record to the Elastic IP
+# alert_email = "you@example.com"

@@ -56,7 +56,13 @@ export function useStudyRoom(gateway: StudyRoomGateway) {
       },
     });
     void reload();
-    return unsubscribe;
+    // The Discord build's socket fires this after a dropped connection comes back.
+    const onReconnected = () => void reload();
+    window.addEventListener("studysquad:reconnected", onReconnected);
+    return () => {
+      unsubscribe();
+      window.removeEventListener("studysquad:reconnected", onReconnected);
+    };
   }, [gateway, reload]);
 
   useEffect(() => {

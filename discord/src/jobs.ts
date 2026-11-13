@@ -4,6 +4,8 @@ import fs from "node:fs";
 /** Root's job event names (JobScheduleEvent in @rootsdk/server-app). */
 export const JOB_EVENT = { Job: "job", JobMissed: "job.missed" };
 
+const MISSED_AFTER_MS = 2 * 60_000;
+
 interface Job {
   id: number;
   tag: string;
@@ -14,12 +16,12 @@ interface Job {
 /**
  * Root's one-time job scheduler, kept in a JSON file so jobs (daily recaps,
  * scheduled session reminders) survive a restart. Jobs that came due while
- * the server was down fire as missed, like on Root.
+ * the server was down fire as missed, like on Root. A sleeping server is woken
+ * for its jobs (guilds.ts), so those fire on time.
  */
 export class JobScheduler extends EventEmitter {
   private jobs: Job[];
   private seq: number;
-  private firstPoll = true;
 
   constructor(
     private readonly file: string,
@@ -56,14 +58,14 @@ export class JobScheduler extends EventEmitter {
 
   /** Fires every due job once. Called on a timer. */
   runDue() {
-    const event = this.firstPoll ? JOB_EVENT.JobMissed : JOB_EVENT.Job;
-    this.firstPoll = false;
     const due = this.jobs.filter((j) => j.start <= this.now());
     if (due.length === 0) return;
     this.jobs = this.jobs.filter((j) => !due.includes(j));
     this.save();
     for (const job of due) {
-      this.emit(event, {
+      // Late by more than two polls (the server was down): Root calls that missed.
+      const missed = this.now() - job.start > MISSED_AFTER_MS;
+      this.emit(missed ? JOB_EVENT.JobMissed : JOB_EVENT.Job, {
         id: BigInt(job.id),
         jobScheduleId: `job${job.id}`,
         resourceId: job.resourceId,

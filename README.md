@@ -93,7 +93,7 @@ Study Squad is a group study timer for [Root](https://www.rootapp.com) communiti
   <img src="docs/screenshots/room-mobile.png" alt="Focus room on a phone, dark theme" width="200">
 </p>
 
-See [DESIGN.md](DESIGN.md) for the reasoning behind each rule and [docs/API.md](docs/API.md) for the client/server contract.
+See [DESIGN.md](DESIGN.md) for the reasoning behind each rule, [docs/API.md](docs/API.md) for the client/server contract, and [docs/adr](docs/adr) for the architecture decisions behind running on both Root and Discord (hosting on AWS: [docs/INFRA.md](docs/INFRA.md)).
 
 ## Try it without a Root account
 

@@ -66,6 +66,19 @@ describe("BadgeUnlocked", () => {
     expect(stop).toHaveBeenCalledTimes(1);
   });
 
+  it("replays the whole moment with the Replay link, without closing it", async () => {
+    const stop = vi.fn();
+    const play = vi.fn(() => stop);
+    const onDismiss = vi.fn();
+    render(<BadgeUnlocked badgeId="focus-100h" play={play} onDismiss={onDismiss} />);
+    await userEvent.click(screen.getByRole("button", { name: "Replay" }));
+    expect(stop).toHaveBeenCalledTimes(1);
+    expect(play).toHaveBeenCalledTimes(2);
+    expect(onDismiss).not.toHaveBeenCalled();
+    expect(screen.getByRole("dialog", { name: "Centurion" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Nice!" })).toHaveFocus();
+  });
+
   it("does not break when the sound fails", () => {
     render(
       <BadgeUnlocked
@@ -118,6 +131,18 @@ describe("color tier ring unlock", () => {
       hum.mockRestore();
     },
   );
+
+  it("replays the ring and its hum with the Replay link", async () => {
+    const stop = vi.fn();
+    const hum = vi.spyOn(clips, "playSound").mockReturnValue(stop);
+    const onDismiss = vi.fn();
+    render(<BadgeUnlocked badgeId="tier-blaze" onDismiss={onDismiss} />);
+    await userEvent.click(screen.getByRole("button", { name: "Replay" }));
+    expect(stop).toHaveBeenCalledTimes(1);
+    expect(hum).toHaveBeenCalledTimes(2);
+    expect(onDismiss).not.toHaveBeenCalled();
+    hum.mockRestore();
+  });
 
   it("stays quiet when sounds are muted", () => {
     const hum = vi.spyOn(clips, "playSound").mockReturnValue(() => {});

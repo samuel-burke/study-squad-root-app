@@ -53,6 +53,7 @@ export function TimerCard({
       size={compact ? 220 : 200}
       remaining={remainingFraction(timer, now)}
       tone={ringTone(timer.phase)}
+      dim={!me.onRoomTimer}
     >
       <div className="ring-time" role="timer" aria-label={`${time} ${phaseCaption(timer)}`}>
         {time}

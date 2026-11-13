@@ -61,6 +61,10 @@ test.describe("focus room", () => {
 
   test("joining adds your card and raises the combo", async ({ page }) => {
     await page.goto("/");
+    // Until you join, the room's clock is dimmed so it doesn't read as yours.
+    const ring = page.locator(".ring").first();
+    await expect(ring).toHaveAttribute("data-dim", "true");
+    await expect(page.locator(".phase-pill")).toHaveAttribute("data-dim", "true");
     const sheet = await openStartSheet(page);
     await expect(sheet.getByRole("radio", { name: /Join the room timer/ })).toContainText(
       "combo goes to 2.0x",
@@ -73,6 +77,8 @@ test.describe("focus room", () => {
     );
     await expect(page.getByRole("heading", { name: /Focusing now · 8/ })).toBeVisible();
     await expect(page.getByText("2.0x").first()).toBeVisible();
+    await expect(ring).toHaveAttribute("data-dim", "false");
+    await expect(page.locator(".phase-pill")).toHaveAttribute("data-dim", "false");
   });
 
   test("private goals show as Focusing to everyone else", async ({ page }) => {

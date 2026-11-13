@@ -11,6 +11,7 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 ### Changed
 
 - The boss defeated moment lands with a heavy thud instead of breaking glass.
+- Until you join, the room timer's ring and round pill are grey, so the room's clock doesn't look like your own session.
 
 ## [0.7.0] - 2026-11-12
 

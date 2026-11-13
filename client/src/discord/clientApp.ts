@@ -62,7 +62,7 @@ export class SignInError extends Error {
 
 const definitions = new Map<string, MethodDef>();
 const pending = new Map<number, { resolve(m: Reply): void; reject(e: unknown): void }>();
-type Reply = {
+export type Reply = {
   t: string;
   id?: number;
   b?: string;
@@ -124,7 +124,8 @@ function connect(hello: object): Promise<void> {
   return opened;
 }
 
-async function request(payload: object): Promise<Reply> {
+/** One request to the Discord host itself (profiles, server settings). */
+export async function request(payload: object): Promise<Reply> {
   await opened;
   const id = ++seq;
   return new Promise((resolve, reject) => {

@@ -55,6 +55,15 @@ In the Developer Portal, under Activities → URL Mappings:
 | `/`            | the host's address (e.g. `study-squad.fly.dev`) |
 | `/discord-cdn` | `cdn.discordapp.com` (avatars)                  |
 
+## Discord-only screens
+
+- **Server settings** (Room settings → Server settings) shows only to people with
+  Manage Server or Administrator, or the owner. It is Root's App settings page
+  rebuilt from `root-manifest.json`, and the host checks permission again on save.
+- **Picture-in-picture**: when Discord shrinks the Activity to a short window
+  (320px tall or less), the app shows `MiniView`: timer, round, how many are
+  studying with the combo, and the boss bar.
+
 ## Try it without Discord
 
 ```sh

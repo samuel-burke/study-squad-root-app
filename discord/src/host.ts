@@ -4,7 +4,9 @@ import http from "node:http";
 import path from "node:path";
 import { WebSocketServer, type WebSocket } from "ws";
 import { DiscordApi, DiscordError, memberName, type DiscordMember } from "./discordApi";
+import { rootPermissions } from "./community";
 import { CallError, Guilds, type GuildsOptions } from "./guilds";
+import { readPlainSettings, type PlainSettings } from "./rootSettings";
 
 export interface HostOptions extends GuildsOptions {
   clientId: string;
@@ -37,7 +39,10 @@ type Hello =
   | { t: "auth"; dev: { userId: string; guildId: string } };
 
 type Message =
-  { t: "call"; id: number; path: string; b: string } | { t: "profiles"; id: number; ids: string[] };
+  | { t: "call"; id: number; path: string; b: string }
+  | { t: "profiles"; id: number; ids: string[] }
+  | { t: "settings"; id: number }
+  | { t: "settings-save"; id: number; values: PlainSettings };
 
 /**
  * The Discord Activity's server: serves the client, swaps sign-in codes for
@@ -78,6 +83,40 @@ export function createHost(options: HostOptions) {
       throw new CallError(7, "Study Squad only works in a server you're a member of.");
     });
     return { userId: user.id, guildId: hello.guildId };
+  }
+
+  /** The server owner, or a role with Administrator or Manage Server. Checked fresh each time. */
+  async function canManage(guildId: string, userId: string) {
+    const [guild, me, roles] = await Promise.all([
+      api.guild(guildId),
+      api.member(guildId, userId),
+      api.roles(guildId),
+    ]);
+    if (guild.owner_id === userId) return true;
+    const mine = new Set([...me.roles, guildId]);
+    return roles.some((role) => {
+      if (!mine.has(role.id)) return false;
+      const p = rootPermissions(role.permissions);
+      return p.communityFullControl || p.communityManageApps;
+    });
+  }
+
+  /** Server settings for the in-app sheet: admins only. */
+  async function settings(guildId: string, userId: string) {
+    if (!(await canManage(guildId, userId))) return { canEdit: false };
+    const channels = (await api.channels(guildId))
+      .filter((c) => c.type === 0)
+      .map((c) => ({ id: c.id, name: c.name ?? "" }));
+    const values = readPlainSettings(path.join(options.dataDir, guildId, "settings.json"));
+    return { canEdit: true, values, channels };
+  }
+
+  async function saveSettings(guildId: string, userId: string, values: unknown) {
+    if (!(await canManage(guildId, userId)))
+      throw new CallError(7, "Only people with Manage Server can change these.");
+    if (!isPlainSettings(values)) throw new CallError(3, "Those settings don't look right.");
+    await guilds.saveSettings(guildId, values);
+    return settings(guildId, userId);
   }
 
   async function profiles(guildId: string, ids: string[]) {
@@ -160,6 +199,11 @@ export function createHost(options: HostOptions) {
             id: message.id,
             profiles: await profiles(guildId, message.ids.slice(0, 100)),
           });
+        } else if (message.t === "settings") {
+          reply({ t: "ok", id: message.id, ...(await settings(guildId, userId)) });
+        } else if (message.t === "settings-save") {
+          const saved = await saveSettings(guildId, userId, message.values);
+          reply({ t: "ok", id: message.id, ...saved });
         }
       } catch (error) {
         fail((message as Message).id, error);
@@ -228,4 +272,10 @@ export function createHost(options: HostOptions) {
 function send(res: http.ServerResponse, status: number, body: unknown) {
   res.writeHead(status, { "content-type": "application/json" });
   res.end(JSON.stringify(body));
+}
+
+/** Groups of plain values; the server reads them through the manifest and ignores the rest. */
+function isPlainSettings(value: unknown): value is PlainSettings {
+  const isObject = (v: unknown) => typeof v === "object" && v !== null && !Array.isArray(v);
+  return isObject(value) && Object.values(value as object).every(isObject);
 }

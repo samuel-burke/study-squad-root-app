@@ -1,9 +1,22 @@
 import { presetLabel, type RoomStateDto, type VoiceChannelChoiceDto } from "@studyroom/core";
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState, type ComponentProps } from "react";
 import { toGatewayError, type StudyRoomGateway } from "../api/gateway";
 import { onDiscord } from "../lib/platform";
 import { SelfTestPanel } from "./SelfTestPanel";
 import { Sheet } from "./Sheet";
+
+// Discord only: loaded lazily so the Root build never pulls in the Discord client.
+const discordSheet = () =>
+  import.meta.env.MODE === "discord"
+    ? import("../discord/ServerSettingsSheet")
+    : new Promise<never>(() => {});
+const ServerSettingsButton = lazy(() =>
+  discordSheet().then((m) => ({ default: m.ServerSettingsButton })),
+);
+const ServerSettingsSheet = lazy(() =>
+  discordSheet().then((m) => ({ default: m.ServerSettingsSheet })),
+);
+type ServerSettings = ComponentProps<typeof ServerSettingsSheet>["initial"];
 
 /**
  * Summary of the room's rules. Admins change most of them in Root's App
@@ -22,7 +35,14 @@ export function SettingsSheet({
   onClose(): void;
   onSendFeedback(): void;
 }) {
+  const [serverSettings, setServerSettings] = useState<ServerSettings | null>(null);
   const f = room.features;
+  if (serverSettings)
+    return (
+      <Suspense fallback={null}>
+        <ServerSettingsSheet initial={serverSettings} onClose={onClose} />
+      </Suspense>
+    );
   const rows: [string, string][] = [
     [
       "Room timer",
@@ -59,8 +79,15 @@ export function SettingsSheet({
         {!onDiscord && <VoiceChannelSetting gateway={gateway} status={voiceStatus} />}
       </dl>
       <div className="tiny dim">
-        Community admins can change these in App settings for Study Squad.
+        {onDiscord
+          ? "People with Manage Server can change these."
+          : "Community admins can change these in App settings for Study Squad."}
       </div>
+      {onDiscord && (
+        <Suspense fallback={null}>
+          <ServerSettingsButton onOpen={setServerSettings} />
+        </Suspense>
+      )}
       {f.feedbackEnabled && (
         <button type="button" className="btn btn-quiet" onClick={onSendFeedback}>
           Send feedback

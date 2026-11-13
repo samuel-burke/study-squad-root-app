@@ -126,6 +126,12 @@ class Member {
     return Buffer.from(String(reply.b), "base64");
   }
 
+  async host(payload: Record<string, unknown>) {
+    const id = ++this.seq;
+    this.socket.send(JSON.stringify({ ...payload, id }));
+    return this.next((m) => m.id === id);
+  }
+
   async profiles(ids: string[]) {
     const id = ++this.seq;
     this.socket.send(JSON.stringify({ t: "profiles", id, ids }));
@@ -239,6 +245,39 @@ describe("Discord host", () => {
     // The reminder is a job saved in the server's own folder.
     const jobs = JSON.parse(fs.readFileSync(path.join(dataDir, GUILD, "jobs.json"), "utf8"));
     expect(jobs).toContainEqual(expect.objectContaining({ start: startsAtMs }));
+  });
+
+  it("shows and saves server settings only for people who can manage the server", async () => {
+    const { member: ana } = await sign("ana-token");
+    expect(await ana.host({ t: "settings" })).toMatchObject({ t: "ok", canEdit: false });
+    expect(
+      await ana.host({ t: "settings-save", values: { game: { bossEnabled: false } } }),
+    ).toMatchObject({
+      t: "err",
+      message: expect.stringMatching(/Manage Server/),
+    });
+
+    const { member: owner } = await sign("owner-token");
+    expect(await owner.host({ t: "settings" })).toMatchObject({
+      canEdit: true,
+      channels: [{ id: POST_CHANNEL, name: "study" }],
+    });
+    expect(await owner.host({ t: "settings-save", values: "nope" })).toMatchObject({ t: "err" });
+    const saved = await owner.host({
+      t: "settings-save",
+      values: { room: { postChannel: POST_CHANNEL }, game: { bossEnabled: false } },
+    });
+    expect(saved).toMatchObject({
+      t: "ok",
+      canEdit: true,
+      values: { game: { bossEnabled: false } },
+    });
+    // The server picks it up live and tells everyone.
+    const push = await ana.next(
+      (m) => m.t === "push" && m.path === "/.StudyRoomService/BroadcastRoomUpdated",
+    );
+    const room = shared.RoomUpdatedEvent.fromBinary(Buffer.from(String(push.b), "base64")).room;
+    expect(room.features.bossEnabled).toBe(false);
   });
 
   it("keeps each server's data in its own folder", () => {

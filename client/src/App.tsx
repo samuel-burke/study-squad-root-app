@@ -29,6 +29,8 @@ import { useSounds } from "./state/useSounds";
 import { MiniPlayer, SoundsSheet } from "./components/SoundsSheet";
 import { useStudyRoom } from "./state/useStudyRoom";
 import { myTableView } from "./lib/view";
+import { onDiscord } from "./lib/platform";
+import { MiniView } from "./components/MiniView";
 
 type Overlay =
   | { kind: "start"; mode: "room" | "solo" }
@@ -43,6 +45,8 @@ export function App({ gateway }: { gateway: StudyRoomGateway }) {
   const { state, actions } = useStudyRoom(gateway);
   const now = useNow(gateway.now.bind(gateway));
   const compact = useMediaQuery("(max-width: 760px)");
+  // Discord's picture-in-picture window is a short strip.
+  const mini = useMediaQuery("(max-height: 320px)") && onDiscord;
   const [screen, setScreen] = useState<"room" | "progress">("room");
   const [overlay, setOverlay] = useState<Overlay>(null);
   const schedule = useSchedule(gateway);
@@ -153,6 +157,7 @@ export function App({ gateway }: { gateway: StudyRoomGateway }) {
   // The timer you see is your own table's.
   const room = myTableView(state.room, me);
   const busy = state.pending > 0;
+  if (mini) return <MiniView room={room} now={now} />;
 
   return (
     <>

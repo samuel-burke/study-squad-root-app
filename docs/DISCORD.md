@@ -39,7 +39,35 @@ intent).
 Never commit or paste the secret values; set them in the host's secret
 settings.
 
-## Run it locally
+## The Activity client
+
+`npm run build:discord -w @studyroom/client` (with `VITE_DISCORD_CLIENT_ID`
+set to the app's id) builds the client into `client/dist-discord`. It is the
+same app with RootGateway; only `@rootsdk/client-app` is swapped for
+`client/src/discord/clientApp.ts`, which signs in through Discord's Embedded
+App SDK (`identify` scope), then talks to the host over `/ws`. The Join voice
+button and voice channel picker are hidden on Discord.
+
+In the Developer Portal, under Activities → URL Mappings:
+
+| Prefix         | Target                                          |
+| -------------- | ----------------------------------------------- |
+| `/`            | the host's address (e.g. `study-squad.fly.dev`) |
+| `/discord-cdn` | `cdn.discordapp.com` (avatars)                  |
+
+## Try it without Discord
+
+```sh
+npm run build && VITE_DISCORD_CLIENT_ID=0 npm run build:discord -w @studyroom/client
+node scripts/discord-dev-host.mjs
+```
+
+Then open `http://127.0.0.1:8090/?devUser=200000000000000002&devGuild=111111111111111111`
+(Ana; `...001` is the server owner, `...003` is Ben). It runs the real host
+against a fake Discord API with `devLogin`, which the real host never turns
+on. `npm run test:e2e:discord` runs the Playwright tests on it.
+
+## Run it for real
 
 ```sh
 npm ci && npm run generate && npm run build

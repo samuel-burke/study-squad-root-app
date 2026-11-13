@@ -1,6 +1,7 @@
 import { presetLabel, type RoomStateDto, type VoiceChannelChoiceDto } from "@studyroom/core";
 import { useEffect, useState } from "react";
 import { toGatewayError, type StudyRoomGateway } from "../api/gateway";
+import { onDiscord } from "../lib/platform";
 import { SelfTestPanel } from "./SelfTestPanel";
 import { Sheet } from "./Sheet";
 
@@ -55,7 +56,7 @@ export function SettingsSheet({
             <dd style={{ margin: 0, textAlign: "right", fontSize: 14 }}>{value}</dd>
           </div>
         ))}
-        <VoiceChannelSetting gateway={gateway} status={voiceStatus} />
+        {!onDiscord && <VoiceChannelSetting gateway={gateway} status={voiceStatus} />}
       </dl>
       <div className="tiny dim">
         Community admins can change these in App settings for Study Squad.

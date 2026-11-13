@@ -10,10 +10,14 @@
     "demo": "vite --mode demo",
     "build:demo": "vite build --mode demo --outDir dist-demo",
     "e2e": "playwright test",
+    "build:discord": "vite build --mode discord --outDir dist-discord",
+    "discord": "vite --mode discord",
     "build:fakeroot": "vite build --mode fakeroot --outDir dist-fakeroot",
-    "e2e:root": "playwright test -c playwright.root.config.ts"
+    "e2e:root": "playwright test -c playwright.root.config.ts",
+    "e2e:discord": "playwright test -c playwright.discord.config.ts"
   },
   "dependencies": {
+    "@discord/embedded-app-sdk": "2.5.0",
     "@studyroom/contract": "*",
     "@studyroom/core": "*",
     "react": "^18.3.1",

@@ -464,7 +464,8 @@ h3 {
   color: var(--teal-text);
 }
 
-.phase-pill[data-phase="idle"] {
+.phase-pill[data-phase="idle"],
+.phase-pill[data-dim="true"] {
   background: var(--surface);
   color: var(--text-muted);
 }
@@ -3277,6 +3278,20 @@ textarea.input {
 }
 :root[data-tier] .ring-progress {
   filter: drop-shadow(0 0 6px var(--tier-glow)) drop-shadow(0 0 14px var(--tier-glow));
+}
+/* Until you join, the room's clock (and its pill, above) is grey, so it doesn't read as yours. */
+.ring[data-dim="true"] circle {
+  stroke-width: 6px;
+}
+:root .ring[data-dim="true"] .ring-progress {
+  stroke: var(--outline-dim);
+  filter: none;
+}
+.ring[data-dim="true"] :is(.ring-time, .ring-combo) {
+  color: var(--text-muted);
+}
+.ring[data-dim="true"] .ring-combo svg {
+  stroke: currentColor;
 }
 :root[data-tier] .btn-primary {
   box-shadow: 0 0 16px var(--tier-glow);

@@ -6,14 +6,16 @@ interface TimerRingProps {
   /** 1 = full ring, 0 = empty. */
   remaining: number;
   tone: "focus" | "break" | "idle";
+  /** Grey and thin: the room's clock, not yours yet. */
+  dim?: boolean;
   children: React.ReactNode;
 }
 
 const STROKE = { focus: "var(--amber-strong)", break: "var(--teal)", idle: "var(--outline-dim)" };
 
-export function TimerRing({ size, remaining, tone, children }: TimerRingProps) {
+export function TimerRing({ size, remaining, tone, dim, children }: TimerRingProps) {
   return (
-    <div className="ring" style={{ width: size, height: size }}>
+    <div className="ring" data-dim={dim} style={{ width: size, height: size }}>
       <svg width={size} height={size} viewBox="0 0 200 200" aria-hidden="true">
         <circle cx="100" cy="100" r={RADIUS} fill="none" stroke="var(--track)" strokeWidth="12" />
         <circle

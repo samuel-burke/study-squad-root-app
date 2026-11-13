@@ -41,6 +41,7 @@ export interface RoomScreenProps {
 
 function Header({
   room,
+  me,
   compact,
   soundsMuted,
   ambientOn,
@@ -50,6 +51,7 @@ function Header({
 }: Pick<
   RoomScreenProps,
   | "room"
+  | "me"
   | "compact"
   | "soundsMuted"
   | "ambientOn"
@@ -78,7 +80,7 @@ function Header({
           </div>
         </div>
       )}
-      <div className="phase-pill" data-phase={room.timer.phase}>
+      <div className="phase-pill" data-phase={room.timer.phase} data-dim={!me.onRoomTimer}>
         <span className="dot" />
         {!compact || room.timer.phase === "longBreak"
           ? phasePill(room.timer)

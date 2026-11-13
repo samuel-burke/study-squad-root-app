@@ -4,6 +4,7 @@ import tierSound from "../assets/sounds/tier.mp3";
 import { playSound } from "../lib/clips";
 import type { Ring3D } from "../lib/ring3d";
 import { BadgeMedal } from "./BadgeMedal";
+import { ReplayLink } from "./ReplayLink";
 
 /** Seconds until the ring is lit and the text shows (the timeline in lib/ring3d.ts). */
 const LAND = 2.88;
@@ -20,10 +21,12 @@ export function RingUnlocked({
   badgeId,
   muted = false,
   onDismiss,
+  onReplay,
 }: {
   badgeId: string;
   muted?: boolean;
   onDismiss(): void;
+  onReplay?(): void;
 }) {
   const badge = badgeById(badgeId);
   const tier = TIERS.find((t) => t.id === badge?.ring);
@@ -114,6 +117,7 @@ export function RingUnlocked({
         >
           Nice!
         </button>
+        {onReplay && <ReplayLink onReplay={onReplay} />}
       </div>
     </div>
   );

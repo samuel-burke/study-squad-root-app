@@ -5,6 +5,7 @@ import { playShowEffects } from "../lib/showEffects";
 import type { Medal3D } from "../lib/medal3d";
 import { clamp, SHOWS, ShowPainter, type DrawMedal, type Show } from "../lib/unlockShow";
 import { BadgeMedal, FRAMES, medalMetal } from "./BadgeMedal";
+import { ReplayLink } from "./ReplayLink";
 import { RingUnlocked } from "./RingUnlocked";
 
 const EYEBROWS: Record<BadgeTier, string> = {
@@ -108,12 +109,21 @@ interface UnlockProps {
   onDismiss(): void;
   /** Starts the tier's music and effects, and returns a function that stops them. */
   play?: (tier: BadgeTier) => (() => void) | void;
+  /** Plays the whole moment again from the start. */
+  onReplay?(): void;
 }
 
 /** A color tier's ring gets its own neon unlock; every other badge gets the medal show. */
 export function BadgeUnlocked(props: UnlockProps) {
   const ring = badgeById(props.badgeId)?.ring;
-  return ring ? <RingUnlocked {...props} /> : <MedalUnlocked {...props} />;
+  // Replay remounts the moment, which restarts its show and sound.
+  const [run, setRun] = useState(0);
+  const onReplay = () => setRun((n) => n + 1);
+  return ring ? (
+    <RingUnlocked key={run} {...props} onReplay={onReplay} />
+  ) : (
+    <MedalUnlocked key={run} {...props} onReplay={onReplay} />
+  );
 }
 
 /**
@@ -123,7 +133,13 @@ export function BadgeUnlocked(props: UnlockProps) {
  * otherwise. It stays up until closed with a tap anywhere, the button, or
  * Escape.
  */
-function MedalUnlocked({ badgeId, muted = false, onDismiss, play = playShow }: UnlockProps) {
+function MedalUnlocked({
+  badgeId,
+  muted = false,
+  onDismiss,
+  play = playShow,
+  onReplay,
+}: UnlockProps) {
   const badge = badgeById(badgeId);
   const tier = badge?.tier;
   const titleId = useId();
@@ -312,6 +328,7 @@ function MedalUnlocked({ badgeId, muted = false, onDismiss, play = playShow }: U
         >
           Nice!
         </button>
+        {onReplay && <ReplayLink onReplay={onReplay} />}
       </div>
     </div>
   );

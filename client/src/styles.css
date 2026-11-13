@@ -2410,6 +2410,15 @@ textarea.input {
   min-width: 140px;
 }
 
+.unlock-replay {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
 @keyframes unlock-rise-text {
   from {
     transform: translateY(10px);

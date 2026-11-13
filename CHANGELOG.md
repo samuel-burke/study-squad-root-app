@@ -4,6 +4,10 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ## [Unreleased]
 
+### Added
+
+- A small Replay link under Nice! on every badge unlock plays the animation and its sound again from the start.
+
 ### Changed
 
 - The boss defeated moment lands with a heavy thud instead of breaking glass.

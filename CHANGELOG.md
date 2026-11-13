@@ -7,7 +7,7 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 ### Added
 
 - Study Squad as a Discord Activity: the same room, game and badges inside Discord voice channels, with a timer mini view for picture-in-picture and a Server settings sheet for people with Manage Server. Root keeps working as before.
-- The privacy policy covers Discord: sign-in with Discord's identify permission, and Discord servers' data hosted on Fly.io.
+- The privacy policy covers Discord: sign-in with Discord's identify permission, and Discord servers' data hosted on AWS in the United States.
 - A small Replay link under Nice! on every badge unlock plays the animation and its sound again from the start.
 
 ### Changed

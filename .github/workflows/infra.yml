@@ -1,0 +1,30 @@
+name: Infra
+
+# Checks the Terraform in infra/. Applying stays a manual step from a
+# trusted machine (docs/INFRA.md), so CI never holds admin AWS access.
+on:
+  pull_request:
+    paths: [infra/**, .github/workflows/infra.yml]
+  push:
+    branches: [main, dev]
+    paths: [infra/**, .github/workflows/infra.yml]
+
+permissions:
+  contents: read
+
+jobs:
+  terraform:
+    name: Terraform format and validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: infra
+    steps:
+      - uses: actions/checkout@v7
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.13.4
+      - run: terraform fmt -check -recursive
+      - run: terraform init -backend=false -input=false
+      - run: terraform validate

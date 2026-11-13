@@ -43,11 +43,11 @@ Each community's Study Squad data lives in that community's own app storage, hos
 Study Squad on Discord works the same way, with "server" in place of "community", and these differences:
 
 - **Signing in:** when you open the Activity, Discord asks you to let Study Squad see your basic account info (the `identify` permission). Study Squad uses it once to learn your Discord user ID. It never sees your email, messages or other servers.
-- **Where data lives:** each Discord server's Study Squad data is kept in its own database on our server, hosted by [Fly.io](https://fly.io) in the United States, instead of on Root. Servers never see each other's data.
+- **Where data lives:** each Discord server's Study Squad data is kept in its own database on our server, hosted on [Amazon Web Services](https://aws.amazon.com) in the United States, on encrypted disks with encrypted backups, instead of on Root. Servers never see each other's data.
 - **Names and pictures:** the Study Squad bot reads your server nickname, picture and roles from Discord to show your card and to check whether you can change server settings. Names are held in memory for up to 5 minutes and aren't saved.
 - **Not used on Discord:** voice channels and channel messages. Study Squad doesn't read who is in voice or what anyone writes.
 - **Server settings** are changed in the Activity by people with Manage Server, instead of in Root's App settings.
-- **Logs:** our server's logs record things like user IDs and errors, are only used to keep the app working, and are kept for a limited time by Fly.io.
+- **Logs:** our server's logs record things like user IDs and errors, are only used to keep the app working, and are deleted after 30 days.
 
 Your Discord account itself is covered by [Discord's privacy policy](https://discord.com/privacy). Deleting your data works the same way, in the Activity, for each Discord server you used it in.
 

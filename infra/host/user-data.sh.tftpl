@@ -1,0 +1,22 @@
+#!/bin/bash
+# First boot: Docker, the data disk at /srv/study-squad, and the deploy script.
+set -euxo pipefail
+dnf install -y docker
+systemctl enable --now docker
+
+# The data disk is attached right after the instance starts; wait for it.
+disk=/dev/disk/by-id/nvme-Amazon_Elastic_Block_Store_${volume_id}
+for _ in $(seq 120); do [ -e "$disk" ] && break; sleep 5; done
+blkid "$disk" || mkfs -t xfs "$disk"
+mkdir -p /srv/study-squad
+echo "$disk /srv/study-squad xfs defaults,nofail 0 2" >>/etc/fstab
+mount -a
+mkdir -p /srv/study-squad/app /srv/study-squad/caddy
+
+echo '${deploy_script}' | base64 -d >/usr/local/bin/study-squad-deploy
+chmod 755 /usr/local/bin/study-squad-deploy
+
+# A replaced instance picks up where the old one left off.
+if [ -s /srv/study-squad/current-image ]; then
+  /usr/local/bin/study-squad-deploy "$(cat /srv/study-squad/current-image)"
+fi

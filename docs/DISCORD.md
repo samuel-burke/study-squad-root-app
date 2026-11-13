@@ -50,10 +50,10 @@ button and voice channel picker are hidden on Discord.
 
 In the Developer Portal, under Activities → URL Mappings:
 
-| Prefix         | Target                                          |
-| -------------- | ----------------------------------------------- |
-| `/`            | the host's address (e.g. `study-squad.fly.dev`) |
-| `/discord-cdn` | `cdn.discordapp.com` (avatars)                  |
+| Prefix         | Target                                                          |
+| -------------- | --------------------------------------------------------------- |
+| `/`            | the host's address (`terraform output url`, without `https://`) |
+| `/discord-cdn` | `cdn.discordapp.com` (avatars)                                  |
 
 ## Discord-only screens
 
@@ -86,39 +86,28 @@ DISCORD_CLIENT_ID=... DISCORD_CLIENT_SECRET=... DISCORD_BOT_TOKEN=... npm start 
 `npx vitest run --project discord` tests the host end to end against a fake
 Discord API.
 
-Each Discord server's worker uses about 27 MB, so a 1 GB machine holds
-roughly 30 active servers. Stopping idle servers' workers is the next step
-once that matters.
+Each Discord server's worker uses about 27 MB and is capped at 128 MB. A
+server's worker sleeps after 15 minutes with nobody in the Activity and
+nobody on a timer, and wakes for the next visitor or its next scheduled job
+(a recap or session reminder), so memory follows active servers, not
+installs. Each socket is rate limited, the bot posts to each channel one
+message at a time, and the Activity reconnects on its own after a drop.
 
-## Deploy (Fly.io)
+## Deploy
 
-The host is a plain Docker image (`Dockerfile`), so any box with a persistent
-disk works. `fly.toml` runs it on Fly.io: one always-on `shared-cpu-1x`
-machine with 1 GB and a 1 GB volume at `/data`, about $6 a month. The
-machine never sleeps, because timers, recaps and reminders run on it.
+The host runs on AWS, set up with Terraform in `infra/`. See
+[INFRA.md](INFRA.md) for the setup, costs, backups and day-to-day commands.
 
-One-time setup:
+One-time setup in the **Discord Developer Portal**
+(https://discord.com/developers/applications):
 
-1. **Discord Developer Portal** (https://discord.com/developers/applications):
-   1. New Application, "Study Squad". Copy the **Application ID**.
-   2. OAuth2: copy the **Client Secret**. Add redirect `https://127.0.0.1`
-      (the Activity flow doesn't use it, but Discord wants one).
-   3. Bot: Reset Token and copy the **bot token**. No privileged intents are needed.
-   4. Activities → Settings: turn on Activities. URL Mappings: `/` to the Fly
-      address (e.g. `study-squad.fly.dev`) and `/discord-cdn` to `cdn.discordapp.com`.
-   5. Installation: Guild Install with scopes `bot` and `applications.commands`,
-      bot permissions View Channels and Send Messages. Share that install link.
-2. **Fly.io**: install `flyctl`, sign in, then from the repo:
-   ```sh
-   fly launch --no-deploy --copy-config --name study-squad
-   fly volumes create study_squad_data --size 1 --region iad
-   fly secrets set DISCORD_CLIENT_ID=... DISCORD_CLIENT_SECRET=... DISCORD_BOT_TOKEN=...
-   ```
-   Optional, same as Root: `FEEDBACK_RELAY_URL`, `FEEDBACK_RELAY_KEY`, `SELF_TEST_USER_IDS`.
-3. **GitHub** (repo Settings → Secrets and variables → Actions): secret
-   `FLY_API_TOKEN` (from `fly tokens create deploy`) and variable
-   `DISCORD_CLIENT_ID` (the Application ID, not secret).
+1. New Application, "Study Squad". Copy the **Application ID**.
+2. OAuth2: copy the **Client Secret**. Add redirect `https://127.0.0.1`
+   (the Activity flow doesn't use it, but Discord wants one).
+3. Bot: Reset Token and copy the **bot token**. No privileged intents are needed.
+4. Activities → Settings: turn on Activities. URL Mappings as in the table above.
+5. Installation: Guild Install with scopes `bot` and `applications.commands`,
+   bot permissions View Channels and Send Messages. Share that install link.
 
-After that, every push to `main` deploys the Discord Activity in the
-"Deploy Discord Activity" CI job, next to the Root upload. Without the
-secret and variable, the job skips with a notice.
+The three values go into AWS SSM Parameter Store (INFRA.md, step 3), never
+into the repo or a chat.

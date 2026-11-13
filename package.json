@@ -12,7 +12,8 @@
     "./networking",
     "./contract",
     "./server",
-    "./client"
+    "./client",
+    "./discord"
   ],
   "dependencies": {
     "@rootsdk/client-app": "0.21.3",
@@ -37,7 +38,7 @@
   },
   "scripts": {
     "generate": "node -e \"require('node:fs').rmSync('networking/gen',{recursive:true,force:true})\" && npm run build -w @studyroom/networking && node scripts/stamp-gen-version.mjs",
-    "build": "npm run build -w @studyroom/core && npm run build -w @studyroom/contract && npm run build -w @studyroom/server && npm run build -w @studyroom/client",
+    "build": "npm run build -w @studyroom/core && npm run build -w @studyroom/contract && npm run build -w @studyroom/server && npm run build -w @studyroom/client && npm run build -w @studyroom/discord",
     "typecheck": "npm run typecheck --workspaces --if-present && tsc -p feedback-relay/tsconfig.json",
     "lint": "eslint . --max-warnings=0",
     "format": "prettier --write .",

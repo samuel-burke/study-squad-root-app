@@ -5,6 +5,7 @@ node_modules/
 dist/
 dist-demo/
 dist-fakeroot/
+dist-discord/
 _site/
 *.tsbuildinfo
 networking/gen/
@@ -38,3 +39,4 @@ client/blob-report/
 # store screenshot output
 scripts/store-screenshots/raw/
 scripts/store-screenshots/out/
+/data/

@@ -38,3 +38,50 @@ test("opened outside Discord, it shows a message instead of a blank screen", asy
   await page.goto("/");
   await expect(page.getByRole("alert")).toBeVisible({ timeout: 20_000 });
 });
+
+const OWNER = "200000000000000001";
+
+test("the server owner edits server settings in the Activity; members don't see them", async ({
+  browser,
+}) => {
+  const ana = await openAs(browser, ANA);
+  await ana.page.getByRole("button", { name: "Room settings" }).click();
+  await expect(ana.page.getByText("People with Manage Server can change these.")).toBeVisible();
+  await expect(ana.page.getByRole("button", { name: "Server settings" })).toHaveCount(0);
+
+  const owner = await openAs(browser, OWNER);
+  await owner.page.getByRole("button", { name: "Room settings" }).click();
+  await owner.page.getByRole("button", { name: "Server settings" }).click();
+  const sheet = owner.page.getByRole("dialog");
+  await expect(sheet.getByText("Only people with Manage Server can see this")).toBeVisible();
+  await sheet
+    .getByRole("combobox", { name: "Bot messages channel" })
+    .selectOption({ label: "#study" });
+  await sheet.getByRole("tab", { name: "Game layer" }).click();
+  await sheet.getByRole("switch", { name: "Weekly boss" }).click();
+  await sheet.getByRole("button", { name: "Save" }).click();
+  await expect(sheet.getByRole("status")).toHaveText(/Saved/);
+
+  // Everyone gets the new settings live: the boss card is gone for Ana.
+  await ana.page.keyboard.press("Escape");
+  await expect(ana.page.getByText("Weekly boss", { exact: false })).toHaveCount(0);
+
+  // Put the boss back for the other tests.
+  await sheet.getByRole("switch", { name: "Weekly boss" }).click();
+  await sheet.getByRole("button", { name: "Save" }).click();
+  await expect(sheet.getByRole("status")).toHaveText(/Saved/);
+  await ana.close();
+  await owner.close();
+});
+
+test("Discord's picture-in-picture window shows the timer mini view", async ({ browser }) => {
+  const context = await browser.newContext({ viewport: { width: 400, height: 225 } });
+  const page = await context.newPage();
+  await page.goto(`/?devUser=${BEN}&devGuild=${GUILD}`);
+  const mini = page.getByRole("main", { name: "Study Squad timer" });
+  await expect(mini.getByRole("timer")).toBeVisible();
+  await expect(mini).toContainText(/studying/);
+  await expect(mini.getByRole("progressbar", { name: "Boss HP left" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Join room timer" })).toHaveCount(0);
+  await context.close();
+});

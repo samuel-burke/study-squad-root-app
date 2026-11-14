@@ -107,6 +107,10 @@ test.describe("focus room", () => {
     await page.getByRole("button", { name: "Join room timer" }).focus();
     await page.keyboard.press("Enter");
     const sheet = page.getByRole("dialog", { name: "What are you working on?" });
+    // The goal box is not auto-focused; Tab past the Now/Later buttons to reach it.
+    await expect(sheet.getByRole("button", { name: "Now" })).toBeFocused();
+    await page.keyboard.press("Tab");
+    await page.keyboard.press("Tab");
     await expect(sheet.getByLabel("Goals for this session")).toBeFocused();
     await page.keyboard.type("Keyboard only");
     await page.keyboard.press("Enter");

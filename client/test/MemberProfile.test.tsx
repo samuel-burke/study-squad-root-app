@@ -37,6 +37,7 @@ function renderSheet(
   props: { you?: boolean; xpEnabled?: boolean } = {},
 ) {
   const onClose = vi.fn();
+  const onReplayBadge = vi.fn();
   render(
     <MemberProfileSheet
       gateway={gateway}
@@ -44,9 +45,10 @@ function renderSheet(
       you={props.you ?? false}
       xpEnabled={props.xpEnabled ?? true}
       onClose={onClose}
+      onReplayBadge={onReplayBadge}
     />,
   );
-  return { onClose, user: userEvent.setup() };
+  return { onClose, onReplayBadge, user: userEvent.setup() };
 }
 
 describe("MemberProfileSheet", () => {
@@ -112,6 +114,54 @@ describe("MemberProfileSheet", () => {
     expect(tile.closest("li")!.nextElementSibling).not.toHaveClass("badge-detail-row");
     await user.click(other);
     expect(screen.queryByRole("region", { name: "Badge details" })).not.toBeInTheDocument();
+  });
+
+  it("lets you replay your own badges and pin them to your card", async () => {
+    const setBadgeShowcase = vi.fn(async (ids: string[]) => ({
+      card: { showcase: ids },
+    }));
+    const gateway = fakeGateway({
+      setBadgeShowcase: setBadgeShowcase as unknown as StudyRoomGateway["setBadgeShowcase"],
+    });
+    const { user, onReplayBadge } = renderSheet(gateway, { you: true });
+    const badges = await screen.findByRole("region", { name: "Badges" });
+
+    await user.click(within(badges).getByRole("button", { name: "First Steps" }));
+    const detail = screen.getByRole("region", { name: "Badge details" });
+    await user.click(within(detail).getByRole("button", { name: "Replay" }));
+    expect(onReplayBadge).toHaveBeenCalledWith("first-session");
+
+    await user.click(within(detail).getByRole("button", { name: "Show on my card" }));
+    expect(setBadgeShowcase).toHaveBeenCalledWith(["first-session"]);
+    expect(
+      await within(detail).findByRole("button", { name: "Take off my card" }),
+    ).toBeInTheDocument();
+    expect(within(badges).getByLabelText("On your card")).toHaveTextContent("First Steps");
+
+    await user.click(within(detail).getByRole("button", { name: "Take off my card" }));
+    expect(setBadgeShowcase).toHaveBeenLastCalledWith([]);
+    expect(await within(detail).findByRole("button", { name: "Show on my card" })).toBeEnabled();
+  });
+
+  it("shows a save error on your own profile", async () => {
+    const gateway = fakeGateway({
+      setBadgeShowcase: vi.fn(async () => {
+        throw new GatewayError(500, "Couldn't save");
+      }),
+    });
+    const { user } = renderSheet(gateway, { you: true });
+    const badges = await screen.findByRole("region", { name: "Badges" });
+    await user.click(within(badges).getByRole("button", { name: "Night Owl" }));
+    await user.click(screen.getByRole("button", { name: "Take off my card" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("Couldn't save");
+  });
+
+  it("never offers Replay or pinning on someone else's profile", async () => {
+    const { user } = renderSheet(fakeGateway());
+    const badges = await screen.findByRole("region", { name: "Badges" });
+    await user.click(within(badges).getByRole("button", { name: "Night Owl" }));
+    const detail = screen.getByRole("region", { name: "Badge details" });
+    expect(within(detail).queryByRole("button")).not.toBeInTheDocument();
   });
 
   it("shows your own username, not You", async () => {

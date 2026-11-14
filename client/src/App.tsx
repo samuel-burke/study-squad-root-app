@@ -246,6 +246,7 @@ export function App({ gateway }: { gateway: StudyRoomGateway }) {
           you={overlay.userId === me.userId}
           xpEnabled={room.features.xpEnabled}
           onClose={() => setOverlay(null)}
+          onReplayBadge={setReplayBadge}
         />
       )}
       {overlay?.kind === "sounds" && (

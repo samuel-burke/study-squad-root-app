@@ -1,4 +1,9 @@
-import { badgeById, type BadgeDefinition, type MemberProfileDto } from "@studyroom/core";
+import {
+  badgeById,
+  SHOWCASE_SIZE,
+  type BadgeDefinition,
+  type MemberProfileDto,
+} from "@studyroom/core";
 import { useEffect, useState } from "react";
 import { toGatewayError, type StudyRoomGateway } from "../api/gateway";
 import { useProfiles } from "../state/useProfiles";
@@ -19,16 +24,20 @@ export function MemberProfileSheet({
   you,
   xpEnabled,
   onClose,
+  onReplayBadge,
 }: {
   gateway: StudyRoomGateway;
   userId: string;
   you: boolean;
   xpEnabled: boolean;
   onClose(): void;
+  /** Plays one of your own badges' unlock moment again. */
+  onReplayBadge?(badgeId: string): void;
 }) {
   const [profile, setProfile] = useState<MemberProfileDto | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
   const names = useProfiles(gateway, [userId]);
   const name = names.get(userId)?.name ?? (you ? "You" : "Member");
 
@@ -42,6 +51,24 @@ export function MemberProfileSheet({
       cancelled = true;
     };
   }, [gateway, userId]);
+
+  // Same pin/unpin as the progress shelf, only offered on your own profile.
+  const togglePin = async (id: string) => {
+    if (!profile) return;
+    const base = profile.showcase;
+    setSaving(true);
+    setError(null);
+    try {
+      const { card } = await gateway.setBadgeShowcase(
+        base.includes(id) ? base.filter((b) => b !== id) : [...base, id].slice(-SHOWCASE_SIZE),
+      );
+      setProfile({ ...profile, showcase: card.showcase });
+    } catch (e) {
+      setError(toGatewayError(e).message);
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <Sheet labelledBy="member-profile-title" onClose={onClose} className="profile-sheet">
@@ -69,6 +96,11 @@ export function MemberProfileSheet({
             you={you}
             selected={selected}
             onSelect={(id) => setSelected(selected === id ? null : id)}
+            own={
+              you
+                ? { busy: saving, onReplay: onReplayBadge, onPin: (id) => void togglePin(id) }
+                : undefined
+            }
           />
         </>
       )}
@@ -114,11 +146,14 @@ function ProfileBadges({
   you,
   selected,
   onSelect,
+  own,
 }: {
   profile: MemberProfileDto;
   you: boolean;
   selected: string | null;
   onSelect(id: string): void;
+  /** Your own profile: the shelf's Replay and "Show on my card". */
+  own?: { busy: boolean; onReplay?(id: string): void; onPin(id: string): void };
 }) {
   const earned = profile.badges
     .map((b) => ({ badge: badgeById(b.id), earnedAt: b.earnedAt }))
@@ -172,6 +207,15 @@ function ProfileBadges({
                       <div className="badge-detail-head">
                         <BadgeMedal badge={detail.badge} size={44} />
                         <strong>{detail.badge.name}</strong>
+                        {own?.onReplay && (
+                          <button
+                            type="button"
+                            className="link-btn small badge-detail-replay"
+                            onClick={() => own.onReplay?.(badge.id)}
+                          >
+                            Replay
+                          </button>
+                        )}
                       </div>
                       {/* Someone else's secret badge doesn't give away how to find it. */}
                       <span className="small muted">
@@ -179,7 +223,21 @@ function ProfileBadges({
                           ? "A secret badge. Nobody tells you how to get these."
                           : detail.badge.description}
                       </span>
-                      <span className="small dim">Earned {earnedDate(detail.earnedAt)}</span>
+                      <div className="row-between small">
+                        <span className="dim">Earned {earnedDate(detail.earnedAt)}</span>
+                        {own && (
+                          <button
+                            type="button"
+                            className="link-btn"
+                            disabled={own.busy}
+                            onClick={() => own.onPin(badge.id)}
+                          >
+                            {profile.showcase.includes(badge.id)
+                              ? "Take off my card"
+                              : "Show on my card"}
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </li>,
                 ]

@@ -113,7 +113,6 @@ export function StartSessionSheet(props: StartSessionSheetProps) {
                     placeholder={
                       i === 0 ? "e.g. Make 20 flashcards" : "Add another goal (optional)"
                     }
-                    data-autofocus={i === 0 ? true : undefined}
                     onChange={(e) =>
                       setGoals((list) => list.map((g, j) => (j === i ? e.target.value : g)))
                     }

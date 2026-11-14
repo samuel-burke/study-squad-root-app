@@ -85,11 +85,11 @@ test("closing the app takes a member out of the room count", async ({ browser, r
   const fay = await openAs(browser, "u-fay");
   const owner = await openAs(browser, "u-owner");
   await expect.poll(async () => (await state(request)).attached).toContain("u-fay");
-  const count = owner.page.getByText(/^\d+ in the room$/);
-  const withFay = Number((await count.textContent())?.split(" ")[0]);
 
+  // The room no longer shows a head count, so check the server let Fay go.
   await fay.close();
-  await expect(count).toHaveText(`${withFay - 1} in the room`);
+  await expect.poll(async () => (await state(request)).attached).not.toContain("u-fay");
+  await expect.poll(async () => (await state(request)).attached).toContain("u-owner");
 
   await expectNoErrors(owner);
   await owner.close();

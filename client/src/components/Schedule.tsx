@@ -1,5 +1,6 @@
 import { LIMITS, type ScheduledSessionDto } from "@studyroom/core";
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { useArrowKeys } from "../state/useArrowKeys";
 import { toGatewayError, type Profile, type StudyRoomGateway } from "../api/gateway";
 
 interface Common {
@@ -64,6 +65,8 @@ export function SchedulePanel(
   },
 ) {
   const [title, setTitle] = useState("");
+  const listRef = useRef<HTMLUListElement>(null);
+  useArrowKeys(listRef, { items: "[aria-pressed]" });
   const [when, setWhen] = useState(nextHour);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -88,7 +91,7 @@ export function SchedulePanel(
       {props.sessions.length === 0 ? (
         <div className="small muted">Nothing scheduled yet.</div>
       ) : (
-        <ul className="sched-list">
+        <ul ref={listRef} className="sched-list">
           {props.sessions.map((s) => (
             <li key={s.id} className="sched-item">
               <DateBadge ms={s.startsAtMs} />

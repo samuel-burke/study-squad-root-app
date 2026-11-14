@@ -26,6 +26,8 @@ interface GoalListProps {
   goals: GoalDto[];
   busy: boolean;
   actions: GoalActions;
+  /** Open with the new-goal box ready to type in. */
+  startAdding?: boolean;
 }
 
 interface Drag {
@@ -42,8 +44,8 @@ interface Drag {
  * arrow keys on it). The top one is the goal on their card. Finished goals fold
  * into a "Done" row with how long each took, and clear in one go.
  */
-export function GoalList({ goals, busy, actions }: GoalListProps) {
-  const [adding, setAdding] = useState(false);
+export function GoalList({ goals, busy, actions, startAdding = false }: GoalListProps) {
+  const [adding, setAdding] = useState(startAdding);
   const [text, setText] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showDone, setShowDone] = useState(false);
@@ -259,6 +261,7 @@ export function GoalList({ goals, busy, actions }: GoalListProps) {
             maxLength={LIMITS.goalTextMaxLength}
             placeholder="e.g. Finish chapter 4 notes"
             autoFocus
+            data-autofocus
             onChange={(e) => setText(e.target.value)}
             onKeyDown={(e) => e.key === "Escape" && setAdding(false)}
           />

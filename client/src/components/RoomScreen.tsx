@@ -98,6 +98,7 @@ function Header({
           type="button"
           className="icon-btn"
           aria-label="Sounds"
+          aria-keyshortcuts="M"
           aria-haspopup="dialog"
           title={ambientOn ? "Background sound on" : soundsMuted ? "Sounds off" : "Sounds on"}
           onClick={onOpenSounds}
@@ -109,6 +110,8 @@ function Header({
           type="button"
           className="icon-btn"
           aria-label="Your progress"
+          aria-keyshortcuts="P"
+          title="Your progress (P)"
           onClick={onOpenProgress}
         >
           <ChartIcon size={18} />
@@ -117,6 +120,8 @@ function Header({
           type="button"
           className="icon-btn"
           aria-label="Room settings"
+          aria-keyshortcuts=","
+          title="Room settings (,)"
           onClick={onOpenSettings}
         >
           <SlidersIcon size={18} />

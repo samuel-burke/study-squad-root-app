@@ -1,6 +1,7 @@
 import { formatHours, type LeaderboardDto } from "@studyroom/core";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { StudyRoomGateway } from "../api/gateway";
+import { useArrowKeys } from "../state/useArrowKeys";
 import { useProfiles } from "../state/useProfiles";
 import { Avatar } from "./Avatar";
 import { TrophyIcon } from "./Icons";
@@ -26,6 +27,8 @@ export function LeaderboardPodium({
   refreshKey?: unknown;
 }) {
   const [board, setBoard] = useState<LeaderboardDto | null>(null);
+  const rowsRef = useRef<HTMLOListElement>(null);
+  useArrowKeys(rowsRef, { items: ".open-profile" });
 
   useEffect(() => {
     let cancelled = false;
@@ -97,7 +100,7 @@ export function LeaderboardPodium({
       {top.length === 0 ? (
         <div className="small muted">Nobody has focused yet this week. Start a timer!</div>
       ) : (
-        <ol className="goal-list leaderboard" style={{ gap: 6 }}>
+        <ol ref={rowsRef} className="goal-list leaderboard" style={{ gap: 6 }}>
           {top.map((e) => {
             const you = e.userId === youId;
             const name = nameOf(e.userId);

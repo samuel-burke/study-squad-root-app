@@ -8,7 +8,9 @@ interface SheetProps {
 }
 
 const FOCUSABLE =
-  'button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select, [href], [tabindex]:not([tabindex="-1"])';
+  "button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select, [href], [tabindex]";
+// Arrow-key groups leave all but one item out of the Tab order.
+const TABBABLE = (el: HTMLElement) => el.tabIndex >= 0;
 
 /**
  * Modal dialog: a bottom sheet on phones, a centered card on desktop.
@@ -36,7 +38,7 @@ export function Sheet({ labelledBy, onClose, className = "", children }: SheetPr
         return;
       }
       if (event.key !== "Tab" || !node) return;
-      const items = [...node.querySelectorAll<HTMLElement>(FOCUSABLE)];
+      const items = [...node.querySelectorAll<HTMLElement>(FOCUSABLE)].filter(TABBABLE);
       if (items.length === 0) return;
       const firstItem = items[0]!;
       const lastItem = items[items.length - 1]!;

@@ -3348,3 +3348,64 @@ textarea.input {
   filter: grayscale(1) brightness(0.55);
   opacity: 0.7;
 }
+
+/* ---------------------------------------------------------------- keyboard shortcuts */
+
+.sheet.shortcuts-sheet {
+  width: min(760px, 100%);
+}
+.shortcut-groups {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px 28px;
+}
+.shortcut-group-title {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin: 0 0 8px;
+}
+.shortcut-groups dl {
+  margin: 0;
+}
+.shortcut-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 5px 0;
+  font-size: 14px;
+  color: var(--text-soft);
+}
+.shortcut-row dd {
+  margin: 0;
+  display: flex;
+  gap: 4px;
+}
+kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 7px;
+  border-radius: 7px;
+  border: 1px solid var(--border-strong);
+  border-bottom-width: 2px;
+  background: var(--bg);
+  color: var(--text);
+  font: 600 13px var(--font-body);
+}
+@media (max-width: 760px) {
+  .shortcut-groups {
+    grid-template-columns: 1fr;
+  }
+}
+/* Touch screens have no keyboard, so no way in to the list. */
+@media (hover: none) {
+  .keyboard-only {
+    display: none;
+  }
+}

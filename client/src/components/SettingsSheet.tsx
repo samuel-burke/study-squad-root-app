@@ -15,11 +15,13 @@ export function SettingsSheet({
   gateway,
   onClose,
   onSendFeedback,
+  onShowShortcuts,
 }: {
   room: RoomStateDto;
   gateway: StudyRoomGateway;
   onClose(): void;
   onSendFeedback(): void;
+  onShowShortcuts(): void;
 }) {
   const f = room.features;
   const rows: [string, string][] = [
@@ -65,6 +67,9 @@ export function SettingsSheet({
           Send feedback
         </button>
       )}
+      <button type="button" className="btn btn-quiet keyboard-only" onClick={onShowShortcuts}>
+        Keyboard shortcuts <kbd>?</kbd>
+      </button>
       {gateway.selfTest && <SelfTestPanel selfTest={gateway.selfTest} />}
       <button type="button" className="btn" onClick={onClose} data-autofocus>
         Close

@@ -10,18 +10,21 @@ export function GoalsSheet({
   busy,
   actions,
   onClose,
+  adding,
 }: {
   me: MyStatusDto;
   xpEnabled: boolean;
   busy: boolean;
   actions: GoalActions;
   onClose(): void;
+  /** Opened to add a goal: the new-goal box is ready. */
+  adding?: boolean;
 }) {
   return (
     <Sheet labelledBy="goals-title" onClose={onClose}>
       <h1 id="goals-title">Your goals</h1>
       {xpEnabled && <XpBar me={me} />}
-      <GoalList goals={me.goals} busy={busy} actions={actions} />
+      <GoalList goals={me.goals} busy={busy} actions={actions} startAdding={adding} />
       <button type="button" className="btn" onClick={onClose}>
         Done
       </button>

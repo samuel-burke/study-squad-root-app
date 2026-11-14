@@ -5,9 +5,10 @@ import {
   type MemberCardDto,
   type TableDto,
 } from "@studyroom/core";
-import type { ReactNode } from "react";
+import { useRef, type ReactNode } from "react";
 import type { Profile } from "../api/gateway";
 import { isFocusing, phasePill, rowTime, statusChip, tableName } from "../lib/view";
+import { useArrowKeys } from "../state/useArrowKeys";
 import { Avatar } from "./Avatar";
 import { BreakMarks, HighFiveButtons, onBreak } from "./BreakFun";
 import { BadgeMedal } from "./BadgeMedal";
@@ -236,6 +237,9 @@ export function MemberBoard({
   busy,
   onJoinTable,
 }: BoardProps) {
+  const boardRef = useRef<HTMLElement>(null);
+  // Arrows move between people across every table; Enter opens the profile.
+  useArrowKeys(boardRef, { items: ".open-profile" });
   const voice = new Set(inVoice);
   const focusing = members.filter(isFocusing).length;
   const onBreak = members.length - focusing;
@@ -315,6 +319,7 @@ export function MemberBoard({
 
   return (
     <section
+      ref={boardRef}
       aria-label="Who is in the room"
       className={compact ? "mobile-board" : undefined}
       style={compact ? undefined : { display: "flex", flexDirection: "column", gap: 14 }}

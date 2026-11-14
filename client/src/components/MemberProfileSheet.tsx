@@ -4,8 +4,9 @@ import {
   type BadgeDefinition,
   type MemberProfileDto,
 } from "@studyroom/core";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toGatewayError, type StudyRoomGateway } from "../api/gateway";
+import { useArrowKeys } from "../state/useArrowKeys";
 import { useProfiles } from "../state/useProfiles";
 import { Avatar } from "./Avatar";
 import { BadgeMedal } from "./BadgeMedal";
@@ -161,6 +162,8 @@ function ProfileBadges({
     .reverse();
   const showcase = profile.showcase.flatMap((id) => badgeById(id) ?? []);
   const detail = earned.find((b) => b.badge.id === selected);
+  const gridRef = useRef<HTMLUListElement>(null);
+  useArrowKeys(gridRef, { items: ".badge-tile" });
 
   return (
     <section className="profile-badges" aria-label="Badges">
@@ -183,7 +186,7 @@ function ProfileBadges({
       {earned.length === 0 ? (
         <div className="small muted">No badges yet.</div>
       ) : (
-        <ul className="badge-grid badge-grid-shelf">
+        <ul ref={gridRef} className="badge-grid badge-grid-shelf">
           {earned.flatMap(({ badge }) => [
             <li key={badge.id}>
               <button

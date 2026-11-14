@@ -7,6 +7,7 @@ import {
 } from "@studyroom/core";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toGatewayError, type Profile, type StudyRoomGateway } from "../api/gateway";
+import { useArrowKeys } from "../state/useArrowKeys";
 import { useProfiles } from "../state/useProfiles";
 import { Avatar } from "./Avatar";
 import { OpenProfileButton } from "./MemberBoard";
@@ -76,6 +77,12 @@ export function WeeklyLeaderboard({
   const [by, setBy] = useState<LeaderboardMetric>("minutes");
   const [period, setPeriod] = useState<LeaderboardPeriod>("week");
   const [board, setBoard] = useState<LeaderboardDto | null>(null);
+  const periodRef = useRef<HTMLDivElement>(null);
+  const byRef = useRef<HTMLDivElement>(null);
+  const rowsRef = useRef<HTMLOListElement>(null);
+  useArrowKeys(periodRef, { pick: true });
+  useArrowKeys(byRef, { pick: true });
+  useArrowKeys(rowsRef, { items: ".open-profile" });
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -142,7 +149,7 @@ export function WeeklyLeaderboard({
         <h2 style={{ fontSize: 16 }}>{shown.title}</h2>
         <span className="tiny dim">{shown.resets}</span>
       </div>
-      <div className="segmented" role="group" aria-label="Period">
+      <div ref={periodRef} className="segmented" role="group" aria-label="Period">
         {PERIODS.map((p) => (
           <button
             key={p.period}
@@ -154,7 +161,7 @@ export function WeeklyLeaderboard({
           </button>
         ))}
       </div>
-      <div className="segmented" role="group" aria-label="Rank by">
+      <div ref={byRef} className="segmented" role="group" aria-label="Rank by">
         {METRICS.map((m) => (
           <button
             key={m.by}
@@ -194,7 +201,7 @@ export function WeeklyLeaderboard({
               {`${shownBy === "xp" ? "Nobody has earned XP" : "Nobody has focused"} yet${shown.when}. Start a timer!`}
             </div>
           ) : (
-            <ol className="goal-list leaderboard" style={{ gap: 6 }}>
+            <ol ref={rowsRef} className="goal-list leaderboard" style={{ gap: 6 }}>
               {board.entries.map((entry) => (
                 <LeaderboardRow
                   key={entry.userId}

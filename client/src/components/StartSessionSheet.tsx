@@ -6,8 +6,9 @@ import {
   type MyStatusDto,
   type RoomStateDto,
 } from "@studyroom/core";
-import { useState, type FormEvent, type ReactNode } from "react";
+import { useRef, useState, type FormEvent, type ReactNode } from "react";
 import type { StartRequest } from "../api/gateway";
+import { useArrowKeys } from "../state/useArrowKeys";
 import { PeopleIcon, TimerIcon } from "./Icons";
 import { Sheet } from "./Sheet";
 import { Toggle } from "./Toggle";
@@ -20,6 +21,8 @@ interface StartSessionSheetProps {
   now: number;
   busy: boolean;
   initialMode: "room" | "solo";
+  /** Opened from the keyboard: start in the goal box, ready to type. */
+  focusGoal?: boolean;
   onClose(): void;
   onStartRoom(request: StartRequest): Promise<boolean>;
   onStartSolo(minutes: number, request: StartRequest): Promise<boolean>;
@@ -54,6 +57,14 @@ export function StartSessionSheet(props: StartSessionSheetProps) {
   // Any whole length the server accepts, typed in. Some secret badges need one.
   const [custom, setCustom] = useState<string | null>(null);
   const minutes = custom === null ? preset : Number(custom);
+  const whenRef = useRef<HTMLDivElement>(null);
+  const timerRef = useRef<HTMLDivElement>(null);
+  const tableRef = useRef<HTMLDivElement>(null);
+  const soloRef = useRef<HTMLDivElement>(null);
+  useArrowKeys(whenRef, { pick: true });
+  useArrowKeys(timerRef, { pick: true, items: ":scope > [role=radio]" });
+  useArrowKeys(tableRef, { pick: true });
+  useArrowKeys(soloRef, { pick: true });
   const minutesValid =
     Number.isInteger(minutes) &&
     minutes >= LIMITS.soloMinMinutes &&
@@ -76,7 +87,7 @@ export function StartSessionSheet(props: StartSessionSheetProps) {
   return (
     <Sheet labelledBy="start-title" onClose={onClose}>
       <h1 id="start-title">What are you working on?</h1>
-      <div className="segmented" role="group" aria-label="When">
+      <div ref={whenRef} className="segmented" role="group" aria-label="When">
         {["Now", "Later"].map((label, i) => (
           <button
             key={label}
@@ -113,6 +124,7 @@ export function StartSessionSheet(props: StartSessionSheetProps) {
                     placeholder={
                       i === 0 ? "e.g. Make 20 flashcards" : "Add another goal (optional)"
                     }
+                    data-autofocus={i === 0 && props.focusGoal ? true : undefined}
                     onChange={(e) =>
                       setGoals((list) => list.map((g, j) => (j === i ? e.target.value : g)))
                     }
@@ -140,7 +152,7 @@ export function StartSessionSheet(props: StartSessionSheetProps) {
             />
           </div>
 
-          <div className="field" role="radiogroup" aria-label="Timer">
+          <div ref={timerRef} className="field" role="radiogroup" aria-label="Timer">
             <div className="field-label">Timer</div>
             <button
               type="button"
@@ -205,7 +217,7 @@ export function StartSessionSheet(props: StartSessionSheetProps) {
                   placeholder="Table name, e.g. Calc II"
                   onChange={(e) => setTableName(e.target.value)}
                 />
-                <div className="minutes" role="radiogroup" aria-label="Table timer">
+                <div ref={tableRef} className="minutes" role="radiogroup" aria-label="Table timer">
                   {(["25-5", "50-10"] as const).map((key) => (
                     <button
                       key={key}
@@ -221,7 +233,12 @@ export function StartSessionSheet(props: StartSessionSheetProps) {
               </>
             )}
             {mode === "solo" && (
-              <div className="minutes" role="radiogroup" aria-label="Solo timer length">
+              <div
+                ref={soloRef}
+                className="minutes"
+                role="radiogroup"
+                aria-label="Solo timer length"
+              >
                 {SOLO_LENGTHS.map((m) => (
                   <button
                     key={m}

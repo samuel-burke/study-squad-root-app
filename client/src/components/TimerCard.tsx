@@ -100,6 +100,7 @@ export function TimerCard({
               type="button"
               className="btn btn-primary"
               onClick={onJoin}
+              aria-keyshortcuts="F"
               disabled={busy || onSoloTimer}
             >
               Join room timer
@@ -114,6 +115,7 @@ export function TimerCard({
               type="button"
               className="btn btn-quiet"
               onClick={onSolo}
+              aria-keyshortcuts="S"
               disabled={busy || me.onRoomTimer}
             >
               Start a solo timer

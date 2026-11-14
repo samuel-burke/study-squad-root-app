@@ -9,7 +9,8 @@ import {
   type CardLookDto,
   type EarnedBadgeDto,
 } from "@studyroom/core";
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { useArrowKeys } from "../state/useArrowKeys";
 import { BadgeMedal } from "./BadgeMedal";
 
 const CATEGORY_TITLES: Record<BadgeCategory, string> = {
@@ -48,6 +49,9 @@ export function BadgeShelf({
   onReplay?(badgeId: string): void;
 }) {
   const [selected, setSelected] = useState<string | null>(null);
+  const shelfRef = useRef<HTMLElement>(null);
+  // One arrow-key grid across every category.
+  useArrowKeys(shelfRef, { items: ".badge-tile" });
   const earnedAt = new Map(earned.map((b) => [b.id, b.earnedAt]));
   const catalog = availableBadges();
   const groups = new Map<BadgeCategory, BadgeDefinition[]>();
@@ -118,7 +122,7 @@ export function BadgeShelf({
   );
 
   return (
-    <section className="card" aria-label="Badges">
+    <section ref={shelfRef} className="card" aria-label="Badges">
       <div className="row-between">
         <h2 style={{ fontSize: 16 }}>Badges</h2>
         <span className="tiny dim tabular">
@@ -208,13 +212,15 @@ export function CardStylePicker({
   onPick(style: string): void;
 }) {
   const held = new Set(earned.map((b) => b.id));
+  const stylesRef = useRef<HTMLUListElement>(null);
+  useArrowKeys(stylesRef, { pick: true });
   return (
     <section className="card" aria-label="Card style">
       <div className="row-between">
         <h2 style={{ fontSize: 16 }}>Card style</h2>
         <span className="tiny dim">What others see on the board</span>
       </div>
-      <ul className="style-grid" role="radiogroup" aria-label="Card style">
+      <ul ref={stylesRef} className="style-grid" role="radiogroup" aria-label="Card style">
         <li>
           <button
             type="button"

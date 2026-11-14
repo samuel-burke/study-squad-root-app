@@ -2,7 +2,8 @@ import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { BADGES } from "@studyroom/core";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { BadgeUnlocked } from "../src/components/BadgeUnlocked";
+import { BadgeMedal } from "../src/components/BadgeMedal";
+import { BadgeUnlocked, medalImage } from "../src/components/BadgeUnlocked";
 import * as clips from "../src/lib/clips";
 import { CLIPS } from "../src/lib/clips";
 import { SHOWS } from "../src/lib/unlockShow";
@@ -168,5 +169,16 @@ describe("tier shows", () => {
     for (let i = 1; i < order.length; i++) {
       expect(SHOWS[order[i]!].end, order[i]).toBeGreaterThanOrEqual(SHOWS[order[i - 1]!].end);
     }
+  });
+});
+
+describe("medalImage", () => {
+  it("leaves the platinum glints off the 3D medal but keeps them on the card", () => {
+    const { container } = render(<BadgeMedal badge={BADGES.find((b) => b.id === "streak-365")!} />);
+    const svg = container.querySelector("svg")!;
+    expect(svg.querySelector(".medal-glints")).not.toBeNull();
+    const art = decodeURIComponent(medalImage(svg).src);
+    expect(art).not.toContain("medal-glints");
+    expect(art).toContain("medal-glyph");
   });
 });

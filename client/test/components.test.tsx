@@ -11,6 +11,7 @@ import type { GoalActions } from "../src/components/GoalList";
 import { GoalsSheet } from "../src/components/GoalsSheet";
 import { MemberBoard } from "../src/components/MemberBoard";
 import { Sheet } from "../src/components/Sheet";
+import { TimerCard } from "../src/components/TimerCard";
 
 describe("Sheet", () => {
   function renderSheet(onClose = vi.fn()) {
@@ -372,5 +373,35 @@ describe("BreakMoment boss panel", () => {
   it("hides the boss once it was already defeated", async () => {
     await renderBreak("alreadyDefeated", true);
     expect(screen.queryByText(/Deadline Dragon/)).toBeNull();
+  });
+});
+
+describe("TimerCard combo line", () => {
+  async function renderTimer(join: boolean) {
+    const { engine } = createHarness();
+    const snap = join ? await engine.joinRoomTimer("me") : await engine.getSnapshot("me");
+    const noop = vi.fn();
+    render(
+      <TimerCard
+        room={snap.room}
+        me={snap.me}
+        now={snap.room.serverNow}
+        busy={false}
+        onJoin={noop}
+        onLeave={noop}
+        onSolo={noop}
+        onEndSolo={noop}
+      />,
+    );
+  }
+
+  it("hides the combo when nobody is focusing", async () => {
+    await renderTimer(false);
+    expect(screen.queryByText(/combo/)).not.toBeInTheDocument();
+  });
+
+  it("shows the combo once someone joins the room timer", async () => {
+    await renderTimer(true);
+    expect(screen.getByText(/1\.0x combo/)).toBeInTheDocument();
   });
 });

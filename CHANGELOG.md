@@ -13,6 +13,8 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 - Cleaner room: the goals card no longer shows the "XP for each goal" line, and the combo inside the clock only shows while someone is on a room timer.
 - Cleaner room: removed the header round pill on desktop (phones keep it), the "in the room" count, the "Posts in #channel" line, the room timer chip on member cards (Solo and Break chips stay) and the boss explainer paragraph.
 - The badge a member shows on their card now sits on the corner of their avatar instead of next to their name.
+- Weekly rank chips only show for the top 3 and sit on the right side of the card.
+- People on a solo timer are grouped under Solo like another table, and only they see their solo countdown.
 - The live demo starts you on the room timer as a returning member, so your first cycle unlocks one thing per round (Full House, the Blaze color tier, the boss and level 8, Full Cycle) instead of a pile of badges at once.
 - The boss defeated moment lands with a heavy thud instead of breaking glass.
 - Until you join, the room timer's ring and round pill are grey, so the room's clock doesn't look like your own session.

@@ -798,8 +798,20 @@ h3 {
   flex: none;
 }
 
-.streak-line .rank-chip {
-  margin-left: 4px;
+/* Top 3 rank sits on the card's right side, vertically centred. */
+.member-card {
+  position: relative;
+}
+
+.member-card > .rank-chip {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.member-card:has(> .rank-chip) .member-goal {
+  padding-right: 40px;
 }
 
 .rank-chip[data-top="true"] {

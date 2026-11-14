@@ -246,11 +246,8 @@ describe("opening a profile from the board", () => {
       const top = screen.getByRole("img", { name: "#1 on this week's leaderboard" });
       expect(top).toHaveTextContent("#1");
       expect(top).toHaveAttribute("data-top", "true");
-      expect(screen.getByRole("img", { name: "#4 on this week's leaderboard" })).toHaveAttribute(
-        "data-top",
-        "false",
-      );
-      expect(screen.getAllByRole("img", { name: /on this week's leaderboard/ })).toHaveLength(2);
+      // Only the top 3 get a rank chip.
+      expect(screen.getAllByRole("img", { name: /on this week's leaderboard/ })).toHaveLength(1);
     },
   );
 });

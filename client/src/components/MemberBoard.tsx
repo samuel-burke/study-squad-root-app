@@ -128,9 +128,9 @@ function FeaturedBadge({ ids }: { ids: string[] }) {
   );
 }
 
-/** The member's place on this week's leaderboard. Nothing when unranked or hidden. */
+/** The member's place on this week's leaderboard, for the top 3 only. */
 export function RankChip({ rank }: { rank: number }) {
-  if (rank <= 0) return null;
+  if (rank <= 0 || rank > 3) return null;
   return (
     <span
       className="rank-chip"
@@ -142,6 +142,25 @@ export function RankChip({ rank }: { rank: number }) {
       #{rank}
     </span>
   );
+}
+
+/**
+ * What a card shows about someone's timer. The clock already has the room's time,
+ * so only room breaks get a chip, and solo timers are shown only to their owner.
+ */
+function memberStatus(
+  member: MemberCardDto,
+  you: boolean,
+  now: number,
+  tables: ReadonlyMap<string, string>,
+) {
+  const chip = statusChip(member, now, tables);
+  const solo = member.status === "soloFocus" || member.status === "soloBreak";
+  return {
+    ...chip,
+    label: solo && !you ? "Solo" : chip.label,
+    show: member.status === "roomBreak" || (solo && you),
+  };
 }
 
 interface MemberProps {
@@ -157,7 +176,7 @@ interface MemberProps {
 }
 
 function MemberCard({ member, profile, you, voice, now, tables, onOpen, highFive }: MemberProps) {
-  const chip = statusChip(member, now, tables);
+  const chip = memberStatus(member, you, now, tables);
   const name = profile?.name ?? (you ? "You" : "Member");
   const label = `${name}, ${chip.label}${voice ? ", in voice" : ""}`;
   const goal = goalText(member);
@@ -175,7 +194,6 @@ function MemberCard({ member, profile, you, voice, now, tables, onOpen, highFive
           <div className="streak-line">
             <FlameIcon size={13} stroke="var(--flame)" />
             {member.streak} day streak
-            <RankChip rank={member.weeklyRank} />
           </div>
         </div>
       </div>
@@ -189,8 +207,7 @@ function MemberCard({ member, profile, you, voice, now, tables, onOpen, highFive
           Focusing
         </div>
       )}
-      {/* The room timer's time is already in the clock, so only solo and break chips show. */}
-      {chip.tone !== "room" && (
+      {chip.show && (
         <div className="member-foot">
           <div className="chip" data-tone={chip.tone}>
             <span className="dot" />
@@ -198,6 +215,7 @@ function MemberCard({ member, profile, you, voice, now, tables, onOpen, highFive
           </div>
         </div>
       )}
+      <RankChip rank={member.weeklyRank} />
       <div className="member-break">
         <BreakMarks member={member} />
         <HighFiveFor member={member} name={name} you={you} highFive={highFive} />
@@ -207,7 +225,7 @@ function MemberCard({ member, profile, you, voice, now, tables, onOpen, highFive
 }
 
 function MemberRow({ member, profile, you, voice, now, tables, onOpen, highFive }: MemberProps) {
-  const chip = statusChip(member, now, tables);
+  const chip = memberStatus(member, you, now, tables);
   const name = profile?.name ?? (you ? "You" : "Member");
   const label = `${name}, ${chip.label}${voice ? ", in voice" : ""}`;
   const goal = goalText(member) ?? (member.goalPrivate ? "Focusing (private)" : "Focusing");
@@ -221,7 +239,6 @@ function MemberRow({ member, profile, you, voice, now, tables, onOpen, highFive 
           style={{ fontSize: 14, fontWeight: 700, display: "flex", alignItems: "center", gap: 6 }}
         >
           {name}
-          <RankChip rank={member.weeklyRank} />
           {voice && <InVoiceMark />}
         </div>
         <div className="goal-line">
@@ -230,7 +247,8 @@ function MemberRow({ member, profile, you, voice, now, tables, onOpen, highFive 
         </div>
       </div>
       <HighFiveFor member={member} name={name} you={you} highFive={highFive} />
-      {chip.tone !== "room" && (
+      <RankChip rank={member.weeklyRank} />
+      {chip.show && (
         <div className="time" data-tone={chip.tone}>
           {time}
         </div>
@@ -277,8 +295,9 @@ export function MemberBoard({
   );
   // Only the main table running: one board, as before tables existed.
   let body: ReactNode = members.length === 0 ? <EmptyBoard /> : list(members);
-  if (tables.some((t) => t.id !== MAIN_TABLE_ID)) {
-    const solo = members.filter((m) => !m.tableId);
+  const solo = members.filter((m) => !m.tableId);
+  // Split by table once there is a second table or anyone is on a solo timer.
+  if (solo.length > 0 || tables.some((t) => t.id !== MAIN_TABLE_ID)) {
     body = (
       <>
         {/* Your table first. Colours stay with each table's place in the room. */}

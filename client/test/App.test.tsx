@@ -88,7 +88,9 @@ describe("Study Squad app", () => {
     const dialog = screen.getByRole("dialog");
     await user.click(within(dialog).getByRole("radio", { name: "45 min" }));
     await user.click(within(dialog).getByRole("button", { name: "Start focusing" }));
-    expect(await screen.findByRole("listitem", { name: /You, Solo · 45:00/ })).toBeInTheDocument();
+    // Your card sits in a Solo group; only you see its countdown.
+    const card = await screen.findByRole("listitem", { name: /^You, Solo · 45:00/ });
+    expect(screen.getByRole("region", { name: "Solo timers" })).toContainElement(card);
     expect(screen.getByRole("button", { name: "End solo timer" })).toBeInTheDocument();
   });
 

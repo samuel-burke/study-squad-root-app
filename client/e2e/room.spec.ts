@@ -96,7 +96,8 @@ test.describe("focus room", () => {
     await sheet.getByRole("radio", { name: /Solo timer/ }).click();
     await sheet.getByRole("radio", { name: "15 min" }).click();
     await sheet.getByRole("button", { name: "Start focusing" }).click();
-    await expect(page.getByRole("listitem", { name: /^You, Solo · 1[45]:\d\d/ })).toBeVisible();
+    const solo = page.getByRole("region", { name: "Solo timers" });
+    await expect(solo.getByRole("listitem", { name: /^You, Solo/ })).toBeVisible();
   });
 
   test("can be used with the keyboard alone", async ({ page }) => {

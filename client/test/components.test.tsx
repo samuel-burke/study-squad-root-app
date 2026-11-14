@@ -319,6 +319,25 @@ describe("MemberBoard", () => {
     expect(badge.closest(".avatar-wrap")).not.toBeNull();
   });
 
+  it.each([false, true])(
+    "groups solo studiers like a table and hides their timer from others (compact: %s)",
+    (compact) => {
+      const solo = { ...me, userId: "kai", status: "soloFocus" as const, tableId: "" };
+      render(
+        <MemberBoard
+          members={[me, solo]}
+          profiles={new Map()}
+          youId="me"
+          now={0}
+          compact={compact}
+        />,
+      );
+      const group = screen.getByRole("region", { name: "Solo timers" });
+      const card = within(group).getByRole("listitem", { name: /^Member, Solo$/ });
+      expect(card).not.toHaveTextContent(/\d\d:\d\d/);
+    },
+  );
+
   it("says You until your profile loads", () => {
     render(<MemberBoard members={[me]} profiles={new Map()} youId="me" now={0} />);
     expect(screen.getByRole("listitem", { name: /^You, Room timer/ })).toBeInTheDocument();

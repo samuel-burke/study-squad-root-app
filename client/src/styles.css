@@ -440,11 +440,6 @@ h3 {
   font-size: 17px;
 }
 
-.brand-sub {
-  font-size: 12px;
-  color: var(--text-muted);
-}
-
 .phase-pill {
   display: inline-flex;
   align-items: center;
@@ -482,14 +477,7 @@ h3 {
   display: flex;
   align-items: center;
   gap: 12px;
-}
-
-.present {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  color: var(--text-muted);
-  font-size: 13px;
+  margin-left: auto;
 }
 
 .voice-btn {
@@ -961,15 +949,6 @@ h3 {
 
 .boss .bar > span {
   background: var(--coral);
-}
-
-.boss-text {
-  font-size: 13px;
-  color: var(--boss-muted);
-}
-
-.boss-text strong {
-  color: var(--text);
 }
 
 /* ---------------------------------------------------------------- session + goals */
@@ -1859,11 +1838,6 @@ textarea.input {
   .app-header {
     padding: 12px 16px 8px;
     gap: 8px;
-  }
-
-  .brand-sub,
-  .header-meta .present {
-    display: none;
   }
 
   .app-header {

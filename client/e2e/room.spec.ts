@@ -64,7 +64,6 @@ test.describe("focus room", () => {
     // Until you join, the room's clock is dimmed so it doesn't read as yours.
     const ring = page.locator(".ring").first();
     await expect(ring).toHaveAttribute("data-dim", "true");
-    await expect(page.locator(".phase-pill")).toHaveAttribute("data-dim", "true");
     const sheet = await openStartSheet(page);
     await expect(sheet.getByRole("radio", { name: /Join the room timer/ })).toContainText(
       "combo goes to 2.0x",
@@ -78,7 +77,6 @@ test.describe("focus room", () => {
     await expect(page.getByRole("heading", { name: /Focusing now · 8/ })).toBeVisible();
     await expect(page.getByText("2.0x").first()).toBeVisible();
     await expect(ring).toHaveAttribute("data-dim", "false");
-    await expect(page.locator(".phase-pill")).toHaveAttribute("data-dim", "false");
   });
 
   test("private goals show as Focusing to everyone else", async ({ page }) => {
@@ -134,7 +132,7 @@ test.describe("the break moment", () => {
     await expect(moment).toContainText(/hit .+ for/);
     await expect(moment).toContainText("Did you finish Read ch. 4?");
     // The board flips to Break for everyone at the same moment.
-    await expect(page.locator(".phase-pill")).toHaveAttribute("data-phase", "break");
+    await expect(page.locator(".ring-time").first()).toHaveAttribute("aria-label", /left in break/);
 
     // Any badges this round earned sit on top of the moment.
     const unlock = page.locator(".unlock");

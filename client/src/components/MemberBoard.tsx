@@ -176,12 +176,15 @@ function MemberCard({ member, profile, you, voice, now, tables, onOpen, highFive
           Focusing
         </div>
       )}
-      <div className="member-foot">
-        <div className="chip" data-tone={chip.tone}>
-          <span className="dot" />
-          {chip.label}
+      {/* The room timer's time is already in the clock, so only solo and break chips show. */}
+      {chip.tone !== "room" && (
+        <div className="member-foot">
+          <div className="chip" data-tone={chip.tone}>
+            <span className="dot" />
+            {chip.label}
+          </div>
         </div>
-      </div>
+      )}
       <div className="member-break">
         <BreakMarks member={member} />
         <HighFiveFor member={member} name={name} you={you} highFive={highFive} />
@@ -215,9 +218,11 @@ function MemberRow({ member, profile, you, voice, now, tables, onOpen, highFive 
         </div>
       </div>
       <HighFiveFor member={member} name={name} you={you} highFive={highFive} />
-      <div className="time" data-tone={chip.tone}>
-        {time}
-      </div>
+      {chip.tone !== "room" && (
+        <div className="time" data-tone={chip.tone}>
+          {time}
+        </div>
+      )}
     </li>
   );
 }

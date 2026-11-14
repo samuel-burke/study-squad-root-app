@@ -344,6 +344,33 @@ describe("Study Squad app", () => {
     expect(await screen.findByRole("timer")).toBeInTheDocument();
   });
 
+  it("shows a freeze day as frozen even when it has unfinished focus time", async () => {
+    const { gateway, user } = await renderApp();
+    const progress = await gateway.getProgress();
+    // Wed and Thu counted, Fri had focus time but no finished session (the freeze
+    // covers it), and today has focus time but nothing finished yet.
+    const days = progress.days.map((d) => ({ ...d, counted: false, focusMinutes: 0 }));
+    const n = days.length;
+    days[n - 4] = { ...days[n - 4]!, counted: true, focusMinutes: 60 };
+    days[n - 3] = { ...days[n - 3]!, counted: true, focusMinutes: 60 };
+    days[n - 2] = { ...days[n - 2]!, focusMinutes: 20 };
+    days[n - 1] = { ...days[n - 1]!, focusMinutes: 10 };
+    vi.spyOn(gateway, "getProgress").mockResolvedValue({
+      ...progress,
+      me: { ...progress.me, streak: 2 },
+      days,
+    });
+    await user.click(screen.getByRole("button", { name: "Your progress" }));
+    expect(await screen.findByText("2 day streak")).toBeInTheDocument();
+    const cells = screen.getByRole("list", { name: "Focus time, last 5 weeks" }).children;
+    const friday = cells[n - 2]!;
+    expect(friday).toHaveClass("heat-frozen");
+    expect(friday).not.toHaveClass("heat-missed");
+    expect(friday).toHaveAccessibleName(`${days[n - 2]!.day}: covered by a freeze`);
+    expect(cells[n - 1]).toHaveClass("heat-missed");
+    expect(screen.getByText("didn't count", { exact: false })).toBeInTheDocument();
+  });
+
   it("hides the freeze status when there's no streak to protect", async () => {
     const { user } = await renderApp({ activeDaysAgo: [10] });
     await user.click(screen.getByRole("button", { name: "Your progress" }));

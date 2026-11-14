@@ -29,9 +29,13 @@ function playShow(tier: BadgeTier): () => void {
 /** Seconds the show keeps drawing after its music ends. */
 const LINGER = 1.5;
 
-/** The flat medal art as an image, on an 88 by 88 box so the ribbons fit. */
+/**
+ * The flat medal art as an image, on an 88 by 88 box so the ribbons fit. The
+ * platinum glints are left off: they belong on the small card, not the 3D medal.
+ */
 export function medalImage(svg: SVGSVGElement): HTMLImageElement {
   const copy = svg.cloneNode(true) as SVGSVGElement;
+  copy.querySelector(".medal-glints")?.remove();
   copy.setAttribute("viewBox", "-12 -12 88 88");
   copy.setAttribute("width", "1024");
   copy.setAttribute("height", "1024");

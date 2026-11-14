@@ -497,7 +497,7 @@ export function BadgeMedal({
       )}
 
       {dressed && (tier === "platinum" || tier === "secret") && (
-        <g fill="#fff">
+        <g className="medal-glints" fill="#fff">
           <path d={GLINT} transform="translate(52 9) scale(1.1)" opacity="0.9" />
           <path d={GLINT} transform="translate(11 50) scale(0.7)" opacity="0.7" />
         </g>

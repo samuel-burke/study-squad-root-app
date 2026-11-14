@@ -89,6 +89,31 @@ describe("MemberProfileSheet", () => {
     );
   });
 
+  it("opens badge details right below the tapped badge, not under the whole grid", async () => {
+    const { user } = renderSheet(fakeGateway());
+    const badges = await screen.findByRole("region", { name: "Badges" });
+    const grid = within(badges).getByRole("list");
+    const tile = within(badges).getByRole("button", { name: "Night Owl" });
+    await user.click(tile);
+    const detail = screen.getByRole("region", { name: "Badge details" });
+    expect(detail).toHaveTextContent("Night Owl");
+    // Same layout as the progress shelf: a full-width row after the tapped tile.
+    const row = tile.closest("li")!.nextElementSibling!;
+    expect(row).toHaveClass("badge-detail-row");
+    expect(row).toContainElement(detail);
+    expect(grid).toHaveClass("badge-grid-shelf");
+    expect(grid.lastElementChild).not.toContainElement(detail);
+    // Tapping another badge moves the details; tapping it again closes them.
+    const other = within(badges).getByRole("button", { name: "1337" });
+    await user.click(other);
+    expect(other.closest("li")!.nextElementSibling).toContainElement(
+      screen.getByRole("region", { name: "Badge details" }),
+    );
+    expect(tile.closest("li")!.nextElementSibling).not.toHaveClass("badge-detail-row");
+    await user.click(other);
+    expect(screen.queryByRole("region", { name: "Badge details" })).not.toBeInTheDocument();
+  });
+
   it("shows your own username, not You", async () => {
     renderSheet(fakeGateway(), { you: true });
     expect(await screen.findByRole("dialog", { name: "Priya" })).toHaveTextContent(

@@ -148,8 +148,8 @@ function ProfileBadges({
       {earned.length === 0 ? (
         <div className="small muted">No badges yet.</div>
       ) : (
-        <ul className="badge-grid">
-          {earned.map(({ badge }) => (
+        <ul className="badge-grid badge-grid-shelf">
+          {earned.flatMap(({ badge }) => [
             <li key={badge.id}>
               <button
                 type="button"
@@ -163,25 +163,29 @@ function ProfileBadges({
                 <BadgeMedal badge={badge} size={44} />
                 <span className="badge-name">{badge.name}</span>
               </button>
-            </li>
-          ))}
+            </li>,
+            // Same as the progress shelf: the details take a full row right below the tapped badge.
+            ...(detail?.badge.id === badge.id
+              ? [
+                  <li key={`${badge.id}-detail`} className="badge-detail-row">
+                    <div className="badge-detail" role="region" aria-label="Badge details">
+                      <div className="badge-detail-head">
+                        <BadgeMedal badge={detail.badge} size={44} />
+                        <strong>{detail.badge.name}</strong>
+                      </div>
+                      {/* Someone else's secret badge doesn't give away how to find it. */}
+                      <span className="small muted">
+                        {detail.badge.secret && !you
+                          ? "A secret badge. Nobody tells you how to get these."
+                          : detail.badge.description}
+                      </span>
+                      <span className="small dim">Earned {earnedDate(detail.earnedAt)}</span>
+                    </div>
+                  </li>,
+                ]
+              : []),
+          ])}
         </ul>
-      )}
-
-      {detail && (
-        <div className="badge-detail" role="region" aria-label="Badge details">
-          <div className="badge-detail-head">
-            <BadgeMedal badge={detail.badge} size={44} />
-            <strong>{detail.badge.name}</strong>
-          </div>
-          {/* Someone else's secret badge doesn't give away how to find it. */}
-          <span className="small muted">
-            {detail.badge.secret && !you
-              ? "A secret badge. Nobody tells you how to get these."
-              : detail.badge.description}
-          </span>
-          <span className="small dim">Earned {earnedDate(detail.earnedAt)}</span>
-        </div>
       )}
     </section>
   );

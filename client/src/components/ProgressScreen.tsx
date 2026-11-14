@@ -149,7 +149,8 @@ export function ProgressScreen({
             <ol className="heatmap" aria-label="Focus time, last 5 weeks">
               {progress.days.map((d, i) => {
                 const isFrozen = frozen.has(d.day);
-                const missed = !d.counted && d.focusMinutes > 0;
+                // A freeze covers the day, even if some unfinished focus time is on it.
+                const missed = !isFrozen && !d.counted && d.focusMinutes > 0;
                 const label = `${d.day}: ${isFrozen ? "covered by a freeze" : formatHours(d.focusMinutes)}${missed ? ", no finished session" : ""}`;
                 return (
                   <li
@@ -181,7 +182,9 @@ export function ProgressScreen({
                     <span className="heat-key" aria-hidden="true" /> freeze
                   </>
                 )}
-                {progress.days.some((d) => !d.counted && d.focusMinutes > 0) && (
+                {progress.days.some(
+                  (d) => !frozen.has(d.day) && !d.counted && d.focusMinutes > 0,
+                ) && (
                   <>
                     {" · "}
                     <span className="heat-key heat-key-missed" aria-hidden="true" /> didn't count

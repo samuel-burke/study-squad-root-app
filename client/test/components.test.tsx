@@ -305,6 +305,20 @@ describe("MemberBoard", () => {
     expect(screen.getByRole("button", { name: "View your profile" })).toBeInTheDocument();
   });
 
+  it.each([false, true])("pins your chosen badge to your avatar (compact: %s)", (compact) => {
+    render(
+      <MemberBoard
+        members={[{ ...me, badges: ["comeback"] }]}
+        profiles={new Map()}
+        youId="me"
+        now={0}
+        compact={compact}
+      />,
+    );
+    const badge = screen.getByRole("img", { name: /^Badge: / });
+    expect(badge.closest(".avatar-wrap")).not.toBeNull();
+  });
+
   it("says You until your profile loads", () => {
     render(<MemberBoard members={[me]} profiles={new Map()} youId="me" now={0} />);
     expect(screen.getByRole("listitem", { name: /^You, Room timer/ })).toBeInTheDocument();

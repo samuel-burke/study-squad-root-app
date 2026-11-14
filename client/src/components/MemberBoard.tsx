@@ -99,6 +99,20 @@ export function OpenProfileButton({
  * The one badge a member features on the board: their first pin, or their
  * newest. The rest live on their progress screen.
  */
+/** The member's picture with their chosen badge pinned to its corner. */
+function AvatarWithBadge({
+  member,
+  profile,
+  you,
+}: Pick<MemberProps, "member" | "profile" | "you">) {
+  return (
+    <span className="avatar-wrap">
+      <Avatar userId={member.userId} profile={profile} you={you} />
+      <FeaturedBadge ids={member.badges} />
+    </span>
+  );
+}
+
 function FeaturedBadge({ ids }: { ids: string[] }) {
   const badge = ids.map(badgeById).find((b) => b !== undefined);
   if (!badge) return null;
@@ -109,7 +123,7 @@ function FeaturedBadge({ ids }: { ids: string[] }) {
       role="img"
       aria-label={`Badge: ${badge.name}`}
     >
-      <BadgeMedal badge={badge} size={22} />
+      <BadgeMedal badge={badge} size={20} />
     </span>
   );
 }
@@ -151,13 +165,12 @@ function MemberCard({ member, profile, you, voice, now, tables, onOpen, highFive
     <li className="member-card" data-you={you} data-style={member.cardStyle} aria-label={label}>
       <OpenProfileButton name={name} you={you} onOpen={onOpen} />
       <div className="member-top">
-        <Avatar userId={member.userId} profile={profile} you={you} />
+        <AvatarWithBadge member={member} profile={profile} you={you} />
         <div style={{ flex: 1, minWidth: 0 }}>
           <div className="member-name">
             <span className="name">{name}</span>
             <span className="level-chip">Lv {member.level}</span>
             {voice && <InVoiceMark />}
-            <FeaturedBadge ids={member.badges} />
           </div>
           <div className="streak-line">
             <FlameIcon size={13} stroke="var(--flame)" />
@@ -202,7 +215,7 @@ function MemberRow({ member, profile, you, voice, now, tables, onOpen, highFive 
   return (
     <li className="member-row" data-style={member.cardStyle} aria-label={label}>
       <OpenProfileButton name={name} you={you} onOpen={onOpen} />
-      <Avatar userId={member.userId} profile={profile} you={you} />
+      <AvatarWithBadge member={member} profile={profile} you={you} />
       <div className="body">
         <div
           style={{ fontSize: 14, fontWeight: 700, display: "flex", alignItems: "center", gap: 6 }}
@@ -210,7 +223,6 @@ function MemberRow({ member, profile, you, voice, now, tables, onOpen, highFive 
           {name}
           <RankChip rank={member.weeklyRank} />
           {voice && <InVoiceMark />}
-          <FeaturedBadge ids={member.badges} />
         </div>
         <div className="goal-line">
           <BreakMarks member={member} />

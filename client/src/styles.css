@@ -2049,6 +2049,19 @@ textarea.input {
   filter: var(--medal-shadow-sm);
 }
 
+.avatar-wrap {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+}
+
+/* The chosen badge sits on the avatar's bottom-right corner. */
+.avatar-wrap .featured-badge {
+  position: absolute;
+  right: -6px;
+  bottom: -6px;
+}
+
 .badge-medal {
   display: block;
   flex: none;

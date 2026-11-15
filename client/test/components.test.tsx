@@ -285,7 +285,6 @@ describe("MemberBoard", () => {
     weeklyRank: 0,
     challenge: "",
     challengeDone: false,
-    highFives: 0,
   };
 
   it.each([false, true])("shows your Root name instead of You (compact: %s)", (compact) => {
@@ -335,6 +334,20 @@ describe("MemberBoard", () => {
       expect(card).not.toHaveTextContent(/\d\d:\d\d/);
     },
   );
+
+  it.each([false, true])("shows no break countdown on room cards (compact: %s)", (compact) => {
+    render(
+      <MemberBoard
+        members={[{ ...me, status: "roomBreak", endsAt: 3_000 }]}
+        profiles={new Map()}
+        youId="me"
+        now={0}
+        compact={compact}
+      />,
+    );
+    const card = screen.getByRole("listitem", { name: /^You, Break/ });
+    expect(card).not.toHaveTextContent(/\d\d:\d\d/);
+  });
 
   it("says You until your profile loads", () => {
     render(<MemberBoard members={[me]} profiles={new Map()} youId="me" now={0} />);

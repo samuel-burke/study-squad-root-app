@@ -204,7 +204,6 @@ const memberToProto = (m: MemberCardDto): MemberCard => ({
   challenge: m.challenge,
   tableId: m.tableId,
   challengeDone: m.challengeDone,
-  highFives: m.highFives,
 });
 
 const timerToProto = (timer: RoomTimerDto): RoomTimer => ({
@@ -420,7 +419,6 @@ const memberFromProto = (m: MemberCard): MemberCardDto => ({
   challenge: m.challenge ?? "",
   tableId: m.tableId ?? "",
   challengeDone: m.challengeDone ?? false,
-  highFives: m.highFives ?? 0,
 });
 
 const timerFromProto = (timer: RoomTimer | undefined): RoomTimerDto => ({

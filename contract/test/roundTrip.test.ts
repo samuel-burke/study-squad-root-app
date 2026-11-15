@@ -90,7 +90,6 @@ const room: RoomStateDto = {
       weeklyRank: 3,
       challenge: "",
       challengeDone: false,
-      highFives: 0,
     },
     {
       userId: "u2",
@@ -106,7 +105,6 @@ const room: RoomStateDto = {
       weeklyRank: 0,
       challenge: "Do 5 squats",
       challengeDone: true,
-      highFives: 4,
     },
     {
       userId: "u3",
@@ -122,7 +120,6 @@ const room: RoomStateDto = {
       weeklyRank: 0,
       challenge: "",
       challengeDone: false,
-      highFives: 0,
     },
     {
       userId: "u4",
@@ -138,7 +135,6 @@ const room: RoomStateDto = {
       weeklyRank: 0,
       challenge: "",
       challengeDone: false,
-      highFives: 0,
     },
   ],
   presentCount: 9,

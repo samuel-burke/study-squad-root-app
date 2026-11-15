@@ -2551,8 +2551,11 @@ textarea.input {
   transform: scale(0.92);
 }
 
-.member-row .high-five-buttons,
-.member-row .high-five-floats {
+.member-row .high-five-buttons {
+  margin-left: 0;
+}
+
+.high-five-floats {
   position: fixed;
   inset: 0;
   pointer-events: none;

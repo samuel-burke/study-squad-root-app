@@ -90,6 +90,11 @@ export function App({ gateway }: { gateway: StudyRoomGateway }) {
   useEffect(() => {
     document.documentElement.dataset.tier = tier;
   }, [tier]);
+  // On your break the accent turns break teal (styles.css), so it's clear it's a break.
+  const breakTime = state.me?.status === "roomBreak" || state.me?.status === "soloBreak";
+  useEffect(() => {
+    document.documentElement.toggleAttribute("data-break", breakTime);
+  }, [breakTime]);
 
   // The boss going down gets its own full-screen moment, at the same time as
   // its music. Not for a boss that was already beaten when the app opened.

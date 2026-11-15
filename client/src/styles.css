@@ -3248,6 +3248,10 @@ textarea.input {
 :root[data-tier] .ring-progress {
   filter: drop-shadow(0 0 6px var(--tier-glow)) drop-shadow(0 0 14px var(--tier-glow));
 }
+/* On a break the ring is teal, so its glow is too. */
+:root[data-tier] .ring[data-tone="break"] .ring-progress {
+  --tier-glow: color-mix(in srgb, var(--teal) calc(var(--neon) * 70%), transparent);
+}
 /* Until you join, the room's clock (and its pill, above) is grey, so it doesn't read as yours. */
 .ring[data-dim="true"] circle {
   stroke-width: 6px;

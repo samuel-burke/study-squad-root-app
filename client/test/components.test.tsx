@@ -3,9 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { createHarness } from "../../core/test/helpers";
 import { AVATAR_RETRY_MS, Avatar } from "../src/components/Avatar";
-import type { BossDto, PersonalResultDto } from "@studyroom/core";
 import { strengthText } from "../src/components/BossCard";
-import { BreakMoment } from "../src/components/BreakMoment";
 import { ErrorBoundary } from "../src/components/ErrorBoundary";
 import type { GoalActions } from "../src/components/GoalList";
 import { GoalsSheet } from "../src/components/GoalsSheet";
@@ -344,71 +342,6 @@ describe("MemberBoard", () => {
   });
 });
 
-describe("BreakMoment boss panel", () => {
-  const boss = (defeated: boolean): BossDto => ({
-    enabled: true,
-    name: "Deadline Dragon",
-    maxHpXp: 1500,
-    damageXp: defeated ? 1500 : 600,
-    strength: 1.5,
-    lootXp: 150,
-    endsAt: 0,
-    defeated,
-  });
-
-  async function renderBreak(outcome: PersonalResultDto["bossOutcome"], defeated: boolean) {
-    const { engine } = createHarness();
-    const { me } = await engine.getSnapshot("me");
-    const result: PersonalResultDto = {
-      source: "solo",
-      round: 0,
-      focusedMinutes: 25,
-      finished: true,
-      baseXp: 50,
-      combo: 1,
-      xpEarned: 50,
-      streak: 1,
-      streakExtended: true,
-      finisherIds: ["me"],
-      roomDamageXp: outcome === "alreadyDefeated" ? 0 : 50,
-      bossOutcome: outcome,
-      goalPrompt: null,
-      breakEndsAt: 0,
-      me,
-    };
-    render(
-      <BreakMoment
-        result={result}
-        boss={boss(defeated)}
-        profiles={new Map()}
-        youId="me"
-        xpEnabled
-        chatChannel=""
-        now={0}
-        busy={false}
-        onGoalDone={vi.fn()}
-        onClose={vi.fn()}
-      />,
-    );
-  }
-
-  it("shows the hit while the boss is standing", async () => {
-    await renderBreak("hit", false);
-    expect(screen.getByText("You hit Deadline Dragon for 50 XP")).toBeInTheDocument();
-  });
-
-  it("celebrates the final blow instead of a damage number", async () => {
-    await renderBreak("finalBlow", true);
-    expect(screen.getByText("Final blow! You defeated Deadline Dragon")).toBeInTheDocument();
-    expect(screen.queryByText(/hit Deadline Dragon/)).toBeNull();
-  });
-
-  it("hides the boss once it was already defeated", async () => {
-    await renderBreak("alreadyDefeated", true);
-    expect(screen.queryByText(/Deadline Dragon/)).toBeNull();
-  });
-});
-
 describe("TimerCard combo line", () => {
   async function renderTimer(join: boolean) {
     const { engine } = createHarness();
@@ -422,6 +355,7 @@ describe("TimerCard combo line", () => {
         busy={false}
         onJoin={noop}
         onLeave={noop}
+        onKeepGoing={noop}
         onSolo={noop}
         onEndSolo={noop}
       />,

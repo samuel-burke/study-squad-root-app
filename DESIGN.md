@@ -157,7 +157,6 @@ Numeric settings are `select` items, not `number` items: in `@rootsdk/dev-tools`
 - **Name**: the mockups say "Study Room"; the app is now called Study Squad. Internal code names (`StudyRoomEngine`, the `StudyRoomService` Protobuf service, `@studyroom/*` packages) keep the old name, because renaming the service would change the wire paths for no user benefit.
 - **Admin setup** is Root's App settings screen (see above). The room shows a read-only summary behind the settings button.
 - **Weekly quests and badges** came after v1. Quest rewards are smaller than the mockup's (+30 to +40 XP rather than +50 to +100) to keep them a bonus next to focus XP, and "Join 3 room timers" counts finished room rounds.
-- **"Chat in #study-hall"** on the break screen is a hint, not a link. Root's `communityLinks.communityChannelCreate` could make it one.
 - **Avatars** use Root profile pictures when a member has one, and the design's initials and colors otherwise.
 - Fonts (DM Sans, Space Grotesk) are bundled with the client instead of loaded from Google Fonts, to avoid third-party requests from inside Root.
 

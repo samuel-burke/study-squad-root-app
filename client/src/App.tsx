@@ -3,10 +3,8 @@ import { HIGH_FIVE_EMOJI, tierFor, type BossDto } from "@studyroom/core";
 import type { StudyRoomGateway } from "./api/gateway";
 import { BadgeUnlocked } from "./components/BadgeUnlocked";
 import { BossDefeated } from "./components/BossDefeated";
-import { KeepGoing } from "./components/KeepGoing";
 import { HighFiveFloats, myBreakKey, onBreak } from "./components/BreakFun";
 import { MemberProfileSheet } from "./components/MemberProfileSheet";
-import { BreakMoment } from "./components/BreakMoment";
 import { Celebration } from "./components/Celebration";
 import { FeedbackSheet } from "./components/FeedbackSheet";
 import { SchedulePanel } from "./components/Schedule";
@@ -111,10 +109,9 @@ export function App({ gateway }: { gateway: StudyRoomGateway }) {
   const userIds = useMemo(
     () => [
       ...(state.room?.members.map((m) => m.userId) ?? []),
-      ...(state.breakMoment?.finisherIds ?? []),
       ...schedule.sessions.map((s) => s.byUserId),
     ],
-    [state.room, state.breakMoment, schedule.sessions],
+    [state.room, schedule.sessions],
   );
   const profiles = useProfiles(gateway, userIds);
 
@@ -132,7 +129,7 @@ export function App({ gateway }: { gateway: StudyRoomGateway }) {
 
   // While a sheet is open, the page behind it can't be focused or clicked.
   const background = useRef<HTMLDivElement>(null);
-  const modalOpen = overlay !== null || state.breakMoment !== null;
+  const modalOpen = overlay !== null;
   useEffect(() => {
     const node = background.current;
     if (!node) return;
@@ -263,6 +260,7 @@ export function App({ gateway }: { gateway: StudyRoomGateway }) {
             onOpenSounds={() => setOverlay({ kind: "sounds" })}
             onStart={(mode) => setOverlay({ kind: "start", mode })}
             onLeave={() => void actions.leaveRoomTimer()}
+            onKeepGoing={() => void actions.keepGoing()}
             onEndSolo={() => void actions.endSolo()}
             goalActions={goalActions}
             onOpenGoals={() => setOverlay({ kind: "goals" })}
@@ -354,25 +352,7 @@ export function App({ gateway }: { gateway: StudyRoomGateway }) {
         <FeedbackSheet gateway={gateway} onClose={() => setOverlay(null)} />
       )}
 
-      {state.celebration && (
-        <Celebration celebration={state.celebration} quiet={state.breakMoment !== null} />
-      )}
-      {state.breakMoment && (
-        <BreakMoment
-          result={state.breakMoment}
-          boss={room.boss}
-          profiles={profiles}
-          youId={me.userId}
-          xpEnabled={room.features.xpEnabled}
-          chatChannel={room.features.postChannelName}
-          now={now}
-          busy={busy}
-          onGoalDone={(id) => {
-            void actions.setGoalDone(id, true).then((ok) => ok && actions.dismissBreak());
-          }}
-          onClose={actions.dismissBreak}
-        />
-      )}
+      {state.celebration && <Celebration celebration={state.celebration} />}
       {bossDown && <BossDefeated boss={bossDown} onDismiss={closeBoss} />}
       {/* The boss moment goes first; badges it earned unlock after it. */}
       {!bossDown && state.newBadges[0] && (
@@ -390,14 +370,6 @@ export function App({ gateway }: { gateway: StudyRoomGateway }) {
           badgeId={replayBadge}
           muted={sounds.muted}
           onDismiss={() => setReplayBadge(null)}
-        />
-      )}
-      {me.keepGoingEndsAt > now && (
-        <KeepGoing
-          endsAt={me.keepGoingEndsAt}
-          now={now}
-          busy={busy}
-          onKeepGoing={() => void actions.keepGoing()}
         />
       )}
       <HighFiveFloats highFives={state.highFives} profiles={profiles} />

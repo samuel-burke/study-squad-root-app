@@ -25,7 +25,6 @@ export interface StudyRoomActions {
   completeBreakChallenge(): Promise<boolean>;
   sendHighFive(userId: string, emoji: string): Promise<boolean>;
   reload(): Promise<void>;
-  dismissBreak(): void;
   dismissBadge(): void;
   dismissError(): void;
 }
@@ -103,7 +102,6 @@ export function useStudyRoom(gateway: StudyRoomGateway) {
       completeBreakChallenge: () => run(() => gateway.completeBreakChallenge()),
       sendHighFive: (userId, emoji) => run(() => gateway.sendHighFive(userId, emoji)),
       reload,
-      dismissBreak: () => dispatch({ type: "dismissBreak" }),
       dismissBadge: () => dispatch({ type: "dismissBadge" }),
       dismissError: () => dispatch({ type: "dismissError" }),
     };

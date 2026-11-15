@@ -71,6 +71,46 @@ describe("roomReducer", () => {
     ).toBeNull();
   });
 
+  it("adds your XP to the round's celebration, and nothing for a solo result", async () => {
+    const snap = await snapshot();
+    const ready = roomReducer(initialRoomViewState, { type: "snapshot", snapshot: snap });
+    const result = {
+      source: "room" as const,
+      round: 2,
+      focusedMinutes: 25,
+      finished: true,
+      baseXp: 2,
+      combo: 2,
+      xpEarned: 4,
+      streak: 7,
+      streakExtended: true,
+      finisherIds: ["me"],
+      roomDamageXp: 4,
+      bossOutcome: "hit" as const,
+      goalPrompt: null,
+      breakEndsAt: 0,
+      me: snap.me,
+    };
+    const solo = roomReducer(ready, { type: "personalResult", event: result });
+    expect(solo.celebration).toBeNull();
+    expect(solo.me).toBe(snap.me);
+    const event = {
+      kind: "focus" as const,
+      round: 2,
+      finisherIds: ["me"],
+      roomDamageXp: 4,
+      combo: 2,
+      room: snap.room,
+    };
+    const round = roomReducer(ready, { type: "phaseCompleted", event, at: 5 });
+    expect(roomReducer(round, { type: "personalResult", event: result }).celebration).toMatchObject(
+      {
+        round: 2,
+        xpEarned: 4,
+      },
+    );
+  });
+
   it("tracks requests in flight and errors", () => {
     let state: RoomViewState = roomReducer(initialRoomViewState, { type: "requestStarted" });
     state = roomReducer(state, { type: "requestStarted" });

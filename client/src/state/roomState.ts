@@ -13,6 +13,8 @@ export interface Celebration {
   combo: number;
   /** Local time it started, so it can fade out on its own. */
   startedAt: number;
+  /** XP you earned this round, once your result arrives. */
+  xpEarned?: number;
 }
 
 export interface ReceivedHighFive extends HighFiveDto {
@@ -24,8 +26,6 @@ export interface RoomViewState {
   status: "loading" | "ready" | "error";
   room: RoomStateDto | null;
   me: MyStatusDto | null;
-  /** The personal break screen, shown after a focus block you took part in. */
-  breakMoment: PersonalResultDto | null;
   /** The room-wide burst everyone sees when a round ends. */
   celebration: Celebration | null;
   /** Badges you just earned, shown one at a time, oldest first. */
@@ -47,7 +47,6 @@ export const initialRoomViewState: RoomViewState = {
   status: "loading",
   room: null,
   me: null,
-  breakMoment: null,
   celebration: null,
   newBadges: [],
   shownBadges: [],
@@ -86,7 +85,6 @@ export type RoomAction =
   | { type: "requestStarted" }
   | { type: "requestFinished" }
   | { type: "requestFailed"; message: string }
-  | { type: "dismissBreak" }
   | { type: "dismissCelebration" }
   | { type: "dismissError" };
 
@@ -134,7 +132,14 @@ export function roomReducer(state: RoomViewState, action: RoomAction): RoomViewS
       };
     case "personalResult":
       return queueBadges(
-        { ...state, breakMoment: action.event, me: action.event.me },
+        {
+          ...state,
+          me: action.event.me,
+          celebration: state.celebration && {
+            ...state.celebration,
+            xpEarned: action.event.xpEarned,
+          },
+        },
         action.event.me.newBadges,
       );
     case "badgesEarned":
@@ -157,8 +162,6 @@ export function roomReducer(state: RoomViewState, action: RoomAction): RoomViewS
       return { ...state, pending: Math.max(0, state.pending - 1) };
     case "requestFailed":
       return { ...state, pending: Math.max(0, state.pending - 1), error: action.message };
-    case "dismissBreak":
-      return { ...state, breakMoment: null };
     case "dismissCelebration":
       return { ...state, celebration: null };
     case "dismissError":

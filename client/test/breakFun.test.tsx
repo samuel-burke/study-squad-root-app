@@ -21,7 +21,6 @@ const card = (userId: string, overrides: Partial<MemberCardDto> = {}): MemberCar
   weeklyRank: 0,
   challenge: "",
   challengeDone: false,
-  highFives: 0,
   ...overrides,
 });
 
@@ -114,7 +113,7 @@ describe("high-fives on the board", () => {
     const onOpen = vi.fn();
     render(
       <MemberBoard
-        members={[card("me"), card("kai", { highFives: 2, challengeDone: true })]}
+        members={[card("me"), card("kai", { challengeDone: true })]}
         profiles={profiles}
         youId="me"
         now={0}
@@ -125,7 +124,8 @@ describe("high-fives on the board", () => {
     );
     // Only on Kai's card, never your own.
     expect(screen.getAllByRole("button", { name: /high-five/ })).toHaveLength(1);
-    expect(screen.getByRole("img", { name: "2 high-fives" })).toBeInTheDocument();
+    // No count on the card: high-fives only pop up on the receiver's screen.
+    expect(screen.queryByRole("img", { name: /high-five/ })).not.toBeInTheDocument();
     expect(screen.getByRole("img", { name: "Did the break challenge" })).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Send Kai a fire" }));
     expect(onSend).toHaveBeenCalledWith("kai", "🔥");

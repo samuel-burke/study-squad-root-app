@@ -947,7 +947,6 @@ export class StudyRoomEngine {
       // No cap per teammate: the per-member write rate limit keeps it sane.
       from.set(userId, (from.get(userId) ?? 0) + 1);
       log.highFives.set(to, from);
-      effects.roomChanged = true;
       effects.notifications.push((n) => n.highFive(to, { fromUserId: userId, emoji }));
       return this.snapshot(tx, userId, now);
     });
@@ -2231,7 +2230,6 @@ export class StudyRoomEngine {
         weeklyRank: ranks.get(userId) ?? 0,
         challenge,
         challengeDone: breakLog?.challengeDone.has(userId) ?? false,
-        highFives: highFiveTotal(breakLog?.highFives.get(userId)),
       };
     };
 

@@ -1,4 +1,3 @@
-import { formatCombo } from "@studyroom/core";
 import { useMemo } from "react";
 import type { Celebration as CelebrationState } from "../state/roomState";
 
@@ -23,13 +22,7 @@ export function confettiPieces(seed: number, count = 36) {
  * The same small burst on every screen when a round ends. Positions come
  * from the round number, so every client renders identical confetti.
  */
-export function Celebration({
-  celebration,
-  quiet = false,
-}: {
-  celebration: CelebrationState;
-  quiet?: boolean;
-}) {
+export function Celebration({ celebration }: { celebration: CelebrationState }) {
   const pieces = useMemo(
     () => confettiPieces(celebration.round * 9973 + celebration.finisherIds.length),
     [celebration.round, celebration.finisherIds.length],
@@ -51,10 +44,10 @@ export function Celebration({
           />
         ))}
       </div>
-      <div className={quiet ? "visually-hidden" : "celebration"} role="status">
-        Round {celebration.round} complete · {people === 1 ? "1 person" : `${people} people`}{" "}
-        finished
-        {celebration.combo > 1 ? ` at ${formatCombo(celebration.combo)}` : ""} · break time
+      <div className="celebration" role="status">
+        {/* Short enough for one line on a phone; the combo is already in the timer. */}
+        Round {celebration.round} complete · {people} finished
+        {celebration.xpEarned ? ` · +${celebration.xpEarned} XP` : ""}
       </div>
     </>
   );

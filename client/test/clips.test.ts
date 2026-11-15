@@ -121,9 +121,9 @@ describe("session chimes and countdown ticks", () => {
     expect(new Set(cues.map((c) => UI_SOUNDS[c].url)).size).toBe(4);
   });
 
-  it("ring the timer finish on the last second instead of a tick", async () => {
+  it("tick on the last second too, so only the phase chime rings at zero", async () => {
     const { UI_SOUNDS } = await setup();
-    expect(UI_SOUNDS.lastTick.url).not.toBe(UI_SOUNDS.tick.url);
+    expect(UI_SOUNDS.lastTick.url).toBe(UI_SOUNDS.tick.url);
   });
 
   it("keep joins, leaves and clicks quieter than the session chimes", async () => {

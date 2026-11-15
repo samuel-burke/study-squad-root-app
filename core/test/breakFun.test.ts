@@ -113,22 +113,17 @@ describe("break challenges", () => {
 });
 
 describe("high-fives", () => {
-  it("counts on the receiver's card and pushes only to them", async () => {
+  it("pushes only to the receiver", async () => {
     const { engine, notifier } = await onBreakTogether();
-    const snapshot = await engine.sendHighFive("ana", "kai", "🔥");
-    expect(snapshot.room.members.find((m) => m.userId === "kai")?.highFives).toBe(1);
+    await engine.sendHighFive("ana", "kai", "🔥");
     expect(notifier.highFives).toEqual([
       { toUserId: "kai", event: { fromUserId: "ana", emoji: "🔥" } },
     ]);
   });
 
-  it("counts every high-five, 👋 and 🔥 alike, with no cap per teammate", async () => {
+  it("sends every 👋 and 🔥, with no cap per teammate", async () => {
     const { engine, notifier } = await onBreakTogether();
     for (let i = 0; i < 8; i++) await engine.sendHighFive("ana", "kai", i % 2 ? "🔥" : "👋");
-    await engine.sendHighFive("kai", "ana", "🔥");
-    const room = (await engine.getSnapshot("kai")).room;
-    expect(room.members.find((m) => m.userId === "kai")?.highFives).toBe(8);
-    expect(room.members.find((m) => m.userId === "ana")?.highFives).toBe(1);
     const toKai = notifier.highFives.filter((h) => h.toUserId === "kai").map((h) => h.event.emoji);
     expect(toKai).toEqual(["👋", "🔥", "👋", "🔥", "👋", "🔥", "👋", "🔥"]);
   });

@@ -316,10 +316,6 @@ h3 {
   color: var(--teal-ink);
 }
 
-.btn-break {
-  border-color: var(--break-border-strong);
-}
-
 .btn-danger {
   border: none;
   background: var(--coral);
@@ -1290,118 +1286,6 @@ textarea.input {
   font-size: 17px;
 }
 
-/* ---------------------------------------------------------------- break moment */
-
-.break-sheet {
-  background: var(--break-bg);
-  border-color: var(--break-border);
-  position: relative;
-  overflow: hidden;
-}
-
-.break-hero {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  gap: 6px;
-  padding-top: 20px;
-}
-
-.break-hero .eyebrow {
-  color: var(--teal-text);
-  justify-content: center;
-}
-
-.break-hero h1 {
-  font-size: 34px;
-  line-height: 1.1;
-}
-
-.stack {
-  display: flex;
-  align-items: center;
-  margin-top: 10px;
-  flex-wrap: wrap;
-  justify-content: center;
-}
-
-.stack .avatar {
-  width: 32px;
-  height: 32px;
-  font-size: 10px;
-  border: 2px solid var(--break-bg);
-}
-
-.stack .avatar + .avatar {
-  margin-left: -8px;
-}
-
-.stack-label {
-  margin-left: 10px;
-  font-size: 13px;
-  color: var(--break-muted);
-}
-
-.stat-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-}
-
-.stat {
-  background: var(--break-surface);
-  border: 1px solid var(--break-border);
-  border-radius: 16px;
-  padding: 14px;
-}
-
-.stat-label,
-.stat-sub {
-  font-size: 12px;
-  color: var(--break-muted);
-}
-
-.stat-value {
-  font-family: var(--font-display);
-  font-size: 28px;
-  font-weight: 700;
-}
-
-.break-panel {
-  background: var(--break-surface);
-  border: 1px solid var(--break-border);
-  border-radius: 16px;
-  padding: 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.boss-hit {
-  background: var(--boss-bg);
-  border-color: var(--boss-border);
-}
-
-.boss-hit .bar {
-  height: 10px;
-  background: var(--boss-track);
-}
-
-.break-footer {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.break-countdown {
-  font-family: var(--font-display);
-  font-size: 30px;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-}
-
 /* ---------------------------------------------------------------- celebration */
 
 .celebration {
@@ -1871,27 +1755,6 @@ textarea.input {
 
   .app-header {
     border-bottom: none;
-  }
-
-  /* The break moment takes over the whole screen on phones, like the mockup. */
-  .backdrop:has(.break-sheet) {
-    background: var(--break-bg);
-  }
-
-  .sheet.break-sheet {
-    min-height: 100vh;
-    max-height: 100vh;
-    border: none;
-    border-radius: 0;
-    animation: fade-in 0.2s ease;
-  }
-
-  .break-sheet .sheet-handle {
-    display: none;
-  }
-
-  .break-sheet .break-footer {
-    margin-top: auto;
   }
 }
 
@@ -2479,33 +2342,6 @@ textarea.input {
   }
 }
 
-/* ---------------------------------------------------------------- keep going */
-
-.keep-going {
-  position: fixed;
-  left: 50%;
-  top: 16px;
-  transform: translateX(-50%);
-  z-index: 45;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  width: max-content;
-  max-width: calc(100% - 32px);
-  background: var(--amber-bg);
-  border: 1px solid var(--amber-you);
-  border-radius: var(--radius);
-  padding: 10px 10px 10px 16px;
-  box-shadow: var(--shadow-pop);
-  animation: pop-in 0.35s cubic-bezier(0.2, 1.4, 0.4, 1);
-}
-
-.keep-going-title {
-  font-family: var(--font-display);
-  font-weight: 700;
-  color: var(--amber-text);
-}
-
 /* Holds the leaderboard and data card inside the progress page's column. */
 .progress-stack {
   display: flex;
@@ -2715,8 +2551,11 @@ textarea.input {
   transform: scale(0.92);
 }
 
-.member-row .high-five-buttons,
-.member-row .high-five-floats {
+.member-row .high-five-buttons {
+  margin-left: 0;
+}
+
+.high-five-floats {
   position: fixed;
   inset: 0;
   pointer-events: none;
@@ -3200,7 +3039,7 @@ textarea.input {
     transparent
   );
 }
-:root[data-tier]:not([data-tier="spark"]) {
+:root[data-tier]:is(:not([data-tier="spark"]), [data-break]) {
   --amber: var(--accent);
   --amber-strong: var(--accent);
   --amber-text: var(--accent);
@@ -3213,14 +3052,23 @@ textarea.input {
   --heat-2: color-mix(in srgb, var(--accent) 58%, var(--surface));
   --flame: var(--accent);
 }
-:root[data-theme="light"][data-tier]:not([data-tier="spark"]) {
+:root[data-theme="light"][data-tier]:is(:not([data-tier="spark"]), [data-break]) {
   --amber-text: color-mix(in srgb, var(--accent) 62%, black);
 }
 :root[data-theme="light"][data-tier="starlight"] {
   --amber-text: var(--accent);
 }
+/* On a break the whole accent turns break teal, keeping the tier's glow strength. */
+:root[data-tier][data-break] {
+  --accent: var(--teal);
+  --glow-color: var(--teal);
+  --amber-ink: var(--teal-ink);
+}
+:root[data-theme="light"][data-tier][data-break] {
+  --amber-text: var(--teal-text);
+}
 
-:root[data-tier] :is(.boss, .boss-hit, .mobile-boss) {
+:root[data-tier] :is(.boss, .mobile-boss) {
   --coral: var(--accent);
   --coral-text: var(--amber-text);
   --boss-bg: color-mix(in srgb, var(--accent) 7%, var(--surface));

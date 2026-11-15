@@ -52,7 +52,7 @@ async function run(page, ms) {
   }
 }
 
-/** One pass through the app: join, break moment, round 2, goals, settings, progress. */
+/** One pass through the app: join, a round, round 2, goals, settings, progress. */
 async function capture(browser, viewport, theme, shots) {
   const suffix = `${viewport === PHONE ? "mobile" : "desktop"}${theme === "light" ? "-light" : ""}`;
   const want = (name) => shots.includes(name);
@@ -75,12 +75,13 @@ async function capture(browser, viewport, theme, shots) {
   await run(page, 14.5 * MIN - 5000);
   await page.clock.runFor(4000);
   await page.waitForTimeout(1500);
-  if (want("break-moment")) await shot("break-moment");
-  await page.getByRole("button", { name: /Done, \+25/ }).click();
-  await page.clock.runFor(1500);
   await clearUnlocks(page);
-  await page.keyboard.press("Escape");
-  await page.clock.runFor(1000);
+  // Phones only shoot the room, so only desktop checks off the goal.
+  if (!phone) {
+    const panel = page.getByRole("region", { name: "Your session" });
+    await panel.getByRole("checkbox", { name: "Calc problem set 6" }).click();
+  }
+  await page.clock.runFor(1500);
   await clearUnlocks(page);
   await run(page, 15 * MIN + 17_000);
   await page.waitForTimeout(800);
@@ -130,7 +131,6 @@ try {
   // Desktop in dark mode first; one light room shot and one phone shot.
   await capture(browser, DESKTOP, "dark", [
     "start-session",
-    "break-moment",
     "room",
     "goals",
     "settings",

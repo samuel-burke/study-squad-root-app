@@ -32,18 +32,16 @@ async function wait(page: Page, ms: number) {
   await page.clock.runFor(ms);
 }
 
-const breakMoment = (page: Page) => page.getByRole("dialog", { name: /^Nice work/ });
+const roundToast = (page: Page) => page.locator(".celebration");
 const boss = (page: Page) => page.locator("section.boss");
-const myCard = (page: Page) => page.getByRole("listitem", { name: /^You, Room timer/ });
+const myCard = (page: Page) => page.getByRole("listitem", { name: /^You,/ });
 
-/** Closes badge unlocks and the break moment, which sit on top of the room. */
+/** Closes badge unlocks, which sit on top of the room. */
 async function clearOverlays(page: Page) {
   for (let i = 0; i < 20; i++) {
     const unlock = page.locator(".unlock");
     if (await unlock.isVisible()) {
       await unlock.getByRole("button", { name: "Nice!" }).click();
-    } else if (await breakMoment(page).isVisible()) {
-      await page.keyboard.press("Escape");
     } else {
       return;
     }
@@ -86,10 +84,12 @@ test.describe("game rules", () => {
       // Five simulated members are on the room timer, so six finish together: 2.0x.
       await open(page, "?focus=2&break=0.5&join=0");
       await joinRoom(page);
-      await wait(page, 2 * MINUTE);
+      // Stop as the round ends, while its toast is still up.
+      await wait(page, 2 * MINUTE - 5 * SECOND);
+      for (let i = 0; i < 20 && !(await roundToast(page).isVisible()); i++)
+        await wait(page, SECOND);
       // A whole minute at 2 XP, times 2.0.
-      await expect(breakMoment(page)).toContainText("+4 XP");
-      await expect(breakMoment(page)).toContainText("× 2.0 combo");
+      await expect(roundToast(page)).toContainText("6 finished · +4 XP");
       await expectEarned(page, ["Study Group", "Full House"]);
     });
 
@@ -107,7 +107,7 @@ test.describe("game rules", () => {
       await open(page, "?focus=1&break=0.5&bots=0&xp=775");
       await joinRoom(page);
       await wait(page, MINUTE + SECOND);
-      await expect(breakMoment(page)).toContainText("+2 XP");
+      await expect(roundToast(page)).toContainText("+2 XP");
       await expectEarned(page, ["Jackpot"]);
     });
   });
@@ -116,14 +116,14 @@ test.describe("game rules", () => {
     test("shows in the long break, and a tap rolls you into the next cycle", async ({ page }) => {
       await open(page, "?focus=1&break=0.5&bots=0");
       await joinRoom(page);
-      const keepGoing = page.getByRole("alertdialog", { name: "Keep going?" });
+      const keepGoing = page.getByRole("button", { name: /^Keep going · / });
       // Four 1 minute rounds and three 30 second breaks: nothing interrupts focus.
       await wait(page, 5.5 * MINUTE - 2 * SECOND);
       await expect(keepGoing).toBeHidden();
       await wait(page, 3 * SECOND);
       await clearOverlays(page);
       await expect(keepGoing).toBeVisible();
-      await keepGoing.getByRole("button", { name: "Keep going" }).click();
+      await keepGoing.click();
       await expect(keepGoing).toBeHidden();
       // Past the end of the cycle you're still on the room timer.
       await wait(page, 2 * MINUTE);
@@ -156,7 +156,7 @@ test.describe("game rules", () => {
       await sheet.getByRole("button", { name: "Start focusing" }).click();
       await wait(page, 16 * MINUTE);
       await clearOverlays(page);
-      await expect(page.getByRole("alertdialog", { name: "Keep going?" })).toHaveCount(0);
+      await expect(page.getByRole("button", { name: /^Keep going/ })).toHaveCount(0);
     });
   });
 
@@ -209,21 +209,21 @@ test.describe("game rules", () => {
       await open(page, "?focus=1&break=0.5&bots=0&streak=6");
       await joinRoom(page);
       await wait(page, MINUTE + SECOND);
-      await expect(breakMoment(page)).toContainText("7 days");
+      await expect(myCard(page)).toContainText("7 day streak");
       await expectEarned(page, ["On a Roll"]);
       await page.getByRole("button", { name: "Leave room timer" }).click();
 
       await page.clock.fastForward("24:00:00");
       await joinRoom(page);
       await wait(page, MINUTE + SECOND);
-      await expect(breakMoment(page)).toContainText("8 days");
+      await expect(myCard(page)).toContainText("8 day streak");
     });
 
     test("the week's freeze covers one missed day", async ({ page }) => {
       await open(page, "?focus=1&break=0.5&bots=0&streak=4&missed=1");
       await joinRoom(page);
       await wait(page, MINUTE + SECOND);
-      await expect(breakMoment(page)).toContainText("5 days");
+      await expect(myCard(page)).toContainText("5 day streak");
       await expectEarned(page, ["Saved by the Freeze"]);
     });
 
@@ -250,7 +250,7 @@ test.describe("game rules", () => {
       await open(page, "?focus=1&break=0.5&bots=0&streak=30&missed=3");
       await joinRoom(page);
       await wait(page, MINUTE + SECOND);
-      await expect(breakMoment(page)).toContainText("1 day");
+      await expect(myCard(page)).toContainText("1 day streak");
       await expectEarned(page, ["Comeback", "Phoenix"]);
     });
   });

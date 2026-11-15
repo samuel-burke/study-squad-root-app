@@ -10,6 +10,7 @@ import { MemberBoard } from "./MemberBoard";
 import { SessionPanel } from "./SessionPanel";
 import { TimerCard } from "./TimerCard";
 import { VoiceButton } from "./VoiceButton";
+import { KeepGoing } from "./KeepGoing";
 
 export interface RoomScreenProps {
   room: RoomStateDto;
@@ -23,6 +24,7 @@ export interface RoomScreenProps {
   onOpenSounds(): void;
   onStart(mode: "room" | "solo"): void;
   onLeave(): void;
+  onKeepGoing(): void;
   onEndSolo(): void;
   goalActions: GoalActions;
   onOpenGoals(): void;
@@ -148,6 +150,7 @@ export function RoomScreen(props: RoomScreenProps) {
       compact={compact}
       onJoin={() => props.onStart("room")}
       onLeave={props.onLeave}
+      onKeepGoing={props.onKeepGoing}
       onSolo={() => props.onStart("solo")}
       onEndSolo={props.onEndSolo}
     />
@@ -185,7 +188,15 @@ export function RoomScreen(props: RoomScreenProps) {
           <button type="button" className="btn btn-secondary" onClick={props.onOpenGoals}>
             Goals · {done} of {me.goals.length}
           </button>
-          {me.onRoomTimer ? (
+          {me.keepGoingEndsAt > now ? (
+            // You're released at the cycle's end anyway, so Keep going takes Leave's spot.
+            <KeepGoing
+              endsAt={me.keepGoingEndsAt}
+              now={now}
+              busy={busy}
+              onKeepGoing={props.onKeepGoing}
+            />
+          ) : me.onRoomTimer ? (
             <button type="button" className="btn" onClick={props.onLeave} disabled={busy}>
               Leave timer
             </button>

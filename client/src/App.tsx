@@ -3,10 +3,8 @@ import { HIGH_FIVE_EMOJI, tierFor, type BossDto } from "@studyroom/core";
 import type { StudyRoomGateway } from "./api/gateway";
 import { BadgeUnlocked } from "./components/BadgeUnlocked";
 import { BossDefeated } from "./components/BossDefeated";
-import { KeepGoing } from "./components/KeepGoing";
 import { HighFiveFloats, myBreakKey, onBreak } from "./components/BreakFun";
 import { MemberProfileSheet } from "./components/MemberProfileSheet";
-import { BreakMoment } from "./components/BreakMoment";
 import { Celebration } from "./components/Celebration";
 import { FeedbackSheet } from "./components/FeedbackSheet";
 import { SchedulePanel } from "./components/Schedule";
@@ -46,7 +44,6 @@ type Overlay =
 
 export function App({ gateway }: { gateway: StudyRoomGateway }) {
   const { state, actions } = useStudyRoom(gateway);
-  const now = useNow(gateway.now.bind(gateway));
   const compact = useMediaQuery("(max-width: 760px)");
   const [screen, setScreen] = useState<"room" | "progress">("room");
   const [overlay, setOverlay] = useState<Overlay>(null);
@@ -63,6 +60,8 @@ export function App({ gateway }: { gateway: StudyRoomGateway }) {
       : state.me.onRoomTimer && state.room
         ? myTableView(state.room, state.me).timer.phaseEndsAt
         : state.me.endsAt;
+  // The clock flips on the same beat as the countdown ticks.
+  const now = useNow(serverNow, myEndsAt);
   useCountdownChirps(myEndsAt, serverNow, sounds.muted);
   const celebrationAt = state.celebration?.startedAt ?? null;
   const boss = state.room?.boss;
@@ -91,6 +90,11 @@ export function App({ gateway }: { gateway: StudyRoomGateway }) {
   useEffect(() => {
     document.documentElement.dataset.tier = tier;
   }, [tier]);
+  // On your break the accent turns break teal (styles.css), so it's clear it's a break.
+  const breakTime = state.me?.status === "roomBreak" || state.me?.status === "soloBreak";
+  useEffect(() => {
+    document.documentElement.toggleAttribute("data-break", breakTime);
+  }, [breakTime]);
 
   // The boss going down gets its own full-screen moment, at the same time as
   // its music. Not for a boss that was already beaten when the app opened.
@@ -110,10 +114,9 @@ export function App({ gateway }: { gateway: StudyRoomGateway }) {
   const userIds = useMemo(
     () => [
       ...(state.room?.members.map((m) => m.userId) ?? []),
-      ...(state.breakMoment?.finisherIds ?? []),
       ...schedule.sessions.map((s) => s.byUserId),
     ],
-    [state.room, state.breakMoment, schedule.sessions],
+    [state.room, schedule.sessions],
   );
   const profiles = useProfiles(gateway, userIds);
 
@@ -131,7 +134,7 @@ export function App({ gateway }: { gateway: StudyRoomGateway }) {
 
   // While a sheet is open, the page behind it can't be focused or clicked.
   const background = useRef<HTMLDivElement>(null);
-  const modalOpen = overlay !== null || state.breakMoment !== null;
+  const modalOpen = overlay !== null;
   useEffect(() => {
     const node = background.current;
     if (!node) return;
@@ -262,6 +265,7 @@ export function App({ gateway }: { gateway: StudyRoomGateway }) {
             onOpenSounds={() => setOverlay({ kind: "sounds" })}
             onStart={(mode) => setOverlay({ kind: "start", mode })}
             onLeave={() => void actions.leaveRoomTimer()}
+            onKeepGoing={() => void actions.keepGoing()}
             onEndSolo={() => void actions.endSolo()}
             goalActions={goalActions}
             onOpenGoals={() => setOverlay({ kind: "goals" })}
@@ -353,25 +357,7 @@ export function App({ gateway }: { gateway: StudyRoomGateway }) {
         <FeedbackSheet gateway={gateway} onClose={() => setOverlay(null)} />
       )}
 
-      {state.celebration && (
-        <Celebration celebration={state.celebration} quiet={state.breakMoment !== null} />
-      )}
-      {state.breakMoment && (
-        <BreakMoment
-          result={state.breakMoment}
-          boss={room.boss}
-          profiles={profiles}
-          youId={me.userId}
-          xpEnabled={room.features.xpEnabled}
-          chatChannel={room.features.postChannelName}
-          now={now}
-          busy={busy}
-          onGoalDone={(id) => {
-            void actions.setGoalDone(id, true).then((ok) => ok && actions.dismissBreak());
-          }}
-          onClose={actions.dismissBreak}
-        />
-      )}
+      {state.celebration && <Celebration celebration={state.celebration} />}
       {bossDown && <BossDefeated boss={bossDown} onDismiss={closeBoss} />}
       {/* The boss moment goes first; badges it earned unlock after it. */}
       {!bossDown && state.newBadges[0] && (
@@ -389,14 +375,6 @@ export function App({ gateway }: { gateway: StudyRoomGateway }) {
           badgeId={replayBadge}
           muted={sounds.muted}
           onDismiss={() => setReplayBadge(null)}
-        />
-      )}
-      {me.keepGoingEndsAt > now && (
-        <KeepGoing
-          endsAt={me.keepGoingEndsAt}
-          now={now}
-          busy={busy}
-          onKeepGoing={() => void actions.keepGoing()}
         />
       )}
       <HighFiveFloats highFives={state.highFives} profiles={profiles} />

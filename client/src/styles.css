@@ -3203,7 +3203,7 @@ textarea.input {
     transparent
   );
 }
-:root[data-tier]:not([data-tier="spark"]) {
+:root[data-tier]:is(:not([data-tier="spark"]), [data-break]) {
   --amber: var(--accent);
   --amber-strong: var(--accent);
   --amber-text: var(--accent);
@@ -3216,11 +3216,20 @@ textarea.input {
   --heat-2: color-mix(in srgb, var(--accent) 58%, var(--surface));
   --flame: var(--accent);
 }
-:root[data-theme="light"][data-tier]:not([data-tier="spark"]) {
+:root[data-theme="light"][data-tier]:is(:not([data-tier="spark"]), [data-break]) {
   --amber-text: color-mix(in srgb, var(--accent) 62%, black);
 }
 :root[data-theme="light"][data-tier="starlight"] {
   --amber-text: var(--accent);
+}
+/* On a break the whole accent turns break teal, keeping the tier's glow strength. */
+:root[data-tier][data-break] {
+  --accent: var(--teal);
+  --glow-color: var(--teal);
+  --amber-ink: var(--teal-ink);
+}
+:root[data-theme="light"][data-tier][data-break] {
+  --amber-text: var(--teal-text);
 }
 
 :root[data-tier] :is(.boss, .boss-hit, .mobile-boss) {

@@ -15,7 +15,7 @@ const STROKE = { focus: "var(--amber-strong)", break: "var(--teal)", idle: "var(
 
 export function TimerRing({ size, remaining, tone, dim, children }: TimerRingProps) {
   return (
-    <div className="ring" data-dim={dim} data-tone={tone} style={{ width: size, height: size }}>
+    <div className="ring" data-dim={dim} style={{ width: size, height: size }}>
       <svg width={size} height={size} viewBox="0 0 200 200" aria-hidden="true">
         <circle cx="100" cy="100" r={RADIUS} fill="none" stroke="var(--track)" strokeWidth="12" />
         <circle

@@ -2,7 +2,8 @@ import type { MyStatusKind } from "@studyroom/core";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { preloadClips } from "../lib/clips";
 import { SHOW_SOUNDS } from "../lib/showEffects";
-import { cueFor, playCue, unlockAudio, type SoundCue } from "../lib/sounds";
+import { cueFor, unlockAudio } from "../lib/sounds";
+import { playUiSound, UI_SOUNDS, type UiSound } from "../lib/uiSounds";
 
 const MUTED_KEY = "studysquad.soundsMuted";
 
@@ -25,12 +26,13 @@ function writeMuted(muted: boolean): void {
 }
 
 /**
- * Plays a chime when your own focus or break starts or ends. The mute choice
+ * Plays a chime when your own focus or break starts or ends, and a click on
+ * button taps. The mute choice
  * is per member and per device, kept in local storage.
  */
 export function useSoundCues(
   status: MyStatusKind | null,
-  play: (cue: SoundCue) => void = playCue,
+  play: (sound: UiSound) => void = playUiSound,
 ): { muted: boolean; setMuted(muted: boolean): void } {
   const [muted, setMutedState] = useState(readMuted);
   const previous = useRef<MyStatusKind | null>(null);
@@ -38,17 +40,32 @@ export function useSoundCues(
   // Audio stays locked until an interaction, and Safari only counts some
   // events (a touch's pointerdown isn't one). Unlock on every kind, every
   // time, since Safari can lock audio again after a call or an app switch.
-  // The recorded clips load on the first one, so they're ready on the beat.
+  // The recorded clips and chimes load on the first one, so they're ready on the beat.
   useEffect(() => {
     const unlock = () => {
       unlockAudio();
-      preloadClips(SHOW_SOUNDS);
+      preloadClips([...SHOW_SOUNDS, ...Object.values(UI_SOUNDS).map((s) => s.url)]);
     };
     for (const type of UNLOCK_EVENTS) window.addEventListener(type, unlock, true);
     return () => {
       for (const type of UNLOCK_EVENTS) window.removeEventListener(type, unlock, true);
     };
   }, []);
+
+  // A soft click on every button tap.
+  useEffect(() => {
+    if (muted) return;
+    const onClick = (event: MouseEvent) => {
+      if (!(event.target instanceof Element) || !event.target.closest("button")) return;
+      try {
+        play("click");
+      } catch {
+        // A click sound must never break a button.
+      }
+    };
+    window.addEventListener("click", onClick, true);
+    return () => window.removeEventListener("click", onClick, true);
+  }, [muted, play]);
 
   useEffect(() => {
     const prev = previous.current;

@@ -62,38 +62,40 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe("playCue", () => {
-  it("schedules one note per pitch of the chime", async () => {
+/** A stand-in sound: one oscillator on the shared context. */
+const beep = (ctx: AudioContext) => void ctx.createOscillator();
+
+describe("withAudio", () => {
+  it("runs the sound on a resumed context", async () => {
     vi.stubGlobal("AudioContext", FakeAudioContext);
-    const { playCue } = await loadSounds();
-    playCue("focusStart");
+    const { withAudio } = await loadSounds();
+    withAudio(beep);
     const ctx = FakeAudioContext.instances[0]!;
-    expect(ctx.oscillators.map((o) => o.frequency.value)).toEqual([523.25, 659.25, 783.99]);
-    expect(ctx.oscillators[0]!.start).toHaveBeenCalledWith(10.02);
+    expect(ctx.oscillators).toHaveLength(1);
     expect(ctx.resume).toHaveBeenCalled();
   });
 
   it("reuses one audio context across chimes", async () => {
     vi.stubGlobal("AudioContext", FakeAudioContext);
-    const { playCue } = await loadSounds();
-    playCue("breakStart");
-    playCue("breakEnd");
+    const { withAudio } = await loadSounds();
+    withAudio(beep);
+    withAudio(beep);
     expect(FakeAudioContext.instances).toHaveLength(1);
-    expect(FakeAudioContext.instances[0]!.oscillators).toHaveLength(5);
+    expect(FakeAudioContext.instances[0]!.oscillators).toHaveLength(2);
   });
 
   it("falls back to the prefixed webkitAudioContext", async () => {
     vi.stubGlobal("AudioContext", undefined);
     vi.stubGlobal("webkitAudioContext", FakeAudioContext);
-    const { playCue } = await loadSounds();
-    playCue("focusEnd");
+    const { withAudio } = await loadSounds();
+    withAudio(beep);
     expect(FakeAudioContext.instances).toHaveLength(1);
   });
 
   it("does nothing when the browser has no Web Audio", async () => {
     vi.stubGlobal("AudioContext", undefined);
-    const { playCue, unlockAudio } = await loadSounds();
-    expect(() => playCue("focusStart")).not.toThrow();
+    const { withAudio, unlockAudio } = await loadSounds();
+    expect(() => withAudio(beep)).not.toThrow();
     expect(() => unlockAudio()).not.toThrow();
   });
 
@@ -106,19 +108,19 @@ describe("playCue", () => {
         }
       },
     );
-    const { playCue } = await loadSounds();
-    expect(() => playCue("focusStart")).not.toThrow();
+    const { withAudio } = await loadSounds();
+    expect(() => withAudio(beep)).not.toThrow();
   });
 
-  it("stays quiet when scheduling a note fails", async () => {
+  it("stays quiet when scheduling a sound fails", async () => {
     class BrokenContext extends FakeAudioContext {
       override createOscillator(): never {
         throw new Error("InvalidStateError");
       }
     }
     vi.stubGlobal("AudioContext", BrokenContext);
-    const { playCue } = await loadSounds();
-    expect(() => playCue("breakStart")).not.toThrow();
+    const { withAudio } = await loadSounds();
+    expect(() => withAudio(beep)).not.toThrow();
   });
 
   it("swallows a resume that rejects or throws", async () => {
@@ -138,7 +140,7 @@ describe("playCue", () => {
     vi.stubGlobal("AudioContext", Throws);
     sounds = await loadSounds();
     expect(() => sounds.unlockAudio()).not.toThrow();
-    expect(() => sounds.playCue("focusStart")).not.toThrow();
+    expect(() => sounds.withAudio(beep)).not.toThrow();
   });
 
   it("does not resume a context that is already running", async () => {
@@ -187,20 +189,11 @@ describe("playCue", () => {
 
   it("starts a fresh context when the old one was closed", async () => {
     vi.stubGlobal("AudioContext", FakeAudioContext);
-    const { playCue } = await loadSounds();
-    playCue("focusStart");
+    const { withAudio } = await loadSounds();
+    withAudio(beep);
     FakeAudioContext.instances[0]!.state = "closed";
-    playCue("focusStart");
+    withAudio(beep);
     expect(FakeAudioContext.instances).toHaveLength(2);
-    expect(FakeAudioContext.instances[1]!.oscillators).toHaveLength(3);
-  });
-
-  it("plays a short chirp, higher on the last second", async () => {
-    vi.stubGlobal("AudioContext", FakeAudioContext);
-    const { playChirp } = await loadSounds();
-    playChirp("tick");
-    playChirp("lastTick");
-    const ctx = FakeAudioContext.instances[0]!;
-    expect(ctx.oscillators.map((o) => o.frequency.value)).toEqual([1318.51, 1760]);
+    expect(FakeAudioContext.instances[1]!.oscillators).toHaveLength(1);
   });
 });

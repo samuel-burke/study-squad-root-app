@@ -58,6 +58,19 @@ describe("useSoundCues", () => {
     expect(play).toHaveBeenCalledWith("focusStart");
   });
 
+  it("clicks on button taps only, and not while muted", () => {
+    const { play, result } = setup("idle");
+    const button = document.body.appendChild(document.createElement("button"));
+    const icon = button.appendChild(document.createElement("span"));
+    icon.click();
+    document.body.click();
+    expect(play.mock.calls).toEqual([["click"]]);
+    act(() => result.current.setMuted(true));
+    button.click();
+    expect(play).toHaveBeenCalledTimes(1);
+    button.remove();
+  });
+
   it("falls back to sounds on when storage is blocked", () => {
     vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
       throw new Error("SecurityError");

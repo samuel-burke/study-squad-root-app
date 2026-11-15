@@ -4,7 +4,7 @@ test.describe("focus room", () => {
   test("opens mid-round with the room already busy, and the timer counts down", async ({
     page,
   }) => {
-    await page.goto("/");
+    await page.goto("/?join=0");
     const timer = page.getByRole("timer");
     await expect(timer).toHaveText(/^1\d:\d\d$/);
     const first = await timer.textContent();
@@ -39,7 +39,7 @@ test.describe("focus room", () => {
   test("starts a study table, splits the board by table and moves between tables", async ({
     page,
   }) => {
-    await page.goto("/");
+    await page.goto("/?join=0");
     await expect(page.getByRole("button", { name: "+ New table" })).toHaveCount(0);
     const sheet = await openStartSheet(page);
     await sheet.getByRole("radio", { name: /Start a new table/ }).click();
@@ -60,7 +60,10 @@ test.describe("focus room", () => {
   });
 
   test("joining adds your card and raises the combo", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/?join=0");
+    // Until you join, the room's clock is dimmed so it doesn't read as yours.
+    const ring = page.locator(".ring").first();
+    await expect(ring).toHaveAttribute("data-dim", "true");
     const sheet = await openStartSheet(page);
     await expect(sheet.getByRole("radio", { name: /Join the room timer/ })).toContainText(
       "combo goes to 2.0x",
@@ -73,10 +76,11 @@ test.describe("focus room", () => {
     );
     await expect(page.getByRole("heading", { name: /Focusing now · 8/ })).toBeVisible();
     await expect(page.getByText("2.0x").first()).toBeVisible();
+    await expect(ring).toHaveAttribute("data-dim", "false");
   });
 
   test("private goals show as Focusing to everyone else", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/?join=0");
     const sheet = await openStartSheet(page);
     await sheet.getByLabel("Goals for this session").fill("Secret plan");
     await sheet.getByRole("switch", { name: "Keep my goals private" }).click();
@@ -87,20 +91,24 @@ test.describe("focus room", () => {
   });
 
   test("a solo timer still shows on the board", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/?join=0");
     const sheet = await openStartSheet(page);
     await sheet.getByRole("radio", { name: /Solo timer/ }).click();
     await sheet.getByRole("radio", { name: "15 min" }).click();
     await sheet.getByRole("button", { name: "Start focusing" }).click();
-    await expect(page.getByRole("listitem", { name: /^You, Solo · 1[45]:\d\d/ })).toBeVisible();
+    const solo = page.getByRole("region", { name: "Solo timers" });
+    await expect(solo.getByRole("listitem", { name: /^You, Solo/ })).toBeVisible();
   });
 
   test("can be used with the keyboard alone", async ({ page }) => {
     test.skip(isPhone(page), "keyboard flow is a desktop concern");
-    await page.goto("/");
+    await page.goto("/?join=0");
     await page.getByRole("button", { name: "Join room timer" }).focus();
     await page.keyboard.press("Enter");
     const sheet = page.getByRole("dialog", { name: "What are you working on?" });
+    // Opened by Enter on the button, focus starts on the Now/Later tabs (one Tab stop).
+    await expect(sheet.getByRole("button", { name: "Now" })).toBeFocused();
+    await page.keyboard.press("Tab");
     await expect(sheet.getByLabel("Goals for this session")).toBeFocused();
     await page.keyboard.type("Keyboard only");
     await page.keyboard.press("Enter");
@@ -115,7 +123,7 @@ test.describe("the break moment", () => {
   test("lands for everyone when the round ends, with XP, streak, boss damage and a goal check", async ({
     page,
   }) => {
-    await page.goto("/?focus=0.1&break=0.5");
+    await page.goto("/?focus=0.1&break=0.5&join=0");
     const sheet = await openStartSheet(page);
     await sheet.getByLabel("Goals for this session").fill("Read ch. 4");
     await sheet.getByRole("button", { name: "Start focusing" }).click();
@@ -123,16 +131,14 @@ test.describe("the break moment", () => {
     const moment = page.getByRole("dialog", { name: "Nice work, everyone" });
     await expect(moment).toBeVisible({ timeout: 15_000 });
     await expect(page.getByRole("status").filter({ hasText: "Round 1 complete" })).toHaveCount(1);
-    // The round also earns a badge, announced in its own banner.
-    await expect(page.getByText("Badge unlocked")).toBeVisible();
     await expect(moment).toContainText("6 days");
     await expect(moment).toContainText(/finished together/);
     await expect(moment).toContainText(/hit .+ for/);
     await expect(moment).toContainText("Did you finish Read ch. 4?");
     // The board flips to Break for everyone at the same moment.
-    await expect(page.locator(".phase-pill")).toHaveAttribute("data-phase", "break");
+    await expect(page.locator(".ring-time").first()).toHaveAttribute("aria-label", /left in break/);
 
-    // The demo starts with no badges, so this round's unlocks sit on top of the moment.
+    // Any badges this round earned sit on top of the moment.
     const unlock = page.locator(".unlock");
     while (await unlock.isVisible()) {
       await unlock.getByRole("button", { name: "Nice!" }).click();

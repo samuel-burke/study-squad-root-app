@@ -2,6 +2,7 @@ import { formatHours, tierFor, type ProgressDto, type QuestDto } from "@studyroo
 import { useEffect, useRef, useState } from "react";
 import { toGatewayError, type StudyRoomGateway } from "../api/gateway";
 import { freezeDays, heatLevel, percent } from "../lib/view";
+import { useArrowKeys } from "../state/useArrowKeys";
 import { BadgeShelf, CardStylePicker } from "./BadgeShelf";
 import { BackIcon, FlameIcon } from "./Icons";
 import { XpBar } from "./SessionPanel";
@@ -37,6 +38,9 @@ export function ProgressScreen({
   const [progress, setProgress] = useState<ProgressDto | null>(null);
   const loaded = useRef(false);
   const [error, setError] = useState<string | null>(null);
+  const heatRef = useRef<HTMLOListElement>(null);
+  // Days are focusable so the keyboard can read them: ← → by day, ↑ ↓ by week.
+  useArrowKeys(heatRef, { items: "li[aria-label]" });
   const [saving, setSaving] = useState(false);
   // The leaderboard loads on its own. Both wait for each other so the stats don't
   // pop in under an already-drawn board while the member is reading it.
@@ -146,10 +150,11 @@ export function ProgressScreen({
                 <span key={i}>{letter}</span>
               ))}
             </div>
-            <ol className="heatmap" aria-label="Focus time, last 5 weeks">
+            <ol ref={heatRef} className="heatmap" aria-label="Focus time, last 5 weeks">
               {progress.days.map((d, i) => {
                 const isFrozen = frozen.has(d.day);
-                const missed = !d.counted && d.focusMinutes > 0;
+                // A freeze covers the day, even if some unfinished focus time is on it.
+                const missed = !isFrozen && !d.counted && d.focusMinutes > 0;
                 const label = `${d.day}: ${isFrozen ? "covered by a freeze" : formatHours(d.focusMinutes)}${missed ? ", no finished session" : ""}`;
                 return (
                   <li
@@ -181,7 +186,9 @@ export function ProgressScreen({
                     <span className="heat-key" aria-hidden="true" /> freeze
                   </>
                 )}
-                {progress.days.some((d) => !d.counted && d.focusMinutes > 0) && (
+                {progress.days.some(
+                  (d) => !frozen.has(d.day) && !d.counted && d.focusMinutes > 0,
+                ) && (
                   <>
                     {" · "}
                     <span className="heat-key heat-key-missed" aria-hidden="true" /> didn't count

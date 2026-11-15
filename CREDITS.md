@@ -22,14 +22,30 @@ trimmed, faded and loudness matched (changes made by Study Squad), under the
 
 | File                 | Used for                    | Sound                                                                                                                                  | Artist         |
 | -------------------- | --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | -------------- |
-| `thud.mp3`           | Every medal landing         | [Dramatic Thud Stinger](https://pixabay.com/sound-effects/film-special-effects-dramatic-thud-stinger-631487/)                          | Dragon Studio  |
+| `thud.mp3`           | Medal landings, boss defeat | [Dramatic Thud Stinger](https://pixabay.com/sound-effects/film-special-effects-dramatic-thud-stinger-631487/)                          | Dragon Studio  |
 | `whoosh.mp3`         | Medals moving, boss medal   | [Whoosh Cinematic](https://pixabay.com/sound-effects/whoosh-cinematic-376875/)                                                         | Dragon Studio  |
 | `spotlight.mp3`      | Gold's spotlight            | [Spotlight Turning On](https://pixabay.com/sound-effects/spotlight-turning-on-388828/)                                                 | freesoundfx    |
 | `tension.mp3`        | Gold's rise                 | [Tension Stinger Ambience](https://pixabay.com/sound-effects/film-special-effects-tension-stinger-ambience-355381/)                    | gd_salman      |
 | `crackle.mp3`        | Platinum's beam             | [Static](https://pixabay.com/sound-effects/static-224541/)                                                                             | SoundReality   |
 | `lightning.mp3`      | Platinum's lightning strike | [Weather Lightning 2](https://pixabay.com/sound-effects/weather-lightning-2-464187/)                                                   | patricksilvey  |
-| `glass.mp3`          | Boss card shattering        | [Glass Bottle Smash](https://pixabay.com/sound-effects/glass-bottle-smash-277554/)                                                     | Universfield   |
 | `../sounds/tier.mp3` | Color tier ring unlock      | [Sci-Fi Sound Effect Designed Circuits Hum 24](https://pixabay.com/sound-effects/sci-fi-sound-effect-designed-circuits-hum-24-200825/) | Gregor Quendel |
+
+The UI sounds live in `client/src/assets/ui`, from the
+Study Squad Audio Pack (original synthesized sounds, converted to MP3 by Study
+Squad), [CC0](https://creativecommons.org/publicdomain/zero/1.0/).
+
+| File                     | Used for                                  |
+| ------------------------ | ----------------------------------------- |
+| `focus-start.mp3`        | Your focus starts                         |
+| `focus-complete.mp3`     | Your focus ends without a break           |
+| `break-start.mp3`        | Your break starts                         |
+| `break-end.mp3`          | Your break ends without more focus        |
+| `timer-tick.mp3`         | Countdown at 1 minute and seconds 5 to 2  |
+| `timer-finish.mp3`       | Countdown's last second, ringing out at 0 |
+| `member-join.mp3`        | Someone else joins the board              |
+| `member-leave.mp3`       | Someone else leaves the board             |
+| `ui-click.mp3`           | Button taps                               |
+| `achievement-unlock.mp3` | A round's celebration                     |
 
 New sounds must be free to use in an app that Root may charge for: CC0,
 CC BY, OGA-BY or the Pixabay Content License, with a line here. No NonCommercial (NC), NoDerivatives (ND),

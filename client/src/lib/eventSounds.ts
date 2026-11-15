@@ -1,12 +1,13 @@
-import { CLIPS, playClip } from "./clips";
+import achievement from "../assets/ui/achievement-unlock.mp3";
+import { CLIPS, playClip, playSound } from "./clips";
 import { playShowEffects } from "./showEffects";
 import { output, withAudio } from "./sounds";
 
 /**
  * Sounds for room moments: a round's celebration, the weekly boss going
- * down, and your own level-up. The celebration and level-up are synthesised
- * with Web Audio like the session chimes. The boss going down is a recorded
- * orchestral clip (see clips.ts).
+ * down, and your own level-up. The level-up is synthesised with Web Audio.
+ * The boss going down is a recorded orchestral clip (see clips.ts), and the
+ * celebration is the UI pack's achievement sound (CC0, see CREDITS.md).
  */
 export type EventSound = "celebration" | "bossDefeat" | "levelUp";
 
@@ -60,25 +61,7 @@ const run = (notes: number[], start: number, gap: number, length: number, volume
     volume,
   }));
 
-export const EVENT_SOUNDS: Record<Exclude<EventSound, "bossDefeat">, Fanfare> = {
-  // A cheerful "ta-da": two quick pickups, a bright major chord and confetti sparkle.
-  celebration: {
-    volume: 0.15,
-    reverb: 1,
-    noises: [{ at: 0.22, length: 0.5, volume: 0.15, from: 5000, to: 9000 }],
-    tones: [
-      { freq: G5, at: 0, length: 0.1, wave: "triangle", volume: 0.7 },
-      { freq: G5, at: 0.1, length: 0.1, wave: "triangle", volume: 0.7 },
-      ...[C5, E5, G5, C6].map((freq) => ({
-        freq,
-        at: 0.22,
-        length: 0.7,
-        wave: "triangle" as const,
-        volume: 0.5,
-      })),
-      ...run([E6, G6, C7], 0.3, 0.07, 0.5, 0.3),
-    ],
-  },
+export const EVENT_SOUNDS: Record<"levelUp", Fanfare> = {
   // A fast climbing scale that lands on a sparkling held note.
   levelUp: {
     volume: 0.15,
@@ -172,12 +155,15 @@ export function scheduleFanfare(ctx: AudioContext, fanfare: Fanfare): GainNode {
   return master;
 }
 
+export const CELEBRATION = { url: achievement, volume: 0.78, seconds: 1.75 };
+
 /** Plays a room-moment sound. Any audio failure is swallowed. */
 export function playEventSound(sound: EventSound): void {
   if (sound === "bossDefeat") {
     playClip("boss");
     playShowEffects("boss");
-  } else withAudio((ctx) => scheduleFanfare(ctx, EVENT_SOUNDS[sound]));
+  } else if (sound === "celebration") playSound(CELEBRATION.url, CELEBRATION.volume);
+  else withAudio((ctx) => scheduleFanfare(ctx, EVENT_SOUNDS[sound]));
 }
 
 /** Seconds from the first note to the end of the last one, not counting reverb. */
@@ -188,5 +174,7 @@ export function fanfareLength(fanfare: Fanfare): number {
 
 /** Seconds a room-moment sound lasts, so the next one can wait for it. */
 export function eventSoundLength(sound: EventSound): number {
-  return sound === "bossDefeat" ? CLIPS.boss.seconds : fanfareLength(EVENT_SOUNDS[sound]);
+  if (sound === "bossDefeat") return CLIPS.boss.seconds;
+  if (sound === "celebration") return CELEBRATION.seconds;
+  return fanfareLength(EVENT_SOUNDS[sound]);
 }

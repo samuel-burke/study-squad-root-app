@@ -1,5 +1,6 @@
-import { useState, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import type { Ambience } from "../lib/library";
+import { useArrowKeys } from "../state/useArrowKeys";
 import type { Sounds } from "../state/useSounds";
 import {
   CafeIcon,
@@ -49,6 +50,8 @@ export function SoundsSheet({
   wide: boolean;
 }) {
   const { settings, update } = sounds;
+  const ambienceRef = useRef<HTMLDivElement>(null);
+  useArrowKeys(ambienceRef, { pick: true });
 
   const music = <Music sounds={sounds} />;
   const ambience = (
@@ -57,7 +60,12 @@ export function SoundsSheet({
         <h2 id="ambience-title">Ambience</h2>
         <span className="tiny dim">Plays under the music</span>
       </div>
-      <div className="ambience-grid" role="group" aria-labelledby="ambience-title">
+      <div
+        ref={ambienceRef}
+        className="ambience-grid"
+        role="group"
+        aria-labelledby="ambience-title"
+      >
         {AMBIENCES.map(([id, name, icon]) => (
           <button
             key={id}
@@ -123,6 +131,10 @@ export function SoundsSheet({
 function Music({ sounds }: { sounds: Sounds }) {
   const { settings, update, tracks, queue, track, playing, progress } = sounds;
   const [showAll, setShowAll] = useState(false);
+  const genreRef = useRef<HTMLDivElement>(null);
+  const tracksRef = useRef<HTMLOListElement>(null);
+  useArrowKeys(genreRef, { pick: true });
+  useArrowKeys(tracksRef);
   const genres = ["All", ...new Set(tracks.map((t) => t.genre))];
   const shown = showAll ? queue : queue.slice(0, SHORT_LIST);
   const duration = progress.duration || track?.seconds || 0;
@@ -198,7 +210,7 @@ function Music({ sounds }: { sounds: Sounds }) {
             <span className="player-btn" aria-hidden="true" />
           </div>
           {genres.length > 2 && (
-            <div className="genre-chips" role="group" aria-label="Genre">
+            <div ref={genreRef} className="genre-chips" role="group" aria-label="Genre">
               {genres.map((g) => (
                 <button
                   key={g}
@@ -212,7 +224,7 @@ function Music({ sounds }: { sounds: Sounds }) {
               ))}
             </div>
           )}
-          <ol className="track-list" aria-label="Tracks">
+          <ol ref={tracksRef} className="track-list" aria-label="Tracks">
             {shown.map((t, i) => (
               <li key={t.id}>
                 <button

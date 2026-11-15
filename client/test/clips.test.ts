@@ -31,7 +31,8 @@ async function setup() {
   vi.resetModules();
   const clips = await import("../src/lib/clips");
   const events = await import("../src/lib/eventSounds");
-  return { ...clips, ...events, fetch };
+  const ui = await import("../src/lib/uiSounds");
+  return { ...clips, ...events, ...ui, fetch };
 }
 
 const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
@@ -67,7 +68,7 @@ describe("recorded clips", () => {
     expect(FakeAudioContext.sources[0]!.stop).toHaveBeenCalled();
   });
 
-  it("are the boss defeated sound, with its glass and whoosh effects", async () => {
+  it("are the boss defeated sound, with its thud and whoosh effects", async () => {
     const { playEventSound, CLIPS, fetch } = await setup();
     playEventSound("bossDefeat");
     await settle();
@@ -101,5 +102,43 @@ describe("recorded clips", () => {
     vi.resetModules();
     const { playClip } = await import("../src/lib/clips");
     expect(() => playClip("secret")()).not.toThrow();
+  });
+});
+
+describe("session chimes and countdown ticks", () => {
+  it("play their recorded sound at the pack's volume", async () => {
+    const { playUiSound, UI_SOUNDS, fetch } = await setup();
+    playUiSound("breakStart");
+    await settle();
+    expect(fetch).toHaveBeenCalledWith(UI_SOUNDS.breakStart.url);
+    expect(UI_SOUNDS.breakStart.volume).toBe(0.68);
+    expect(FakeAudioContext.sources).toHaveLength(1);
+  });
+
+  it("have a distinct sound for each session change", async () => {
+    const { UI_SOUNDS } = await setup();
+    const cues = ["focusStart", "focusEnd", "breakStart", "breakEnd"] as const;
+    expect(new Set(cues.map((c) => UI_SOUNDS[c].url)).size).toBe(4);
+  });
+
+  it("ring the timer finish on the last second instead of a tick", async () => {
+    const { UI_SOUNDS } = await setup();
+    expect(UI_SOUNDS.lastTick.url).not.toBe(UI_SOUNDS.tick.url);
+  });
+
+  it("keep joins, leaves and clicks quieter than the session chimes", async () => {
+    const { UI_SOUNDS } = await setup();
+    for (const quiet of ["memberJoin", "memberLeave", "click"] as const) {
+      expect(UI_SOUNDS[quiet].volume).toBeLessThan(UI_SOUNDS.breakStart.volume);
+    }
+  });
+
+  it("play the achievement sound for a round's celebration", async () => {
+    const { playEventSound, eventSoundLength, CELEBRATION, fetch } = await setup();
+    playEventSound("celebration");
+    await settle();
+    expect(fetch).toHaveBeenCalledWith(CELEBRATION.url);
+    expect(FakeAudioContext.sources).toHaveLength(1);
+    expect(eventSoundLength("celebration")).toBe(1.75);
   });
 });

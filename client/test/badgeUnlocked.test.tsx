@@ -2,7 +2,8 @@ import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { BADGES } from "@studyroom/core";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { BadgeUnlocked } from "../src/components/BadgeUnlocked";
+import { BadgeMedal } from "../src/components/BadgeMedal";
+import { BadgeUnlocked, medalImage } from "../src/components/BadgeUnlocked";
 import * as clips from "../src/lib/clips";
 import { CLIPS } from "../src/lib/clips";
 import { SHOWS } from "../src/lib/unlockShow";
@@ -66,6 +67,19 @@ describe("BadgeUnlocked", () => {
     expect(stop).toHaveBeenCalledTimes(1);
   });
 
+  it("replays the whole moment with the Replay link, without closing it", async () => {
+    const stop = vi.fn();
+    const play = vi.fn(() => stop);
+    const onDismiss = vi.fn();
+    render(<BadgeUnlocked badgeId="focus-100h" play={play} onDismiss={onDismiss} />);
+    await userEvent.click(screen.getByRole("button", { name: "Replay" }));
+    expect(stop).toHaveBeenCalledTimes(1);
+    expect(play).toHaveBeenCalledTimes(2);
+    expect(onDismiss).not.toHaveBeenCalled();
+    expect(screen.getByRole("dialog", { name: "Centurion" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Nice!" })).toHaveFocus();
+  });
+
   it("does not break when the sound fails", () => {
     render(
       <BadgeUnlocked
@@ -119,6 +133,18 @@ describe("color tier ring unlock", () => {
     },
   );
 
+  it("replays the ring and its hum with the Replay link", async () => {
+    const stop = vi.fn();
+    const hum = vi.spyOn(clips, "playSound").mockReturnValue(stop);
+    const onDismiss = vi.fn();
+    render(<BadgeUnlocked badgeId="tier-blaze" onDismiss={onDismiss} />);
+    await userEvent.click(screen.getByRole("button", { name: "Replay" }));
+    expect(stop).toHaveBeenCalledTimes(1);
+    expect(hum).toHaveBeenCalledTimes(2);
+    expect(onDismiss).not.toHaveBeenCalled();
+    hum.mockRestore();
+  });
+
   it("stays quiet when sounds are muted", () => {
     const hum = vi.spyOn(clips, "playSound").mockReturnValue(() => {});
     render(<BadgeUnlocked badgeId="tier-blaze" muted onDismiss={() => {}} />);
@@ -143,5 +169,16 @@ describe("tier shows", () => {
     for (let i = 1; i < order.length; i++) {
       expect(SHOWS[order[i]!].end, order[i]).toBeGreaterThanOrEqual(SHOWS[order[i - 1]!].end);
     }
+  });
+});
+
+describe("medalImage", () => {
+  it("leaves the platinum glints off the 3D medal but keeps them on the card", () => {
+    const { container } = render(<BadgeMedal badge={BADGES.find((b) => b.id === "streak-365")!} />);
+    const svg = container.querySelector("svg")!;
+    expect(svg.querySelector(".medal-glints")).not.toBeNull();
+    const art = decodeURIComponent(medalImage(svg).src);
+    expect(art).not.toContain("medal-glints");
+    expect(art).toContain("medal-glyph");
   });
 });

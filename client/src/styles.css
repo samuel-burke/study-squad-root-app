@@ -440,11 +440,6 @@ h3 {
   font-size: 17px;
 }
 
-.brand-sub {
-  font-size: 12px;
-  color: var(--text-muted);
-}
-
 .phase-pill {
   display: inline-flex;
   align-items: center;
@@ -464,7 +459,8 @@ h3 {
   color: var(--teal-text);
 }
 
-.phase-pill[data-phase="idle"] {
+.phase-pill[data-phase="idle"],
+.phase-pill[data-dim="true"] {
   background: var(--surface);
   color: var(--text-muted);
 }
@@ -481,14 +477,7 @@ h3 {
   display: flex;
   align-items: center;
   gap: 12px;
-}
-
-.present {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  color: var(--text-muted);
-  font-size: 13px;
+  margin-left: auto;
 }
 
 .voice-btn {
@@ -797,27 +786,6 @@ h3 {
   flex: none;
 }
 
-.rank-chip {
-  font-size: 11px;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  color: var(--text-muted);
-  background: var(--bg);
-  border: 1px solid var(--border);
-  padding: 1px 6px;
-  border-radius: 6px;
-  flex: none;
-}
-
-.streak-line .rank-chip {
-  margin-left: 4px;
-}
-
-.rank-chip[data-top="true"] {
-  color: var(--amber-text);
-  border-color: var(--amber-you);
-}
-
 .streak-line {
   display: flex;
   align-items: center;
@@ -960,15 +928,6 @@ h3 {
 
 .boss .bar > span {
   background: var(--coral);
-}
-
-.boss-text {
-  font-size: 13px;
-  color: var(--boss-muted);
-}
-
-.boss-text strong {
-  color: var(--text);
 }
 
 /* ---------------------------------------------------------------- session + goals */
@@ -1860,11 +1819,6 @@ textarea.input {
     gap: 8px;
   }
 
-  .brand-sub,
-  .header-meta .present {
-    display: none;
-  }
-
   .app-header {
     flex-wrap: nowrap;
   }
@@ -2072,6 +2026,19 @@ textarea.input {
   flex: none;
   line-height: 0;
   filter: var(--medal-shadow-sm);
+}
+
+.avatar-wrap {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+}
+
+/* The chosen badge sits on the avatar's bottom-right corner. */
+.avatar-wrap .featured-badge {
+  position: absolute;
+  right: -6px;
+  bottom: -6px;
 }
 
 .badge-medal {
@@ -2408,6 +2375,15 @@ textarea.input {
 .unlock-text .btn {
   margin-top: 12px;
   min-width: 140px;
+}
+
+.unlock-replay {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px;
+  color: var(--text-muted);
+  font-weight: 600;
 }
 
 @keyframes unlock-rise-text {
@@ -3269,6 +3245,20 @@ textarea.input {
 :root[data-tier] .ring-progress {
   filter: drop-shadow(0 0 6px var(--tier-glow)) drop-shadow(0 0 14px var(--tier-glow));
 }
+/* Until you join, the room's clock (and its pill, above) is grey, so it doesn't read as yours. */
+.ring[data-dim="true"] circle {
+  stroke-width: 6px;
+}
+:root .ring[data-dim="true"] .ring-progress {
+  stroke: var(--outline-dim);
+  filter: none;
+}
+.ring[data-dim="true"] :is(.ring-time, .ring-combo) {
+  color: var(--text-muted);
+}
+.ring[data-dim="true"] .ring-combo svg {
+  stroke: currentColor;
+}
 :root[data-tier] .btn-primary {
   box-shadow: 0 0 16px var(--tier-glow);
 }
@@ -3323,4 +3313,65 @@ textarea.input {
 .ring-badge[data-locked="true"] {
   filter: grayscale(1) brightness(0.55);
   opacity: 0.7;
+}
+
+/* ---------------------------------------------------------------- keyboard shortcuts */
+
+.sheet.shortcuts-sheet {
+  width: min(760px, 100%);
+}
+.shortcut-groups {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px 28px;
+}
+.shortcut-group-title {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin: 0 0 8px;
+}
+.shortcut-groups dl {
+  margin: 0;
+}
+.shortcut-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 5px 0;
+  font-size: 14px;
+  color: var(--text-soft);
+}
+.shortcut-row dd {
+  margin: 0;
+  display: flex;
+  gap: 4px;
+}
+kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 7px;
+  border-radius: 7px;
+  border: 1px solid var(--border-strong);
+  border-bottom-width: 2px;
+  background: var(--bg);
+  color: var(--text);
+  font: 600 13px var(--font-body);
+}
+@media (max-width: 760px) {
+  .shortcut-groups {
+    grid-template-columns: 1fr;
+  }
+}
+/* Touch screens have no keyboard, so no way in to the list. */
+@media (hover: none) {
+  .keyboard-only {
+    display: none;
+  }
 }

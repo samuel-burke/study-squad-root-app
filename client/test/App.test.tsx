@@ -30,7 +30,7 @@ describe("Study Squad app", () => {
   it("opens on an idle room with an empty board", async () => {
     await renderApp();
     expect(screen.getByRole("timer")).toHaveTextContent("25:00");
-    expect(screen.getByText("Room timer is free")).toBeInTheDocument();
+    expect(screen.getByText("ready when you are")).toBeInTheDocument();
     expect(screen.getByText(/The room is quiet/)).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Focusing now · 0" })).toBeInTheDocument();
   });
@@ -50,7 +50,10 @@ describe("Study Squad app", () => {
     const board = screen.getByRole("region", { name: "Who is in the room" });
     const card = within(board).getByRole("listitem", { name: /You, Room timer/ });
     expect(card).toHaveTextContent("Make 20 flashcards");
-    expect(screen.getByText("Focus · round 1 of 4")).toBeInTheDocument();
+    // The clock already shows the room timer, so the header and cards don't repeat it.
+    expect(card).not.toHaveTextContent("Room timer");
+    expect(screen.queryByText(/round 1 of 4/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/in the room$/)).not.toBeInTheDocument();
     // Like the mockup, the dot for the round in progress is filled.
     const dots = document.querySelectorAll(".round-dot");
     expect([...dots].map((d) => d.getAttribute("data-done"))).toEqual([
@@ -85,7 +88,9 @@ describe("Study Squad app", () => {
     const dialog = screen.getByRole("dialog");
     await user.click(within(dialog).getByRole("radio", { name: "45 min" }));
     await user.click(within(dialog).getByRole("button", { name: "Start focusing" }));
-    expect(await screen.findByRole("listitem", { name: /You, Solo · 45:00/ })).toBeInTheDocument();
+    // Your card sits in a Solo group; only you see its countdown.
+    const card = await screen.findByRole("listitem", { name: /^You, Solo · 45:00/ });
+    expect(screen.getByRole("region", { name: "Solo timers" })).toContainElement(card);
     expect(screen.getByRole("button", { name: "End solo timer" })).toBeInTheDocument();
   });
 
@@ -344,6 +349,33 @@ describe("Study Squad app", () => {
     expect(await screen.findByRole("timer")).toBeInTheDocument();
   });
 
+  it("shows a freeze day as frozen even when it has unfinished focus time", async () => {
+    const { gateway, user } = await renderApp();
+    const progress = await gateway.getProgress();
+    // Wed and Thu counted, Fri had focus time but no finished session (the freeze
+    // covers it), and today has focus time but nothing finished yet.
+    const days = progress.days.map((d) => ({ ...d, counted: false, focusMinutes: 0 }));
+    const n = days.length;
+    days[n - 4] = { ...days[n - 4]!, counted: true, focusMinutes: 60 };
+    days[n - 3] = { ...days[n - 3]!, counted: true, focusMinutes: 60 };
+    days[n - 2] = { ...days[n - 2]!, focusMinutes: 20 };
+    days[n - 1] = { ...days[n - 1]!, focusMinutes: 10 };
+    vi.spyOn(gateway, "getProgress").mockResolvedValue({
+      ...progress,
+      me: { ...progress.me, streak: 2 },
+      days,
+    });
+    await user.click(screen.getByRole("button", { name: "Your progress" }));
+    expect(await screen.findByText("2 day streak")).toBeInTheDocument();
+    const cells = screen.getByRole("list", { name: "Focus time, last 5 weeks" }).children;
+    const friday = cells[n - 2]!;
+    expect(friday).toHaveClass("heat-frozen");
+    expect(friday).not.toHaveClass("heat-missed");
+    expect(friday).toHaveAccessibleName(`${days[n - 2]!.day}: covered by a freeze`);
+    expect(cells[n - 1]).toHaveClass("heat-missed");
+    expect(screen.getByText("didn't count", { exact: false })).toBeInTheDocument();
+  });
+
   it("hides the freeze status when there's no streak to protect", async () => {
     const { user } = await renderApp({ activeDaysAgo: [10] });
     await user.click(screen.getByRole("button", { name: "Your progress" }));
@@ -471,7 +503,9 @@ describe("Study Squad app", () => {
     await waitFor(() =>
       expect(within(bar).getByRole("button", { name: "Leave timer" })).toBeInTheDocument(),
     );
-    expect(screen.getByRole("listitem", { name: /You, Room timer/ })).toHaveTextContent("Room");
+    // The round pill stays on phones; the row skips "Room" since the clock already says it.
+    expect(screen.getByText("Round 1 of 4")).toBeInTheDocument();
+    expect(screen.getByRole("listitem", { name: /You, Room timer/ })).not.toHaveTextContent("Room");
   });
 
   it("celebrates and shows the break moment when the round ends", async () => {

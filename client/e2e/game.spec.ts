@@ -84,7 +84,7 @@ test.describe("game rules", () => {
       page,
     }) => {
       // Five simulated members are on the room timer, so six finish together: 2.0x.
-      await open(page, "?focus=2&break=0.5");
+      await open(page, "?focus=2&break=0.5&join=0");
       await joinRoom(page);
       await wait(page, 2 * MINUTE);
       // A whole minute at 2 XP, times 2.0.

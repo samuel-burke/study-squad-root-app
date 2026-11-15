@@ -1,5 +1,6 @@
 import { useEffect } from "react";
-import { playChirp, type Chirp } from "../lib/sounds";
+import type { Chirp } from "../lib/sounds";
+import { playUiSound } from "../lib/uiSounds";
 
 /** Seconds before a phase change that get a chirp: one early warning, then the last five. */
 export const CHIRP_SECONDS = [60, 5, 4, 3, 2, 1] as const;
@@ -26,7 +27,7 @@ export function useCountdownChirps(
   endsAt: number | null,
   now: () => number,
   muted: boolean,
-  play: (chirp: Chirp) => void = playChirp,
+  play: (chirp: Chirp) => void = playUiSound,
 ): void {
   useEffect(() => {
     if (endsAt === null || muted) return;

@@ -92,7 +92,7 @@ describe("useEventSounds", () => {
     const { play, rerender } = setup(base);
     rerender({ state: { ...base, celebrationAt: 1, level: 4 }, muted: false });
     expect(play.mock.calls).toEqual([["celebration"]]);
-    act(() => vi.advanceTimersByTime(fanfareLength(EVENT_SOUNDS.celebration) * 1000 + 200));
+    act(() => vi.advanceTimersByTime(eventSoundLength("celebration") * 1000 + 200));
     expect(play.mock.calls).toEqual([["celebration"], ["levelUp"]]);
   });
 
@@ -150,13 +150,13 @@ describe("event sound synthesis", () => {
     });
   }
 
-  it.each(["celebration", "levelUp"] as const)("schedules every note of %s", async (sound) => {
+  it("schedules every note of the level-up", async () => {
     vi.stubGlobal("AudioContext", FakeAudioContext);
     vi.resetModules();
     const { playEventSound } = await import("../src/lib/eventSounds");
     FakeAudioContext.started = 0;
-    playEventSound(sound);
-    const fanfare = EVENT_SOUNDS[sound];
+    playEventSound("levelUp");
+    const fanfare = EVENT_SOUNDS.levelUp;
     expect(FakeAudioContext.started).toBe(fanfare.tones.length + (fanfare.noises?.length ?? 0));
   });
 

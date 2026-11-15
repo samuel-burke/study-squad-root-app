@@ -1,4 +1,4 @@
-import { GAME, type MyStatusDto } from "@studyroom/core";
+import type { MyStatusDto } from "@studyroom/core";
 import { percent } from "../lib/view";
 import { GoalList, type GoalActions } from "./GoalList";
 
@@ -43,11 +43,6 @@ export function SessionPanel({ me, xpEnabled, busy, goalActions }: SessionPanelP
       {xpEnabled && <XpBar me={me} />}
       <h2 style={{ fontSize: 17 }}>Your goals this session</h2>
       <GoalList goals={me.goals} busy={busy} actions={goalActions} />
-      {xpEnabled && (
-        <div className="tiny dim">
-          +{GAME.xpPerGoal} XP for each goal you finish, up to {GAME.goalsWithXpPerDay} a day
-        </div>
-      )}
     </section>
   );
 }

@@ -25,7 +25,9 @@ describe("demoOptionsFromSearch", () => {
       breakMinutes: undefined,
       elapsedMinutes: 10.5,
       bots: true,
+      joined: true,
     });
+    expect(demoOptionsFromSearch("?join=0").joined).toBe(false);
   });
 
   it("reads fast presets for tests and ignores junk", () => {
@@ -34,6 +36,7 @@ describe("demoOptionsFromSearch", () => {
       breakMinutes: 0.1,
       elapsedMinutes: 0,
       bots: false,
+      joined: false,
     });
     expect(demoOptionsFromSearch("?focus=-1&elapsed=abc").focusMinutes).toBeUndefined();
   });
@@ -127,5 +130,54 @@ describe("DemoGateway test knobs", () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+});
+
+describe("DemoGateway pacing", () => {
+  /** Plays your first cycle on the live demo's 1 minute timer and lists the badges each moment unlocks. */
+  async function firstCycle(checkGoalAt?: number) {
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(new Date("2026-11-13T15:00:00"));
+      const gateway = await DemoGateway.create(demoOptionsFromSearch("?focus=1&break=0.5"));
+      const unlocks: string[][] = [];
+      const levels: number[] = [];
+      gateway.subscribe({
+        badgesEarned: (ids: string[]) => unlocks.push(ids),
+        myStatus: (me: { level: number }) => levels.push(me.level),
+        roomUpdated() {},
+        phaseCompleted() {},
+        personalResult() {},
+        highFive() {},
+      } as unknown as Parameters<typeof gateway.subscribe>[0]);
+      // You start on the room timer, with a goal.
+      const { me: start } = await gateway.getSnapshot();
+      for (let second = 0; second < 6 * 60; second++) {
+        if (second === checkGoalAt) await gateway.setGoalDone(start.goals[0]!.id, true);
+        await vi.advanceTimersByTimeAsync(1_000);
+      }
+      return { unlocks, start, level: levels.at(-1) };
+    } finally {
+      vi.useRealTimers();
+    }
+  }
+
+  it("starts you as a returning member who already holds what your history earned", async () => {
+    const gateway = await DemoGateway.create(demoOptionsFromSearch("?focus=1&break=0.5"));
+    const { badges } = await gateway.getProgress();
+    expect(badges.map((b) => b.id)).toEqual(
+      expect.arrayContaining(["first-session", "level-5", "focus-10h", "tier-ember", "streak-3"]),
+    );
+  });
+
+  it.each([
+    ["no goal checked", undefined],
+    ["the goal checked at the break", 64],
+  ])("unlocks one badge per round of the first cycle, with %s", async (_, checkGoalAt) => {
+    const { unlocks, start, level } = await firstCycle(checkGoalAt);
+    expect(start.status).toBe("roomFocus");
+    expect(start.level).toBe(7);
+    expect(unlocks).toEqual([["full-house"], ["tier-blaze"], ["first-boss"], ["full-cycle"]]);
+    expect(level).toBe(8);
   });
 });

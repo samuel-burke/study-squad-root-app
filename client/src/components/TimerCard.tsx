@@ -53,12 +53,13 @@ export function TimerCard({
       size={compact ? 220 : 200}
       remaining={remainingFraction(timer, now)}
       tone={ringTone(timer.phase)}
+      dim={!me.onRoomTimer}
     >
       <div className="ring-time" role="timer" aria-label={`${time} ${phaseCaption(timer)}`}>
         {time}
       </div>
       <div className="small muted">{compact ? label : phaseCaption(timer)}</div>
-      {room.features.comboEnabled && (
+      {room.features.comboEnabled && room.roomParticipantCount > 0 && (
         <div className="ring-combo">
           <BoltIcon size={13} stroke="var(--amber-strong)" />
           {formatCombo(room.combo)} combo
@@ -99,6 +100,7 @@ export function TimerCard({
               type="button"
               className="btn btn-primary"
               onClick={onJoin}
+              aria-keyshortcuts="F"
               disabled={busy || onSoloTimer}
             >
               Join room timer
@@ -113,6 +115,7 @@ export function TimerCard({
               type="button"
               className="btn btn-quiet"
               onClick={onSolo}
+              aria-keyshortcuts="S"
               disabled={busy || me.onRoomTimer}
             >
               Start a solo timer

@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { tierFor, type BossDto } from "@studyroom/core";
+import { HIGH_FIVE_EMOJI, tierFor, type BossDto } from "@studyroom/core";
 import type { StudyRoomGateway } from "./api/gateway";
 import { BadgeUnlocked } from "./components/BadgeUnlocked";
 import { BossDefeated } from "./components/BossDefeated";
 import { KeepGoing } from "./components/KeepGoing";
-import { HighFiveFloats } from "./components/BreakFun";
+import { HighFiveFloats, myBreakKey, onBreak } from "./components/BreakFun";
 import { MemberProfileSheet } from "./components/MemberProfileSheet";
 import { BreakMoment } from "./components/BreakMoment";
 import { Celebration } from "./components/Celebration";
@@ -16,14 +16,17 @@ import { LeaderboardPodium } from "./components/LeaderboardPodium";
 import { ProgressScreen } from "./components/ProgressScreen";
 import { RoomScreen } from "./components/RoomScreen";
 import { SettingsSheet } from "./components/SettingsSheet";
+import { ShortcutsSheet } from "./components/ShortcutsSheet";
 import { StartSessionSheet } from "./components/StartSessionSheet";
 import { Toast } from "./components/Toast";
 import { useMediaQuery } from "./state/useMediaQuery";
 import { useNow } from "./state/useNow";
 import { useSchedule } from "./state/useSchedule";
+import { useShortcuts } from "./state/useShortcuts";
 import { useProfiles } from "./state/useProfiles";
 import { useCountdownChirps } from "./state/useCountdownChirps";
 import { useEventSounds } from "./state/useEventSounds";
+import { useMemberSounds } from "./state/useMemberSounds";
 import { useSoundCues } from "./state/useSoundCues";
 import { useSounds } from "./state/useSounds";
 import { MiniPlayer, SoundsSheet } from "./components/SoundsSheet";
@@ -31,8 +34,10 @@ import { useStudyRoom } from "./state/useStudyRoom";
 import { myTableView } from "./lib/view";
 
 type Overlay =
-  | { kind: "start"; mode: "room" | "solo" }
-  | { kind: "goals" }
+  // `keys`: opened from the keyboard, so the sheet starts in its text box.
+  | { kind: "start"; mode: "room" | "solo"; keys?: boolean }
+  | { kind: "goals"; adding?: boolean }
+  | { kind: "shortcuts" }
   | { kind: "settings" }
   | { kind: "sounds" }
   | { kind: "feedback" }
@@ -75,6 +80,11 @@ export function App({ gateway }: { gateway: StudyRoomGateway }) {
     [celebrationAt, boss, level],
   );
   useEventSounds(eventSoundState, sounds.muted);
+  useMemberSounds(
+    state.room?.members.map((m) => m.userId) ?? null,
+    state.me?.userId ?? null,
+    sounds.muted,
+  );
 
   // The accent color follows the member's tier (styles.css).
   const tier = tierFor(state.me?.lifetimeFocusMinutes ?? 0).tier.id;
@@ -129,6 +139,75 @@ export function App({ gateway }: { gateway: StudyRoomGateway }) {
     if (modalOpen) node.setAttribute("aria-hidden", "true");
     else node.removeAttribute("aria-hidden");
   }, [modalOpen, state.status]);
+
+  // E asks first ("Press E again…"); a second E within 2 s ends the session.
+  const [hint, setHint] = useState<string | null>(null);
+  useEffect(() => {
+    if (!hint) return;
+    const timer = setTimeout(() => setHint(null), 2000);
+    return () => clearTimeout(timer);
+  }, [hint]);
+
+  const keys: Record<string, () => void> = {};
+  const you = state.me;
+  const yourRoom = state.room && you ? myTableView(state.room, you) : null;
+  if (you && yourRoom) {
+    const idle = you.status === "idle";
+    const start = (mode: "room" | "solo") => () => {
+      if (idle) setOverlay({ kind: "start", mode, keys: true });
+    };
+    const mine = yourRoom.members.find((m) => m.userId === you.userId);
+    const onMyBreak = myBreakKey(yourRoom, you.userId, now) !== null;
+    Object.assign(keys, {
+      f: start("room"),
+      s: start("solo"),
+      e: () => {
+        if (idle) return;
+        // The hint is up for 2 s, which is the window for the second E.
+        if (hint) {
+          setHint(null);
+          void (you.onRoomTimer ? actions.leaveRoomTimer() : actions.endSolo());
+          return;
+        }
+        const what = you.onRoomTimer
+          ? "leave the room timer"
+          : you.status === "soloBreak"
+            ? "skip your solo break"
+            : "end your solo timer";
+        setHint(`Press E again to ${what}`);
+      },
+      enter: () => {
+        if (you.keepGoingEndsAt > now) void actions.keepGoing();
+      },
+      g: () => setOverlay({ kind: "goals" }),
+      n: () => setOverlay({ kind: "goals", adding: true }),
+      m: () => setOverlay({ kind: "sounds" }),
+      k: player.togglePlay,
+      "[": () => player.skip(-1),
+      "]": () => player.skip(1),
+      q: () => sounds.setMuted(!sounds.muted),
+      p: () => setScreen((s) => (s === "room" ? "progress" : "room")),
+      escape: () => setScreen("room"),
+      y: () => setOverlay({ kind: "member", userId: you.userId }),
+      ",": () => setOverlay({ kind: "settings" }),
+      // The voice button keeps its own confirm sheet.
+      v: () => document.querySelector<HTMLElement>(".voice-btn")?.click(),
+      d: () => {
+        if (onMyBreak && mine?.challenge && !mine.challengeDone)
+          void actions.completeBreakChallenge();
+      },
+      h: () => {
+        if (!onMyBreak) return;
+        for (const m of yourRoom.members)
+          if (m.userId !== you.userId && onBreak(m.status))
+            void actions.sendHighFive(m.userId, HIGH_FIVE_EMOJI[0]);
+      },
+      "?": () => setOverlay({ kind: "shortcuts" }),
+    });
+  }
+  // Off while a sheet or a full-screen moment is up; those have their own keys.
+  const momentUp = bossDown !== null || state.newBadges.length > 0 || replayBadge !== null;
+  useShortcuts(keys, !modalOpen && !momentUp);
 
   if (state.status === "loading") {
     return (
@@ -214,6 +293,7 @@ export function App({ gateway }: { gateway: StudyRoomGateway }) {
           now={now}
           busy={busy}
           initialMode={overlay.mode}
+          focusGoal={overlay.keys}
           onClose={() => setOverlay(null)}
           onStartRoom={actions.joinRoomTimer}
           onStartSolo={actions.startSolo}
@@ -235,6 +315,7 @@ export function App({ gateway }: { gateway: StudyRoomGateway }) {
           xpEnabled={room.features.xpEnabled}
           busy={busy}
           actions={goalActions}
+          adding={overlay.adding}
           onClose={() => setOverlay(null)}
         />
       )}
@@ -246,6 +327,7 @@ export function App({ gateway }: { gateway: StudyRoomGateway }) {
           you={overlay.userId === me.userId}
           xpEnabled={room.features.xpEnabled}
           onClose={() => setOverlay(null)}
+          onReplayBadge={setReplayBadge}
         />
       )}
       {overlay?.kind === "sounds" && (
@@ -263,8 +345,10 @@ export function App({ gateway }: { gateway: StudyRoomGateway }) {
           gateway={gateway}
           onClose={() => setOverlay(null)}
           onSendFeedback={() => setOverlay({ kind: "feedback" })}
+          onShowShortcuts={() => setOverlay({ kind: "shortcuts" })}
         />
       )}
+      {overlay?.kind === "shortcuts" && <ShortcutsSheet onClose={() => setOverlay(null)} />}
       {overlay?.kind === "feedback" && (
         <FeedbackSheet gateway={gateway} onClose={() => setOverlay(null)} />
       )}
@@ -317,6 +401,7 @@ export function App({ gateway }: { gateway: StudyRoomGateway }) {
       )}
       <HighFiveFloats highFives={state.highFives} profiles={profiles} />
       {state.error && <Toast message={state.error} onDismiss={actions.dismissError} />}
+      {hint && !state.error && <Toast message={hint} onDismiss={() => setHint(null)} />}
     </>
   );
 }

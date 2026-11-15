@@ -5,6 +5,7 @@ import { playShowEffects } from "../lib/showEffects";
 import type { Medal3D } from "../lib/medal3d";
 import { clamp, SHOWS, ShowPainter, type DrawMedal, type Show } from "../lib/unlockShow";
 import { BadgeMedal, FRAMES, medalMetal } from "./BadgeMedal";
+import { ReplayLink } from "./ReplayLink";
 import { RingUnlocked } from "./RingUnlocked";
 
 const EYEBROWS: Record<BadgeTier, string> = {
@@ -28,9 +29,13 @@ function playShow(tier: BadgeTier): () => void {
 /** Seconds the show keeps drawing after its music ends. */
 const LINGER = 1.5;
 
-/** The flat medal art as an image, on an 88 by 88 box so the ribbons fit. */
+/**
+ * The flat medal art as an image, on an 88 by 88 box so the ribbons fit. The
+ * platinum glints are left off: they belong on the small card, not the 3D medal.
+ */
 export function medalImage(svg: SVGSVGElement): HTMLImageElement {
   const copy = svg.cloneNode(true) as SVGSVGElement;
+  copy.querySelector(".medal-glints")?.remove();
   copy.setAttribute("viewBox", "-12 -12 88 88");
   copy.setAttribute("width", "1024");
   copy.setAttribute("height", "1024");
@@ -108,12 +113,21 @@ interface UnlockProps {
   onDismiss(): void;
   /** Starts the tier's music and effects, and returns a function that stops them. */
   play?: (tier: BadgeTier) => (() => void) | void;
+  /** Plays the whole moment again from the start. */
+  onReplay?(): void;
 }
 
 /** A color tier's ring gets its own neon unlock; every other badge gets the medal show. */
 export function BadgeUnlocked(props: UnlockProps) {
   const ring = badgeById(props.badgeId)?.ring;
-  return ring ? <RingUnlocked {...props} /> : <MedalUnlocked {...props} />;
+  // Replay remounts the moment, which restarts its show and sound.
+  const [run, setRun] = useState(0);
+  const onReplay = () => setRun((n) => n + 1);
+  return ring ? (
+    <RingUnlocked key={run} {...props} onReplay={onReplay} />
+  ) : (
+    <MedalUnlocked key={run} {...props} onReplay={onReplay} />
+  );
 }
 
 /**
@@ -123,7 +137,13 @@ export function BadgeUnlocked(props: UnlockProps) {
  * otherwise. It stays up until closed with a tap anywhere, the button, or
  * Escape.
  */
-function MedalUnlocked({ badgeId, muted = false, onDismiss, play = playShow }: UnlockProps) {
+function MedalUnlocked({
+  badgeId,
+  muted = false,
+  onDismiss,
+  play = playShow,
+  onReplay,
+}: UnlockProps) {
   const badge = badgeById(badgeId);
   const tier = badge?.tier;
   const titleId = useId();
@@ -312,6 +332,7 @@ function MedalUnlocked({ badgeId, muted = false, onDismiss, play = playShow }: U
         >
           Nice!
         </button>
+        {onReplay && <ReplayLink onReplay={onReplay} />}
       </div>
     </div>
   );

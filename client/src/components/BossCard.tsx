@@ -1,4 +1,4 @@
-import { formatCombo, formatXp, type BossDto } from "@studyroom/core";
+import { formatXp, type BossDto } from "@studyroom/core";
 import { percent } from "../lib/view";
 import { SwordIcon } from "./Icons";
 
@@ -25,7 +25,7 @@ export function strengthText(boss: BossDto): string {
   return `Strength ${boss.strength.toFixed(digits)}×`;
 }
 
-export function BossCard({ boss, combo, now }: { boss: BossDto; combo: number; now: number }) {
+export function BossCard({ boss, now }: { boss: BossDto; now: number }) {
   const left = hpLeft(boss);
   const defeatedPct = percent(boss.damageXp, boss.maxHpXp);
   return (
@@ -64,11 +64,6 @@ export function BossCard({ boss, combo, now }: { boss: BossDto; combo: number; n
           <span>{hpText(boss)} HP left</span>
           <span>{defeatedPct}% defeated</span>
         </div>
-      </div>
-      <div className="boss-text">
-        Every XP you earn is damage, live each minute you focus. Right now the room hits at{" "}
-        <strong>{formatCombo(combo)}</strong>.
-        {boss.lootXp > 0 && <> Defeat it for +{boss.lootXp} XP each.</>}
       </div>
     </section>
   );

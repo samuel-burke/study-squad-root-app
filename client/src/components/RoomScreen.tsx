@@ -1,11 +1,11 @@
 import type { MyStatusDto, RoomStateDto } from "@studyroom/core";
 import type { ReactNode } from "react";
 import type { Profile } from "../api/gateway";
-import { phasePill } from "../lib/view";
 import { BossCard, MobileBoss } from "./BossCard";
 import { BreakChallengeCard, myBreakKey } from "./BreakFun";
 import type { GoalActions } from "./GoalList";
-import { AppLogo, ChartIcon, PeopleIcon, SlidersIcon, SoundOffIcon, SoundOnIcon } from "./Icons";
+import { phasePill } from "../lib/view";
+import { AppLogo, ChartIcon, SlidersIcon, SoundOffIcon, SoundOnIcon } from "./Icons";
 import { MemberBoard } from "./MemberBoard";
 import { SessionPanel } from "./SessionPanel";
 import { TimerCard } from "./TimerCard";
@@ -41,6 +41,7 @@ export interface RoomScreenProps {
 
 function Header({
   room,
+  me,
   compact,
   soundsMuted,
   ambientOn,
@@ -50,6 +51,7 @@ function Header({
 }: Pick<
   RoomScreenProps,
   | "room"
+  | "me"
   | "compact"
   | "soundsMuted"
   | "ambientOn"
@@ -57,7 +59,6 @@ function Header({
   | "onOpenProgress"
   | "onOpenSettings"
 >) {
-  const channel = room.features.postChannelName;
   return (
     <header className="app-header">
       {compact ? (
@@ -72,30 +73,27 @@ function Header({
           <div className="brand-mark" aria-hidden="true">
             <AppLogo size={32} />
           </div>
-          <div style={{ minWidth: 0 }}>
-            <div className="brand-name">Study Squad</div>
-            {channel && <div className="brand-sub">Posts in #{channel}</div>}
-          </div>
+          <div className="brand-name">Study Squad</div>
         </div>
       )}
-      <div className="phase-pill" data-phase={room.timer.phase}>
-        <span className="dot" />
-        {!compact || room.timer.phase === "longBreak"
-          ? phasePill(room.timer)
-          : room.timer.phase === "idle"
-            ? "Timer free"
-            : `Round ${room.timer.round} of ${room.timer.rounds}`}
-      </div>
-      <div className="header-meta">
-        <div className="present">
-          <PeopleIcon />
-          {room.presentCount} in the room
+      {compact && (
+        // Phones have no round dots, so the round lives here.
+        <div className="phase-pill" data-phase={room.timer.phase} data-dim={!me.onRoomTimer}>
+          <span className="dot" />
+          {room.timer.phase === "longBreak"
+            ? phasePill(room.timer)
+            : room.timer.phase === "idle"
+              ? "Timer free"
+              : `Round ${room.timer.round} of ${room.timer.rounds}`}
         </div>
+      )}
+      <div className="header-meta">
         <VoiceButton voice={room.voice} compact={compact} />
         <button
           type="button"
           className="icon-btn"
           aria-label="Sounds"
+          aria-keyshortcuts="M"
           aria-haspopup="dialog"
           title={ambientOn ? "Background sound on" : soundsMuted ? "Sounds off" : "Sounds on"}
           onClick={onOpenSounds}
@@ -107,6 +105,8 @@ function Header({
           type="button"
           className="icon-btn"
           aria-label="Your progress"
+          aria-keyshortcuts="P"
+          title="Your progress (P)"
           onClick={onOpenProgress}
         >
           <ChartIcon size={18} />
@@ -115,6 +115,8 @@ function Header({
           type="button"
           className="icon-btn"
           aria-label="Room settings"
+          aria-keyshortcuts=","
+          title="Room settings (,)"
           onClick={onOpenSettings}
         >
           <SlidersIcon size={18} />
@@ -218,9 +220,7 @@ export function RoomScreen(props: RoomScreenProps) {
         </main>
         <aside className="room-aside">
           {props.podium}
-          {room.boss.enabled && !room.boss.defeated && (
-            <BossCard boss={room.boss} combo={room.combo} now={now} />
-          )}
+          {room.boss.enabled && !room.boss.defeated && <BossCard boss={room.boss} now={now} />}
           <SessionPanel
             me={me}
             xpEnabled={room.features.xpEnabled}

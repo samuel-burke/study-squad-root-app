@@ -46,7 +46,6 @@ type Overlay =
 
 export function App({ gateway }: { gateway: StudyRoomGateway }) {
   const { state, actions } = useStudyRoom(gateway);
-  const now = useNow(gateway.now.bind(gateway));
   const compact = useMediaQuery("(max-width: 760px)");
   const [screen, setScreen] = useState<"room" | "progress">("room");
   const [overlay, setOverlay] = useState<Overlay>(null);
@@ -63,6 +62,8 @@ export function App({ gateway }: { gateway: StudyRoomGateway }) {
       : state.me.onRoomTimer && state.room
         ? myTableView(state.room, state.me).timer.phaseEndsAt
         : state.me.endsAt;
+  // The clock flips on the same beat as the countdown ticks.
+  const now = useNow(serverNow, myEndsAt);
   useCountdownChirps(myEndsAt, serverNow, sounds.muted);
   const celebrationAt = state.celebration?.startedAt ?? null;
   const boss = state.room?.boss;

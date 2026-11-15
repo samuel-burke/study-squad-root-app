@@ -4,6 +4,15 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ## [Unreleased]
 
+### Fixed
+
+- A break or focus starting plays one chime again, not two: the countdown's last second is a tick, not a second chime.
+- The countdown clock flips its seconds on the same beat as the ticks, instead of up to a quarter second after them.
+
+### Changed
+
+- Button clicks are half as loud.
+
 ## [0.7.1] - 2026-11-15
 
 Keyboard shortcuts, a new sound pack, badge details on profiles, and a cleaner room.

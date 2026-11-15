@@ -4,7 +4,6 @@ import focusComplete from "../assets/ui/focus-complete.mp3";
 import focusStart from "../assets/ui/focus-start.mp3";
 import memberJoin from "../assets/ui/member-join.mp3";
 import memberLeave from "../assets/ui/member-leave.mp3";
-import timerFinish from "../assets/ui/timer-finish.mp3";
 import timerTick from "../assets/ui/timer-tick.mp3";
 import uiClick from "../assets/ui/ui-click.mp3";
 import { playSound } from "./clips";
@@ -24,11 +23,11 @@ export const UI_SOUNDS: Record<UiSound, { url: string; volume: number }> = {
   breakStart: { url: breakStart, volume: 0.68 },
   breakEnd: { url: breakEnd, volume: 0.72 },
   tick: { url: timerTick, volume: 0.38 },
-  // Starts a second before zero and rings out as the clock gets there.
-  lastTick: { url: timerFinish, volume: 0.68 },
+  // Just a tick: the phase change's own chime follows a second later.
+  lastTick: { url: timerTick, volume: 0.5 },
   memberJoin: { url: memberJoin, volume: 0.48 },
   memberLeave: { url: memberLeave, volume: 0.35 },
-  click: { url: uiClick, volume: 0.3 },
+  click: { url: uiClick, volume: 0.15 },
 };
 
 /** Plays a UI sound. Any audio failure is swallowed. */

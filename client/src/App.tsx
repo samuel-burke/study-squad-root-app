@@ -50,8 +50,13 @@ export function App({ gateway }: { gateway: StudyRoomGateway }) {
   const schedule = useSchedule(gateway);
   // A badge the member asked to see unlock again, from the progress screen.
   const [replayBadge, setReplayBadge] = useState<string | null>(null);
-  const sounds = useSoundCues(state.me?.status ?? null);
-  const player = useSounds(state.me?.status ?? null);
+  // Your own status isn't pushed when a room phase changes, but your card in
+  // the room is, so the break chimes, music and colors follow that.
+  const myCard = state.room?.members.find((m) => m.userId === state.me?.userId);
+  const myStatus =
+    state.me?.status === "idle" ? "idle" : (myCard?.status ?? state.me?.status ?? null);
+  const sounds = useSoundCues(myStatus);
+  const player = useSounds(myStatus);
   const serverNow = useCallback(() => gateway.now(), [gateway]);
   // Room timer members follow the room clock, which every phase change updates.
   const myEndsAt =
@@ -91,7 +96,7 @@ export function App({ gateway }: { gateway: StudyRoomGateway }) {
     document.documentElement.dataset.tier = tier;
   }, [tier]);
   // On your break the accent turns break teal (styles.css), so it's clear it's a break.
-  const breakTime = state.me?.status === "roomBreak" || state.me?.status === "soloBreak";
+  const breakTime = myStatus === "roomBreak" || myStatus === "soloBreak";
   useEffect(() => {
     document.documentElement.toggleAttribute("data-break", breakTime);
   }, [breakTime]);

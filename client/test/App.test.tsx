@@ -518,6 +518,18 @@ describe("Study Squad app", () => {
     expect(screen.getByRole("listitem", { name: /You, Room timer/ })).not.toHaveTextContent("Room");
   });
 
+  it("turns the app break teal for your break and back when focus starts", async () => {
+    const { user } = await renderApp({ focusMinutes: 0.02, breakMinutes: 0.05 });
+    await user.click(screen.getByRole("button", { name: "Join room timer" }));
+    await user.click(
+      within(screen.getByRole("dialog")).getByRole("button", { name: "Start focusing" }),
+    );
+    const root = document.documentElement;
+    expect(root).not.toHaveAttribute("data-break");
+    await waitFor(() => expect(root).toHaveAttribute("data-break"), { timeout: 4_000 });
+    await waitFor(() => expect(root).not.toHaveAttribute("data-break"), { timeout: 6_000 });
+  });
+
   it("celebrates the round end without a break screen", async () => {
     const { user } = await renderApp({ focusMinutes: 0.02, breakMinutes: 1 });
     await user.click(screen.getByRole("button", { name: "Join room timer" }));

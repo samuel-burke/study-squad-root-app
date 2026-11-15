@@ -440,11 +440,6 @@ h3 {
   font-size: 17px;
 }
 
-.brand-sub {
-  font-size: 12px;
-  color: var(--text-muted);
-}
-
 .phase-pill {
   display: inline-flex;
   align-items: center;
@@ -482,14 +477,7 @@ h3 {
   display: flex;
   align-items: center;
   gap: 12px;
-}
-
-.present {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  color: var(--text-muted);
-  font-size: 13px;
+  margin-left: auto;
 }
 
 .voice-btn {
@@ -798,27 +786,6 @@ h3 {
   flex: none;
 }
 
-.rank-chip {
-  font-size: 11px;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  color: var(--text-muted);
-  background: var(--bg);
-  border: 1px solid var(--border);
-  padding: 1px 6px;
-  border-radius: 6px;
-  flex: none;
-}
-
-.streak-line .rank-chip {
-  margin-left: 4px;
-}
-
-.rank-chip[data-top="true"] {
-  color: var(--amber-text);
-  border-color: var(--amber-you);
-}
-
 .streak-line {
   display: flex;
   align-items: center;
@@ -961,15 +928,6 @@ h3 {
 
 .boss .bar > span {
   background: var(--coral);
-}
-
-.boss-text {
-  font-size: 13px;
-  color: var(--boss-muted);
-}
-
-.boss-text strong {
-  color: var(--text);
 }
 
 /* ---------------------------------------------------------------- session + goals */
@@ -1861,11 +1819,6 @@ textarea.input {
     gap: 8px;
   }
 
-  .brand-sub,
-  .header-meta .present {
-    display: none;
-  }
-
   .app-header {
     flex-wrap: nowrap;
   }
@@ -2073,6 +2026,19 @@ textarea.input {
   flex: none;
   line-height: 0;
   filter: var(--medal-shadow-sm);
+}
+
+.avatar-wrap {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+}
+
+/* The chosen badge sits on the avatar's bottom-right corner. */
+.avatar-wrap .featured-badge {
+  position: absolute;
+  right: -6px;
+  bottom: -6px;
 }
 
 .badge-medal {

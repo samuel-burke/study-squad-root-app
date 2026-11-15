@@ -30,7 +30,7 @@ describe("Study Squad app", () => {
   it("opens on an idle room with an empty board", async () => {
     await renderApp();
     expect(screen.getByRole("timer")).toHaveTextContent("25:00");
-    expect(screen.getByText("Room timer is free")).toBeInTheDocument();
+    expect(screen.getByText("ready when you are")).toBeInTheDocument();
     expect(screen.getByText(/The room is quiet/)).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Focusing now · 0" })).toBeInTheDocument();
   });
@@ -50,7 +50,10 @@ describe("Study Squad app", () => {
     const board = screen.getByRole("region", { name: "Who is in the room" });
     const card = within(board).getByRole("listitem", { name: /You, Room timer/ });
     expect(card).toHaveTextContent("Make 20 flashcards");
-    expect(screen.getByText("Focus · round 1 of 4")).toBeInTheDocument();
+    // The clock already shows the room timer, so the header and cards don't repeat it.
+    expect(card).not.toHaveTextContent("Room timer");
+    expect(screen.queryByText(/round 1 of 4/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/in the room$/)).not.toBeInTheDocument();
     // Like the mockup, the dot for the round in progress is filled.
     const dots = document.querySelectorAll(".round-dot");
     expect([...dots].map((d) => d.getAttribute("data-done"))).toEqual([
@@ -85,7 +88,9 @@ describe("Study Squad app", () => {
     const dialog = screen.getByRole("dialog");
     await user.click(within(dialog).getByRole("radio", { name: "45 min" }));
     await user.click(within(dialog).getByRole("button", { name: "Start focusing" }));
-    expect(await screen.findByRole("listitem", { name: /You, Solo · 45:00/ })).toBeInTheDocument();
+    // Your card sits in a Solo group; only you see its countdown.
+    const card = await screen.findByRole("listitem", { name: /^You, Solo · 45:00/ });
+    expect(screen.getByRole("region", { name: "Solo timers" })).toContainElement(card);
     expect(screen.getByRole("button", { name: "End solo timer" })).toBeInTheDocument();
   });
 
@@ -498,7 +503,9 @@ describe("Study Squad app", () => {
     await waitFor(() =>
       expect(within(bar).getByRole("button", { name: "Leave timer" })).toBeInTheDocument(),
     );
-    expect(screen.getByRole("listitem", { name: /You, Room timer/ })).toHaveTextContent("Room");
+    // The round pill stays on phones; the row skips "Room" since the clock already says it.
+    expect(screen.getByText("Round 1 of 4")).toBeInTheDocument();
+    expect(screen.getByRole("listitem", { name: /You, Room timer/ })).not.toHaveTextContent("Room");
   });
 
   it("celebrates and shows the break moment when the round ends", async () => {

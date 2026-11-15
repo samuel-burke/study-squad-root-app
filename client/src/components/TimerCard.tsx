@@ -59,7 +59,7 @@ export function TimerCard({
         {time}
       </div>
       <div className="small muted">{compact ? label : phaseCaption(timer)}</div>
-      {room.features.comboEnabled && (
+      {room.features.comboEnabled && room.roomParticipantCount > 0 && (
         <div className="ring-combo">
           <BoltIcon size={13} stroke="var(--amber-strong)" />
           {formatCombo(room.combo)} combo

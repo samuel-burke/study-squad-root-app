@@ -119,32 +119,23 @@ test.describe("focus room", () => {
   });
 });
 
-test.describe("the break moment", () => {
-  test("lands for everyone when the round ends, with XP, streak, boss damage and a goal check", async ({
-    page,
-  }) => {
+test.describe("the round end", () => {
+  test("celebrates for everyone with a toast, and no screen covers the room", async ({ page }) => {
     await page.goto("/?focus=0.1&break=0.5&join=0");
     const sheet = await openStartSheet(page);
-    await sheet.getByLabel("Goals for this session").fill("Read ch. 4");
     await sheet.getByRole("button", { name: "Start focusing" }).click();
 
-    const moment = page.getByRole("dialog", { name: "Nice work, everyone" });
-    await expect(moment).toBeVisible({ timeout: 15_000 });
-    await expect(page.getByRole("status").filter({ hasText: "Round 1 complete" })).toHaveCount(1);
-    await expect(moment).toContainText("6 days");
-    await expect(moment).toContainText(/finished together/);
-    await expect(moment).toContainText(/hit .+ for/);
-    await expect(moment).toContainText("Did you finish Read ch. 4?");
+    await expect(page.getByRole("status").filter({ hasText: "Round 1 complete" })).toHaveCount(1, {
+      timeout: 15_000,
+    });
     // The board flips to Break for everyone at the same moment.
     await expect(page.locator(".ring-time").first()).toHaveAttribute("aria-label", /left in break/);
-
-    // Any badges this round earned sit on top of the moment.
+    // Any badges this round earned unlock on top of the room, and then it's just the room.
     const unlock = page.locator(".unlock");
     while (await unlock.isVisible()) {
       await unlock.getByRole("button", { name: "Nice!" }).click();
     }
-    await moment.getByRole("button", { name: "Done, +25 XP" }).click();
-    await expect(moment).toBeHidden();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
   });
 
   test("on a break, tapping 👋 or 🔥 on a teammate's card sends it", async ({ page }) => {
@@ -152,13 +143,13 @@ test.describe("the break moment", () => {
     const sheet = await openStartSheet(page);
     await sheet.getByRole("button", { name: "Start focusing" }).click();
 
-    const moment = page.getByRole("dialog", { name: "Nice work, everyone" });
-    await expect(moment).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByRole("status").filter({ hasText: "Round 1 complete" })).toHaveCount(1, {
+      timeout: 15_000,
+    });
     const unlock = page.locator(".unlock");
     while (await unlock.isVisible()) {
       await unlock.getByRole("button", { name: "Nice!" }).click();
     }
-    await moment.getByRole("button", { name: "Back to the room" }).click();
 
     // The buttons sit on the teammate's own card, not loose on the screen.
     const card = page.getByRole("listitem", { name: /^Ana R\., Break/ });

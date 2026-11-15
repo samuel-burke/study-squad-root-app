@@ -162,7 +162,9 @@ test("when a round ends, each member gets their own result", async ({ browser, r
 
   await advanceClock(request, 26 * 60_000);
   for (const m of [dee, eli]) {
-    await expect(m.page.getByRole("dialog", { name: /^Nice work/ })).toBeVisible();
+    await expect(m.page.getByRole("status").filter({ hasText: /Round \d+ complete/ })).toHaveCount(
+      1,
+    );
   }
 
   await expectNoErrors(dee, eli);

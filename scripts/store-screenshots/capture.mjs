@@ -38,7 +38,7 @@ const BADGES = [
   "weekend-warrior",
 ].join(",");
 // A Sunday evening: 24 day streak after today, level 16, second on the weekly board.
-const QUERY = `?badges=${BADGES}&streak=23&xp=8420&weekHours=3.4`;
+const QUERY = `?badges=${BADGES}&streak=23&xp=8420&weekHours=3.4&join=0`;
 const START = new Date("2026-11-01T18:40:00-06:00");
 
 async function newPage(browser, fakeClock = true) {
@@ -79,17 +79,18 @@ async function captureApp(browser) {
   await page.getByRole("button", { name: "Start focusing" }).click();
   await page.clock.runFor(3000);
   await clearUnlocks(page);
-  // The room opened 10.5 minutes into round 1, so this lands on the break moment.
+  // The room opened 10.5 minutes into round 1, so this lands on the round's end.
   await page.clock.runFor(14.5 * MIN - 5000);
   await clearUnlocks(page);
   await page.clock.runFor(4000);
   await page.waitForTimeout(1500);
   await page.screenshot({ path: shot("break") });
-  await page.getByRole("button", { name: /Done, \+25/ }).click();
-  await page.clock.runFor(1500);
   await clearUnlocks(page);
-  await page.keyboard.press("Escape");
-  await page.clock.runFor(1000);
+  await page
+    .getByRole("region", { name: "Your session" })
+    .getByRole("checkbox", { name: "Calc problem set 6" })
+    .click();
+  await page.clock.runFor(1500);
   await clearUnlocks(page);
   // Into round 2, about 15 minutes left.
   for (let i = 0; i < 15; i++) {

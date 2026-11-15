@@ -189,7 +189,7 @@ describe("keyboard shortcuts", () => {
       .mockResolvedValueOnce({ ...snapshot.me, keepGoingEndsAt: 0 });
     const user = userEvent.setup();
     render(<App gateway={gateway} />);
-    await screen.findByRole("alertdialog", { name: "Keep going?" });
+    await screen.findByRole("button", { name: /^Keep going/ });
     await user.keyboard("{Enter}");
     expect(keepGoing).toHaveBeenCalledOnce();
   });

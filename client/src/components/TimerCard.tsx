@@ -9,6 +9,7 @@ import {
 import { nextLabel, phaseCaption, remainingFraction } from "../lib/view";
 import { BoltIcon } from "./Icons";
 import { TimerRing } from "./TimerRing";
+import { KeepGoing } from "./KeepGoing";
 
 interface TimerCardProps {
   room: RoomStateDto;
@@ -18,6 +19,7 @@ interface TimerCardProps {
   compact?: boolean;
   onJoin(): void;
   onLeave(): void;
+  onKeepGoing(): void;
   onSolo(): void;
   onEndSolo(): void;
 }
@@ -36,6 +38,7 @@ export function TimerCard({
   compact,
   onJoin,
   onLeave,
+  onKeepGoing,
   onSolo,
   onEndSolo,
 }: TimerCardProps) {
@@ -91,6 +94,14 @@ export function TimerCard({
           <span style={{ marginLeft: 6 }}>{nextLabel(timer)}</span>
         </div>
         <div className="actions">
+          {me.keepGoingEndsAt > now && (
+            <KeepGoing
+              endsAt={me.keepGoingEndsAt}
+              now={now}
+              busy={busy}
+              onKeepGoing={onKeepGoing}
+            />
+          )}
           {me.onRoomTimer ? (
             <button type="button" className="btn" onClick={onLeave} disabled={busy}>
               {table ? "Leave table" : "Leave room timer"}

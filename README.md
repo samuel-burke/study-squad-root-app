@@ -52,12 +52,12 @@ Study Squad is a group study timer for [Root](https://www.rootapp.com) communiti
 - **Sounds**: a music player with 20 calm lo-fi tracks (CC0) plus rain, storm, café, fireplace or forest ambience layered underneath, each with its own volume. It fades out on breaks and ships inside the app, so nothing is loaded from outside
 - **No drift**: the server stores when a cycle started; every client derives the countdown (and the countdown chirps) from that and a measured clock offset
 - **Goals list**: add, edit, drag to reorder (the top goal is the one on your card), and clear finished goals in one tap. Finished goals fold into one row and show how long they took. The first 5 goals finished each day pay +25 XP
-- **Break moment**: XP earned, streak, damage dealt to the boss, and "did you finish your goal?"
+- **Round end**: a quick toast with how many finished, the combo and the XP you earned, without covering the room
 - **Game layer**: XP and levels with no daily cap, a combo multiplier for focusing together (+0.2x per extra person, no cap), color tiers from Spark to Starlight that set the app's accent by lifetime focus hours, a weekly built-in boss with its own strength, weekly quests, over 80 badges to collect (some secret, some in their own colors, plus a neon ring for each color tier) and card styles that unlock with level
 - **Big moments**: badge unlocks are short cinematics with recorded orchestral music for each tier and recorded sound effects on the action, and when the room defeats the weekly boss everyone sees it shatter and a gold boss slayer medal rise. Replay any unlock from Nice!, your progress shelf or your profile
 - **Leaderboard** by focus minutes or XP, for this week, month, year or all time. Members can hide themselves
 - **Streaks without guilt**: one finished session counts the day (the calendar outlines days that didn't count), one free freeze per week, and days start at 4am so late nights count
-- **Keep going?** at the end of each cycle, so a forgotten timer can't farm XP all day
+- **Keep going** at the end of each cycle, a button next to Leave in the long break, so a forgotten timer can't farm XP all day
 - **Voice**: admins pick the community's voice channel from a dropdown in Room settings. The room shows a Join voice button (it asks first) and headphones next to whoever is in the call
 - **Channel posts**: daily recap, "room is busy", streak milestones, boss defeats, and a squad bot that cheers on the people studying. Bot @mentions are off by default, so names are plain text unless an admin turns pings on
 - **Keyboard shortcuts**: F to start focusing, S for a solo timer, G for goals, M for sounds and more, with a "?" list and arrow keys in every list and grid
@@ -76,17 +76,16 @@ Study Squad is a group study timer for [Root](https://www.rootapp.com) communiti
 </picture>
 
 <p>
-  <img src="docs/screenshots/break-moment-desktop.png" alt="The break moment: XP earned, streak, boss damage and did you finish your goal" width="49%">
   <img src="docs/screenshots/sounds-desktop.png" alt="The Sounds sheet: a lo-fi music player with moods and a track list, plus ambience under the music" width="49%">
-</p>
-
-<p>
   <img src="docs/screenshots/start-session-desktop.png" alt="Start a session: Now and Later tabs, goals, private toggle, room timer, solo timer or a new table" width="49%">
-  <img src="docs/screenshots/goals-desktop.png" alt="Your goals: edit, drag to reorder, finished goals folded with how long they took" width="49%">
 </p>
 
 <p>
+  <img src="docs/screenshots/goals-desktop.png" alt="Your goals: edit, drag to reorder, finished goals folded with how long they took" width="49%">
   <img src="docs/screenshots/progress-desktop.png" alt="Your progress: the weekly leaderboard, level, streak calendar, quests and badges" width="49%">
+</p>
+
+<p>
   <img src="docs/screenshots/settings-desktop.png" alt="Room settings: the room's rules, the voice channel dropdown for admins and Send feedback" width="49%">
 </p>
 

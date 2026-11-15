@@ -13,6 +13,8 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 - Member cards no longer show a break countdown; the clock already shows it.
 - Button clicks are half as loud.
+- The round complete screen is gone. When a round ends, the room's "Round complete" toast is shorter and now shows the XP you earned, and the room stays in view.
+- Keep going sits with the session buttons in the long break instead of a banner over the top of the screen. On phones it takes Leave timer's spot in the bottom bar.
 
 ## [0.7.1] - 2026-11-15
 

@@ -12,7 +12,7 @@ const out = resolve(process.argv[2] ?? join(here, "../../docs/screenshots"));
 const MIN = 60_000;
 const BADGES =
   "streak-3,streak-7,level-5,level-10,focus-10h,first-session,squad-up,full-cycle,study-group,first-goal,goals-25,productive-day,first-boss,quest-first,podium,marathon";
-const QUERY = `?badges=${BADGES}&streak=11&xp=4210&weekHours=3.4`;
+const QUERY = `?badges=${BADGES}&streak=11&xp=4210&weekHours=3.4&join=0`;
 const START = new Date("2026-11-04T18:40:00-06:00");
 const DESKTOP = { width: 1440, height: 900 };
 const PHONE = { width: 390, height: 844 };

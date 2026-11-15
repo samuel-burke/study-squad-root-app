@@ -4,12 +4,26 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ## [Unreleased]
 
+## [0.7.1] - 2026-11-15
+
+Keyboard shortcuts, a new sound pack, badge details on profiles, and a cleaner room.
+
 ### Added
 
 - A small Replay link under Nice! on every badge unlock plays the animation and its sound again from the start.
+- Keyboard shortcuts for the main actions (F to start focusing, S for a solo timer, G for goals, M for sounds, P for progress and more), a "?" list of them, and arrow keys inside every pick-one group, list and grid.
+- On a profile, tapping a badge opens its details right below it. On your own profile you can also Replay it and put it on or take it off your card.
+
+### Fixed
+
+- A streak calendar day covered by the weekly freeze now shows as frozen even if it also had unfinished focus time.
 
 ### Changed
 
+- New UI sounds from the Study Squad Audio Pack (CC0) for focus and break starts and ends, the countdown, button taps, and members joining or leaving the board.
+- The color tier unlock hum is louder.
+- The sparkle glints on the 3D platinum and secret medals are gone.
+- Opening Start focusing no longer jumps the cursor into the goal box, so the phone keyboard doesn't pop up (the F shortcut still does).
 - Cleaner room: the goals card no longer shows the "XP for each goal" line, and the combo inside the clock only shows while someone is on a room timer.
 - Cleaner room: removed the header round pill on desktop (phones keep it), the "in the room" count, the "Posts in #channel" line, the room timer chip on member cards (Solo and Break chips stay) and the boss explainer paragraph.
 - The badge a member shows on their card now sits on the corner of their avatar instead of next to their name.

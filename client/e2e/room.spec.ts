@@ -172,7 +172,10 @@ test.describe("the break moment", () => {
 
     await wave.click();
     await fire.click();
-    await expect(card.getByRole("img", { name: "2 high-fives" })).toBeVisible();
+    // No count on the card. In the demo, Ana sends the same one back, and it pops up on screen.
+    await expect(
+      page.locator(".high-five-float").filter({ hasText: "Ana R. sent you a fire" }),
+    ).toBeVisible();
   });
 });
 

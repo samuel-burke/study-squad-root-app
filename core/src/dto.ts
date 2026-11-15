@@ -45,8 +45,6 @@ export interface MemberCardDto {
   challenge: string;
   /** On a break and has done this break's challenge. */
   challengeDone: boolean;
-  /** High-fives received this break. 0 when not on a break. */
-  highFives: number;
 }
 
 /** A high-five, pushed only to the member who received it. */

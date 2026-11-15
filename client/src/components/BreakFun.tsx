@@ -122,26 +122,14 @@ export function HighFiveButtons({
   );
 }
 
-/** Small marks on a card on a break: the challenge tick, and high-fives received. */
+/** A tick on a card on a break when they've done the challenge. */
 export function BreakMarks({ member }: { member: MemberCardDto }) {
-  if (!onBreak(member.status)) return null;
-  if (!member.challengeDone && member.highFives === 0) return null;
+  if (!onBreak(member.status) || !member.challengeDone) return null;
   return (
     <span className="break-marks">
-      {member.challengeDone && (
-        <span className="break-mark" role="img" aria-label="Did the break challenge">
-          ✓
-        </span>
-      )}
-      {member.highFives > 0 && (
-        <span
-          className="break-mark"
-          role="img"
-          aria-label={`${member.highFives} high-five${member.highFives === 1 ? "" : "s"}`}
-        >
-          👋 {member.highFives}
-        </span>
-      )}
+      <span className="break-mark" role="img" aria-label="Did the break challenge">
+        ✓
+      </span>
     </span>
   );
 }

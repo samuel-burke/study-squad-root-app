@@ -20,4 +20,18 @@ describe("useNow", () => {
     }
     expect(result.current).toBeGreaterThanOrEqual(1800);
   });
+
+  it("flips on the countdown's second, not up to a tick later", () => {
+    vi.setSystemTime(0);
+    // 5.13 s left: the clock shows 6 until 130 ms from now, then 5 until 1,130.
+    const { result } = renderHook(() => useNow(() => Date.now(), 5_130));
+    act(() => {
+      vi.advanceTimersByTime(130);
+    });
+    expect(result.current).toBe(130);
+    act(() => {
+      vi.advanceTimersByTime(1_000);
+    });
+    expect(result.current).toBe(1_130);
+  });
 });

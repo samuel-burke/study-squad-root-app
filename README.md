@@ -16,7 +16,7 @@
 
 [**Try the live demo**](https://samuel-burke.github.io/study-squad-root-app/demo/?focus=1&break=0.5) · [Architecture](#architecture) · [Changelog](CHANGELOG.md) · [Privacy](https://samuel-burke.github.io/study-squad-root-app/privacy/)
 
-<img src="docs/screenshots/hero.gif" alt="A focus round ends: a gold badge unlocks, then the break moment shows XP earned, the streak and damage dealt to the weekly boss" width="100%">
+<img src="docs/screenshots/hero.gif" alt="A focus round ends: the Full House gold badge unlocks, then the whole room turns break teal" width="100%">
 
 <sub>TypeScript · React · Vite · Node · Protobuf · SQLite · Vitest · Playwright · GitHub Actions</sub>
 
@@ -43,7 +43,7 @@ Study Squad is a group study timer for [Root](https://www.rootapp.com) communiti
 - **Light and dark**, desktop and phone, with keyboard shortcuts on desktop
 
 <details>
-<summary>All features (v0.7.1)</summary>
+<summary>All features (v0.7.2)</summary>
 
 - **Shared room timer** (25/5, 50/10 or custom, rounds of 4 with a long break) and **solo timers** that still show on the board
 - **Live focus board**: who's focusing, on what, how long is left and who's in voice, with solo timers grouped under Solo. Goals can be private ("Focusing")
@@ -150,7 +150,7 @@ Requests route through Root's servers, so a valid `DEV_TOKEN` is required even l
 | `npm run server`        | Server through Root's dev host (needs `server/.env`)                    |
 | `npm run client`        | Client dev server for use inside Root                                   |
 
-The screenshots above come from the demo build. To retake them, run `npm run demo`, then `node scripts/readme-screenshots/capture.mjs` (it writes `docs/screenshots/`, dark and light). The App Store images have their own script in `scripts/store-screenshots/`.
+The screenshots above come from the demo build. To retake them, run `npm run demo`, then `node scripts/readme-screenshots/capture.mjs` (it writes `docs/screenshots/`, dark and light). The hero GIF has its own script, `node scripts/readme-screenshots/hero.mjs` (needs ffmpeg). The App Store images have their own script in `scripts/store-screenshots/`.
 
 ## Architecture
 

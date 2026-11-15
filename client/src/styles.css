@@ -786,39 +786,6 @@ h3 {
   flex: none;
 }
 
-.rank-chip {
-  font-size: 11px;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  color: var(--text-muted);
-  background: var(--bg);
-  border: 1px solid var(--border);
-  padding: 1px 6px;
-  border-radius: 6px;
-  flex: none;
-}
-
-/* Top 3 rank sits on the card's right side, vertically centred. */
-.member-card {
-  position: relative;
-}
-
-.member-card > .rank-chip {
-  position: absolute;
-  right: 14px;
-  top: 50%;
-  transform: translateY(-50%);
-}
-
-.member-card:has(> .rank-chip) .member-goal {
-  padding-right: 40px;
-}
-
-.rank-chip[data-top="true"] {
-  color: var(--amber-text);
-  border-color: var(--amber-you);
-}
-
 .streak-line {
   display: flex;
   align-items: center;

@@ -40,13 +40,13 @@ Study Squad is a group study timer for [Root](https://www.rootapp.com) communiti
 - **Game layer**: XP, levels, streaks, a weekly boss, quests, color tiers that change the app's accent as your hours grow, and over 80 badges with their own unlock cinematics
 - **Sounds**: 20 bundled lo-fi tracks with rain, café or forest ambience underneath
 - **Leaderboards** by minutes or XP, with a toggle to hide yourself
-- **Light and dark**, desktop and phone
+- **Light and dark**, desktop and phone, with keyboard shortcuts on desktop
 
 <details>
-<summary>All features (v0.7.0)</summary>
+<summary>All features (v0.7.1)</summary>
 
 - **Shared room timer** (25/5, 50/10 or custom, rounds of 4 with a long break) and **solo timers** that still show on the board
-- **Live focus board**: who's focusing, on what, how long is left, their rank and who's in voice. Goals can be private ("Focusing")
+- **Live focus board**: who's focusing, on what, how long is left and who's in voice, with solo timers grouped under Solo. Goals can be private ("Focusing")
 - **Study tables**: start a named table like "Calc II" with its own 25/5 or 50/10 timer and tap Sit here to join, all from the Start focusing sheet. Everyone at every table still counts toward the room's combo, shown inside the timer ring
 - **Scheduled sessions**: plan one from the Later tab of the Start focusing sheet, tap I'm in, and get a mention in the channel when it starts
 - **Sounds**: a music player with 20 calm lo-fi tracks (CC0) plus rain, storm, café, fireplace or forest ambience layered underneath, each with its own volume. It fades out on breaks and ships inside the app, so nothing is loaded from outside
@@ -54,12 +54,13 @@ Study Squad is a group study timer for [Root](https://www.rootapp.com) communiti
 - **Goals list**: add, edit, drag to reorder (the top goal is the one on your card), and clear finished goals in one tap. Finished goals fold into one row and show how long they took. The first 5 goals finished each day pay +25 XP
 - **Break moment**: XP earned, streak, damage dealt to the boss, and "did you finish your goal?"
 - **Game layer**: XP and levels with no daily cap, a combo multiplier for focusing together (+0.2x per extra person, no cap), color tiers from Spark to Starlight that set the app's accent by lifetime focus hours, a weekly built-in boss with its own strength, weekly quests, over 80 badges to collect (some secret, some in their own colors, plus a neon ring for each color tier) and card styles that unlock with level
-- **Big moments**: badge unlocks are short cinematics with recorded orchestral music for each tier and recorded sound effects on the action, and when the room defeats the weekly boss everyone sees it shatter and a gold boss slayer medal rise
+- **Big moments**: badge unlocks are short cinematics with recorded orchestral music for each tier and recorded sound effects on the action, and when the room defeats the weekly boss everyone sees it shatter and a gold boss slayer medal rise. Replay any unlock from Nice!, your progress shelf or your profile
 - **Leaderboard** by focus minutes or XP, for this week, month, year or all time. Members can hide themselves
 - **Streaks without guilt**: one finished session counts the day (the calendar outlines days that didn't count), one free freeze per week, and days start at 4am so late nights count
 - **Keep going?** at the end of each cycle, so a forgotten timer can't farm XP all day
 - **Voice**: admins pick the community's voice channel from a dropdown in Room settings. The room shows a Join voice button (it asks first) and headphones next to whoever is in the call
 - **Channel posts**: daily recap, "room is busy", streak milestones, boss defeats, and a squad bot that cheers on the people studying. Bot @mentions are off by default, so names are plain text unless an admin turns pings on
+- **Keyboard shortcuts**: F to start focusing, S for a solo timer, G for goals, M for sounds and more, with a "?" list and arrow keys in every list and grid
 - **Light and dark**: follows the theme picked in Root and switches live (the demo follows your device)
 - **Send feedback** straight to the developer, anonymously, from Room settings
 - **Admin settings** through Root's App settings (no custom admin UI to secure), plus the voice channel dropdown in Room settings

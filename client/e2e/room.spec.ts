@@ -143,13 +143,13 @@ test.describe("the round end", () => {
     const sheet = await openStartSheet(page);
     await sheet.getByRole("button", { name: "Start focusing" }).click();
 
-    const moment = page.getByRole("dialog", { name: "Nice work, everyone" });
-    await expect(moment).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByRole("status").filter({ hasText: "Round 1 complete" })).toHaveCount(1, {
+      timeout: 15_000,
+    });
     const unlock = page.locator(".unlock");
     while (await unlock.isVisible()) {
       await unlock.getByRole("button", { name: "Nice!" }).click();
     }
-    await moment.getByRole("button", { name: "Back to the room" }).click();
 
     // The buttons sit on the teammate's own card, not loose on the screen.
     const card = page.getByRole("listitem", { name: /^Ana R\., Break/ });

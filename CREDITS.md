@@ -30,6 +30,18 @@ trimmed, faded and loudness matched (changes made by Study Squad), under the
 | `lightning.mp3`      | Platinum's lightning strike | [Weather Lightning 2](https://pixabay.com/sound-effects/weather-lightning-2-464187/)                                                   | patricksilvey  |
 | `../sounds/tier.mp3` | Color tier ring unlock      | [Sci-Fi Sound Effect Designed Circuits Hum 24](https://pixabay.com/sound-effects/sci-fi-sound-effect-designed-circuits-hum-24-200825/) | Gregor Quendel |
 
+The session chimes and countdown tick live in `client/src/assets/ui`, from the
+Study Squad Audio Pack (original synthesized sounds, converted to MP3 by Study
+Squad), [CC0](https://creativecommons.org/publicdomain/zero/1.0/).
+
+| File                 | Used for                           |
+| -------------------- | ---------------------------------- |
+| `focus-start.mp3`    | Your focus starts                  |
+| `focus-complete.mp3` | Your focus ends without a break    |
+| `break-start.mp3`    | Your break starts                  |
+| `break-end.mp3`      | Your break ends without more focus |
+| `timer-tick.mp3`     | Countdown at 1 minute and last 5 s |
+
 New sounds must be free to use in an app that Root may charge for: CC0,
 CC BY, OGA-BY or the Pixabay Content License, with a line here. No NonCommercial (NC), NoDerivatives (ND),
 ShareAlike (SA) or GPL sounds.

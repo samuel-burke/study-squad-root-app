@@ -4,14 +4,21 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ## [Unreleased]
 
+## [0.7.2] - 2026-11-15
+
+No more round complete screen, a break that turns the whole app teal, and sound and phone fixes.
+
 ### Fixed
 
+- On phones, the high-five and fire buttons sit on their member's card again and respond to taps, and high-fives you receive float across the screen again.
 - A break or focus starting plays one chime again, not two: the countdown's last second is a tick, not a second chime.
 - The countdown clock flips its seconds on the same beat as the ticks, instead of up to a quarter second after them.
 
 ### Changed
 
 - Member cards no longer show a break countdown; the clock already shows it.
+- During your break the whole app switches to break teal (the timer, buttons, boss card, XP bar and more), and goes back to your tier color when focus starts.
+- Member cards no longer show a high-five count. High-fives and fires pop up only on the receiver's screen, and the squad bot's break recap still counts them.
 - Button clicks are half as loud.
 - The round complete screen is gone. When a round ends, the room's "Round complete" toast is shorter and now shows the XP you earned, and the room stays in view.
 - Keep going sits with the session buttons in the long break instead of a banner over the top of the screen. On phones it takes Leave timer's spot in the bottom bar.

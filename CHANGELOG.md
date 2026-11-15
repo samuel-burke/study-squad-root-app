@@ -11,6 +11,7 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ### Changed
 
+- Member cards no longer show a break countdown; the clock already shows it.
 - Button clicks are half as loud.
 
 ## [0.7.1] - 2026-11-15

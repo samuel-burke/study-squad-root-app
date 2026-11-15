@@ -130,8 +130,8 @@ function FeaturedBadge({ ids }: { ids: string[] }) {
 }
 
 /**
- * What a card shows about someone's timer. The clock already has the room's time,
- * so only room breaks get a chip, and solo timers are shown only to their owner.
+ * What a card shows about someone's timer. The clock already has the room's time
+ * (focus and break), so only your own solo timer gets a chip.
  */
 function memberStatus(
   member: MemberCardDto,
@@ -144,7 +144,7 @@ function memberStatus(
   return {
     ...chip,
     label: solo && !you ? "Solo" : chip.label,
-    show: member.status === "roomBreak" || (solo && you),
+    show: solo && you,
   };
 }
 

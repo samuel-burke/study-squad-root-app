@@ -45,7 +45,7 @@ Squad), [CC0](https://creativecommons.org/publicdomain/zero/1.0/).
 | `member-join.mp3`        | Someone else joins the board              |
 | `member-leave.mp3`       | Someone else leaves the board             |
 | `ui-click.mp3`           | Button taps                               |
-| `achievement-unlock.mp3` | Your level-up                             |
+| `achievement-unlock.mp3` | A round's celebration                     |
 
 New sounds must be free to use in an app that Root may charge for: CC0,
 CC BY, OGA-BY or the Pixabay Content License, with a line here. No NonCommercial (NC), NoDerivatives (ND),

@@ -133,12 +133,12 @@ describe("session chimes and countdown ticks", () => {
     }
   });
 
-  it("play the achievement sound on a level-up", async () => {
-    const { playEventSound, eventSoundLength, LEVEL_UP, fetch } = await setup();
-    playEventSound("levelUp");
+  it("play the achievement sound for a round's celebration", async () => {
+    const { playEventSound, eventSoundLength, CELEBRATION, fetch } = await setup();
+    playEventSound("celebration");
     await settle();
-    expect(fetch).toHaveBeenCalledWith(LEVEL_UP.url);
+    expect(fetch).toHaveBeenCalledWith(CELEBRATION.url);
     expect(FakeAudioContext.sources).toHaveLength(1);
-    expect(eventSoundLength("levelUp")).toBe(1.75);
+    expect(eventSoundLength("celebration")).toBe(1.75);
   });
 });

@@ -1,12 +1,13 @@
-import { CLIPS, playClip } from "./clips";
+import achievement from "../assets/ui/achievement-unlock.mp3";
+import { CLIPS, playClip, playSound } from "./clips";
 import { playShowEffects } from "./showEffects";
 import { output, withAudio } from "./sounds";
 
 /**
  * Sounds for room moments: a round's celebration, the weekly boss going
- * down, and your own level-up. The celebration and level-up are synthesised
- * with Web Audio like the session chimes. The boss going down is a recorded
- * orchestral clip (see clips.ts).
+ * down, and your own level-up. The celebration is synthesised with Web Audio.
+ * The boss going down is a recorded orchestral clip (see clips.ts), and the
+ * level-up is the UI pack's achievement sound (CC0, see CREDITS.md).
  */
 export type EventSound = "celebration" | "bossDefeat" | "levelUp";
 
@@ -42,10 +43,8 @@ export interface Fanfare {
 }
 
 const C5 = 523.25;
-const D5 = 587.33;
 const E5 = 659.25;
 const G5 = 783.99;
-const A5 = 880;
 const C6 = 1046.5;
 const E6 = 1318.51;
 const G6 = 1567.98;
@@ -60,7 +59,7 @@ const run = (notes: number[], start: number, gap: number, length: number, volume
     volume,
   }));
 
-export const EVENT_SOUNDS: Record<Exclude<EventSound, "bossDefeat">, Fanfare> = {
+export const EVENT_SOUNDS: Record<"celebration", Fanfare> = {
   // A cheerful "ta-da": two quick pickups, a bright major chord and confetti sparkle.
   celebration: {
     volume: 0.15,
@@ -77,17 +76,6 @@ export const EVENT_SOUNDS: Record<Exclude<EventSound, "bossDefeat">, Fanfare> = 
         volume: 0.5,
       })),
       ...run([E6, G6, C7], 0.3, 0.07, 0.5, 0.3),
-    ],
-  },
-  // A fast climbing scale that lands on a sparkling held note.
-  levelUp: {
-    volume: 0.15,
-    reverb: 1.2,
-    tones: [
-      ...run([C5, D5, E5, G5, A5, C6], 0, 0.06, 0.16, 0.6),
-      { freq: E6, at: 0.38, length: 0.9, wave: "triangle", volume: 0.55 },
-      { freq: C6, at: 0.38, length: 0.9, wave: "sine", volume: 0.45 },
-      ...run([G6, C7], 0.48, 0.08, 0.5, 0.3),
     ],
   },
 };
@@ -172,12 +160,15 @@ export function scheduleFanfare(ctx: AudioContext, fanfare: Fanfare): GainNode {
   return master;
 }
 
+export const LEVEL_UP = { url: achievement, volume: 0.78, seconds: 1.75 };
+
 /** Plays a room-moment sound. Any audio failure is swallowed. */
 export function playEventSound(sound: EventSound): void {
   if (sound === "bossDefeat") {
     playClip("boss");
     playShowEffects("boss");
-  } else withAudio((ctx) => scheduleFanfare(ctx, EVENT_SOUNDS[sound]));
+  } else if (sound === "levelUp") playSound(LEVEL_UP.url, LEVEL_UP.volume);
+  else withAudio((ctx) => scheduleFanfare(ctx, EVENT_SOUNDS[sound]));
 }
 
 /** Seconds from the first note to the end of the last one, not counting reverb. */
@@ -188,5 +179,7 @@ export function fanfareLength(fanfare: Fanfare): number {
 
 /** Seconds a room-moment sound lasts, so the next one can wait for it. */
 export function eventSoundLength(sound: EventSound): number {
-  return sound === "bossDefeat" ? CLIPS.boss.seconds : fanfareLength(EVENT_SOUNDS[sound]);
+  if (sound === "bossDefeat") return CLIPS.boss.seconds;
+  if (sound === "levelUp") return LEVEL_UP.seconds;
+  return fanfareLength(EVENT_SOUNDS[sound]);
 }

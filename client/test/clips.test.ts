@@ -121,9 +121,24 @@ describe("session chimes and countdown ticks", () => {
     expect(new Set(cues.map((c) => UI_SOUNDS[c].url)).size).toBe(4);
   });
 
-  it("tick the same sound, a little louder on the last second", async () => {
+  it("ring the timer finish on the last second instead of a tick", async () => {
     const { UI_SOUNDS } = await setup();
-    expect(UI_SOUNDS.lastTick.url).toBe(UI_SOUNDS.tick.url);
-    expect(UI_SOUNDS.lastTick.volume).toBeGreaterThan(UI_SOUNDS.tick.volume);
+    expect(UI_SOUNDS.lastTick.url).not.toBe(UI_SOUNDS.tick.url);
+  });
+
+  it("keep joins, leaves and clicks quieter than the session chimes", async () => {
+    const { UI_SOUNDS } = await setup();
+    for (const quiet of ["memberJoin", "memberLeave", "click"] as const) {
+      expect(UI_SOUNDS[quiet].volume).toBeLessThan(UI_SOUNDS.breakStart.volume);
+    }
+  });
+
+  it("play the achievement sound on a level-up", async () => {
+    const { playEventSound, eventSoundLength, LEVEL_UP, fetch } = await setup();
+    playEventSound("levelUp");
+    await settle();
+    expect(fetch).toHaveBeenCalledWith(LEVEL_UP.url);
+    expect(FakeAudioContext.sources).toHaveLength(1);
+    expect(eventSoundLength("levelUp")).toBe(1.75);
   });
 });

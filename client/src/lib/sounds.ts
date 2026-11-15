@@ -130,5 +130,5 @@ export function withAudio(schedule: (ctx: AudioContext) => void): void {
   }
 }
 
-/** "tick" counts down; "lastTick" is the final second, a little louder. */
+/** "tick" counts down; "lastTick" is the final second, ringing out to zero. */
 export type Chirp = "tick" | "lastTick";

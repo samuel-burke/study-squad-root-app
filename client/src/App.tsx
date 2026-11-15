@@ -26,6 +26,7 @@ import { useShortcuts } from "./state/useShortcuts";
 import { useProfiles } from "./state/useProfiles";
 import { useCountdownChirps } from "./state/useCountdownChirps";
 import { useEventSounds } from "./state/useEventSounds";
+import { useMemberSounds } from "./state/useMemberSounds";
 import { useSoundCues } from "./state/useSoundCues";
 import { useSounds } from "./state/useSounds";
 import { MiniPlayer, SoundsSheet } from "./components/SoundsSheet";
@@ -79,6 +80,11 @@ export function App({ gateway }: { gateway: StudyRoomGateway }) {
     [celebrationAt, boss, level],
   );
   useEventSounds(eventSoundState, sounds.muted);
+  useMemberSounds(
+    state.room?.members.map((m) => m.userId) ?? null,
+    state.me?.userId ?? null,
+    sounds.muted,
+  );
 
   // The accent color follows the member's tier (styles.css).
   const tier = tierFor(state.me?.lifetimeFocusMinutes ?? 0).tier.id;

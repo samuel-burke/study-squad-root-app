@@ -2,8 +2,8 @@ import type { MyStatusKind } from "@studyroom/core";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { preloadClips } from "../lib/clips";
 import { SHOW_SOUNDS } from "../lib/showEffects";
-import { cueFor, unlockAudio, type SoundCue } from "../lib/sounds";
-import { playUiSound, UI_SOUNDS } from "../lib/uiSounds";
+import { cueFor, unlockAudio } from "../lib/sounds";
+import { playUiSound, UI_SOUNDS, type UiSound } from "../lib/uiSounds";
 
 const MUTED_KEY = "studysquad.soundsMuted";
 
@@ -26,12 +26,13 @@ function writeMuted(muted: boolean): void {
 }
 
 /**
- * Plays a chime when your own focus or break starts or ends. The mute choice
+ * Plays a chime when your own focus or break starts or ends, and a click on
+ * button taps. The mute choice
  * is per member and per device, kept in local storage.
  */
 export function useSoundCues(
   status: MyStatusKind | null,
-  play: (cue: SoundCue) => void = playUiSound,
+  play: (sound: UiSound) => void = playUiSound,
 ): { muted: boolean; setMuted(muted: boolean): void } {
   const [muted, setMutedState] = useState(readMuted);
   const previous = useRef<MyStatusKind | null>(null);
@@ -50,6 +51,21 @@ export function useSoundCues(
       for (const type of UNLOCK_EVENTS) window.removeEventListener(type, unlock, true);
     };
   }, []);
+
+  // A soft click on every button tap.
+  useEffect(() => {
+    if (muted) return;
+    const onClick = (event: MouseEvent) => {
+      if (!(event.target instanceof Element) || !event.target.closest("button")) return;
+      try {
+        play("click");
+      } catch {
+        // A click sound must never break a button.
+      }
+    };
+    window.addEventListener("click", onClick, true);
+    return () => window.removeEventListener("click", onClick, true);
+  }, [muted, play]);
 
   useEffect(() => {
     const prev = previous.current;

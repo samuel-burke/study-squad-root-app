@@ -150,13 +150,13 @@ describe("event sound synthesis", () => {
     });
   }
 
-  it.each(["celebration", "levelUp"] as const)("schedules every note of %s", async (sound) => {
+  it("schedules every note of the celebration", async () => {
     vi.stubGlobal("AudioContext", FakeAudioContext);
     vi.resetModules();
     const { playEventSound } = await import("../src/lib/eventSounds");
     FakeAudioContext.started = 0;
-    playEventSound(sound);
-    const fanfare = EVENT_SOUNDS[sound];
+    playEventSound("celebration");
+    const fanfare = EVENT_SOUNDS.celebration;
     expect(FakeAudioContext.started).toBe(fanfare.tones.length + (fanfare.noises?.length ?? 0));
   });
 

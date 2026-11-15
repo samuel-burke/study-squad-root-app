@@ -287,7 +287,6 @@ describe("MemberBoard", () => {
     weeklyRank: 0,
     challenge: "",
     challengeDone: false,
-    highFives: 0,
   };
 
   it.each([false, true])("shows your Root name instead of You (compact: %s)", (compact) => {

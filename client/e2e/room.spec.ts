@@ -146,6 +146,37 @@ test.describe("the break moment", () => {
     await moment.getByRole("button", { name: "Done, +25 XP" }).click();
     await expect(moment).toBeHidden();
   });
+
+  test("on a break, tapping 👋 or 🔥 on a teammate's card sends it", async ({ page }) => {
+    await page.goto("/?focus=0.1&break=0.5&join=0");
+    const sheet = await openStartSheet(page);
+    await sheet.getByRole("button", { name: "Start focusing" }).click();
+
+    const moment = page.getByRole("dialog", { name: "Nice work, everyone" });
+    await expect(moment).toBeVisible({ timeout: 15_000 });
+    const unlock = page.locator(".unlock");
+    while (await unlock.isVisible()) {
+      await unlock.getByRole("button", { name: "Nice!" }).click();
+    }
+    await moment.getByRole("button", { name: "Back to the room" }).click();
+
+    // The buttons sit on the teammate's own card, not loose on the screen.
+    const card = page.getByRole("listitem", { name: /^Ana R\., Break/ });
+    const wave = card.getByRole("button", { name: "Send Ana R. a high-five" });
+    const fire = card.getByRole("button", { name: "Send Ana R. a fire" });
+    const cardBox = (await card.boundingBox())!;
+    const waveBox = (await wave.boundingBox())!;
+    expect(waveBox.x).toBeGreaterThanOrEqual(cardBox.x);
+    expect(waveBox.y).toBeGreaterThanOrEqual(cardBox.y);
+    expect(waveBox.y + waveBox.height).toBeLessThanOrEqual(cardBox.y + cardBox.height);
+
+    await wave.click();
+    await fire.click();
+    // No count on the card. In the demo, Ana sends the same one back, and it pops up on screen.
+    await expect(
+      page.locator(".high-five-float").filter({ hasText: "Ana R. sent you a fire" }),
+    ).toBeVisible();
+  });
 });
 
 test.describe("progress", () => {

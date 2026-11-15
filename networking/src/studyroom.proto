@@ -83,8 +83,9 @@ message MemberCard {
   int32 weekly_rank = 10;
   // On a break and has done this break's challenge.
   bool challenge_done = 11;
-  // High-fives received this break. 0 when not on a break.
-  int32 high_fives = 12;
+  // Was high_fives: the count of high-fives received this break.
+  reserved 12;
+  reserved "high_fives";
   // This break's challenge, picked by the server so it never repeats the
   // last one. Empty when not on a break.
   string challenge = 13;

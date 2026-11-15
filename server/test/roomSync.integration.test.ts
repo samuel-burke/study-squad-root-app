@@ -204,7 +204,7 @@ describe("room timer sync across clients (engine + SQLite + push adapter)", () =
     const marcusCard = (await engine.getSnapshot("viewer")).room.members.find(
       (m) => m.userId === "marcus",
     );
-    expect(marcusCard).toMatchObject({ highFives: 2, challengeDone: true });
+    expect(marcusCard).toMatchObject({ challengeDone: true });
   });
 
   it("keeps each member's status private to their own devices", async () => {

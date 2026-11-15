@@ -4,6 +4,10 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ## [Unreleased]
 
+## [0.7.3] - 2026-11-15
+
+Breaks end properly again.
+
 ### Fixed
 
 - After a room break, the app switches back from break teal to your color, and the focus chime plays again. Music also comes back from its break fade on time.

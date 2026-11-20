@@ -4,6 +4,10 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ## [Unreleased]
 
+### Fixed
+
+- A day saved by a streak freeze shows ice blue on the Progress calendar even when it had some unfinished focus time. Before, it showed the pale focus color, so the used freeze looked missing.
+
 ## [0.7.3] - 2026-11-15
 
 Breaks end properly again.

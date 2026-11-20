@@ -246,6 +246,28 @@ test.describe("game rules", () => {
       await expect(page.locator(".streak-hint")).toContainText("keep your streak");
     });
 
+    test("a freeze day with unfinished focus time is drawn ice blue", async ({ page }) => {
+      await open(page, "?focus=10&break=1&bots=0&streak=4");
+      // Wednesday: some focus, but leaves before the round ends, so the day doesn't count.
+      await joinRoom(page);
+      await wait(page, 3 * MINUTE);
+      await clearOverlays(page);
+      await page.getByRole("button", { name: "Leave room timer" }).click();
+      await clearOverlays(page);
+      // Thursday: the week's freeze is holding the streak up across Wednesday.
+      await page.clock.fastForward("24:00:00");
+      await page.getByRole("button", { name: "Your progress" }).click();
+      await expect(page.getByText("Freeze used this week")).toBeVisible();
+      const wednesday = page.getByRole("listitem", { name: /^2026-10-28: covered by a freeze/ });
+      await expect(wednesday).toHaveClass(/heat-frozen/);
+      // The real cascade, not just the class: data-level colors must not win over the freeze.
+      const colors = await wednesday.evaluate((el) => {
+        const key = document.querySelector(".heat-key:not(.heat-key-missed)")!;
+        return [getComputedStyle(el).backgroundColor, getComputedStyle(key).backgroundColor];
+      });
+      expect(colors[0]).toBe(colors[1]);
+    });
+
     test("a broken 30 day streak restarts at 1 with Comeback and Phoenix", async ({ page }) => {
       await open(page, "?focus=1&break=0.5&bots=0&streak=30&missed=3");
       await joinRoom(page);

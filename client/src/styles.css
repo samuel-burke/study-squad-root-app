@@ -1404,7 +1404,7 @@ textarea.input {
   background: var(--amber);
 }
 
-.heat-frozen {
+.heat.heat-frozen {
   background: var(--heat-frozen);
 }
 
